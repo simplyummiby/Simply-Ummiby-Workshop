@@ -1,67 +1,43 @@
 # Simply Ummiby Workshop
 
-**Version 0.3.1**
+**Version 0.3.2**
 
-This release refines the Processing Area into a more realistic handmade production traveler.
+This release adds an order-driven Purchase to Restock center.
 
-## What changed
+## What is new
 
-### Production Planning
+When a material is marked inside Production Planning as:
 
-The first tab is now **Production Planning**.
-
-The only requirement before moving forward is choosing a fulfillment method:
-
-- Use Finished Inventory
-- Use Fabrication Kit
-- Build From Raw Materials
-
-Materials no longer block manufacturing.
-
-### Materials Status
-
-Each product shows its needed materials with one of four statuses:
-
-- Available
 - Need to Buy
 - Ordered
 - Backordered
 
-For the paper towel holder, this includes:
+it now appears automatically in two places:
 
-- Macramé cord
-- Wooden ring
-- Wooden dowel
-- End caps (2)
+1. Dashboard Inventory Alerts
+2. Inventory → Purchase to Restock
 
-You may begin the macramé work even when the wooden ring, dowel, or end caps are not yet available.
+## Purchase to Restock
 
-### Manufacturing & Assembly
+Materials are grouped so several orders needing the same supply do not create a cluttered list.
 
-The second tab is now divided into meaningful sections.
+For each material, the app shows:
 
-For the paper towel holder:
+- number of active production items affected,
+- customer,
+- Etsy order number,
+- product,
+- color,
+- current material status,
+- a shortcut back to the affected item.
 
-- Macramé
-- Assembly
+You can also mark all active instances of that material:
 
-This allows you to complete the knotting work first and add the hardware later.
+- Ordered
+- Available
 
-When every manufacturing and assembly step is checked but a material is still marked unavailable, the app asks whether to:
+These changes sync back into the affected Production Planning records.
 
-- continue anyway, or
-- move the item to Waiting on Material.
+## Still planned
 
-### Existing features retained
-
-- Multi-item Etsy orders
-- Independent item progress
-- Pack & Ship tab
-- Whole-order final shipping checklist
-- Resume functionality
-- Local browser storage
-- Downloadable backups
-
-## Important note
-
-Automatic inventory deductions are not included yet.
+This is an order-driven restock list, not full counted inventory yet. Supplier links, exact purchase quantities, stock receipts, fabrication-kit counts, and automatic deductions remain planned for the Inventory release.

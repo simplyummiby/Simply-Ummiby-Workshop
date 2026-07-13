@@ -26,6 +26,13 @@
 - Manufacturing & Assembly sections
 - Missing-material completion warning
 
+## Version 0.3.2 — Order-Driven Restock Alerts — Complete
+
+- Dashboard material alerts
+- Purchase to Restock center
+- Grouped active-order material needs
+- Ordered and Available status syncing
+
 ## Version 0.3.5 — Recipe Refinement
 
 - Review real production checklists

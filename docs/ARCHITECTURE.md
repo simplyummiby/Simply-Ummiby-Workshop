@@ -1,6 +1,6 @@
 # Architecture
 
-## Version 0.3.1
+## Version 0.3.2
 
 Simply Ummiby Workshop remains a static, local-first web application.
 
@@ -74,3 +74,8 @@ The current care sheet is generated in a temporary printable browser window. The
 ## Version 0.3.1 workflow model
 
 Production items now store `materialStatuses` and nested `manufacturingChecks`. The migration maps earlier flat manufacturing checklists into the new sectioned traveler model.
+
+
+## Derived restock data
+
+Version 0.3.2 does not store a second independent shopping list. The Purchase to Restock center is derived from active production-item `materialStatuses`. This avoids duplicate records and keeps the central view synchronized with Production Planning.

@@ -63,3 +63,14 @@ Planned stock thresholds, resource links, backup and restore, and future Google 
 ## Production Traveler Rules
 
 Materials are informational during Production Planning and do not block manufacturing. The app only asks about unavailable materials when the user attempts to finish Manufacturing & Assembly.
+
+
+## Purchase to Restock
+
+Working in Version 0.3.2:
+
+- Collects all unavailable materials from active Production Planning records
+- Groups repeated material needs
+- Shows affected orders and products
+- Allows central Ordered and Available updates
+- Syncs changes back to each production item

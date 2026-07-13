@@ -1,6 +1,6 @@
 (() => {
   const STORAGE_KEY = "simplyUmmibyWorkshopData";
-  const VERSION = "0.3.1";
+  const VERSION = "0.3.2";
   const ITEM_STATUSES = ["New","Preparing","Manufacturing","Waiting on Material","Ready for Packing","Packed","Ready to Mail","Completed"];
   const STATUS_PROGRESS = {
     "New": 5, "Preparing": 20, "Manufacturing": 50, "Waiting on Material": 35,
@@ -15,7 +15,7 @@
 
   const viewContent = {
     batch: { title: "Batch Production", copy: "Prepare fabrication kits, make finished inventory, and replenish printed or Cricut-made supplies.", card: "Batch-production workflows arrive after the first inventory release." },
-    inventory: { title: "Inventory", copy: "Track raw materials, fabrication kits, finished products, poly mailers, tags, care sheets, labels, and stickers.", card: "Version 0.3 uses inventory reminders; automatic deductions arrive in Version 0.5." },
+    inventory: { title: "Inventory", copy: "Track raw materials, fabrication kits, finished products, poly mailers, tags, care sheets, labels, and stickers.", card: "Purchase to Restock is now working. Full counted inventory and deductions arrive in Version 0.5." },
     products: { title: "Products & Recipes", copy: "Each product now supplies its preparation, manufacturing, and packing checklists.", card: "Recipe editing will be added later. The current recipes are stored in js/data/sample-data.js." },
     resources: { title: "Resources", copy: "Your print-and-link toolbox for Etsy, Shippo, Cricut Design Space, care instructions, packing slips, and supplier links.", card: "The Processing workspace already includes working external shortcuts and a temporary printable care sheet." },
     settings: { title: "Settings", copy: "Manage stock thresholds, shop preferences, backups, and future Google Drive integration.", card: "Version 0.3 stores all workflow progress locally and supports downloadable JSON backups." }
@@ -179,6 +179,7 @@
     editingOrderId = null;
     if (view === "dashboard") return renderDashboardView();
     if (view === "workshop") return renderWorkshopView();
+    if (view === "inventory") return renderRestockView();
 
     const config = viewContent[view];
     if (!config) return;
@@ -191,6 +192,139 @@
     card.textContent = config.card;
     Object.assign(card.style, {display:"grid", placeItems:"center", padding:"26px", color:"var(--muted)"});
     viewContainer.replaceChildren(fragment);
+  }
+
+
+  function getRestockGroups() {
+    const groups = new Map();
+    data.orders.forEach(order => {
+      if (order.status === "Completed") return;
+      order.items.forEach(item => {
+        const product = productById(item.productId);
+        if (!product) return;
+        product.materials.forEach(material => {
+          const status = item.workflow.materialStatuses[material.id] || "Available";
+          if (status === "Available") return;
+          const key = material.id;
+          if (!groups.has(key)) {
+            groups.set(key, {
+              id: material.id,
+              name: material.name,
+              statuses: new Set(),
+              items: []
+            });
+          }
+          const group = groups.get(key);
+          group.statuses.add(status);
+          group.items.push({
+            orderId: order.id,
+            itemId: item.id,
+            customerName: order.customerName,
+            etsyOrderNumber: order.etsyOrderNumber,
+            productName: item.productName,
+            color: item.color,
+            status
+          });
+        });
+      });
+    });
+    return [...groups.values()].sort((a,b) => a.name.localeCompare(b.name));
+  }
+
+  function groupPrimaryStatus(group) {
+    if (group.statuses.has("Backordered")) return "Backordered";
+    if (group.statuses.has("Need to Buy")) return "Need to Buy";
+    if (group.statuses.has("Ordered")) return "Ordered";
+    return "Available";
+  }
+
+  function renderRestockView() {
+    pageTitle.textContent = "Inventory";
+    setActiveNav("inventory");
+    const groups = getRestockGroups();
+    viewContainer.innerHTML = `
+      <section class="page-section wide">
+        <div class="section-heading workshop-heading">
+          <div>
+            <p class="eyebrow">Order-driven supplies</p>
+            <h3>Purchase to Restock</h3>
+            <p>Anything marked Need to Buy, Ordered, or Backordered inside Production Planning appears here automatically.</p>
+          </div>
+        </div>
+
+        <section class="restock-summary-grid">
+          <article class="summary-card"><strong>${groups.length}</strong><span>Materials needing attention</span></article>
+          <article class="summary-card"><strong>${groups.reduce((sum,g) => sum + g.items.length,0)}</strong><span>Affected production items</span></article>
+          <article class="summary-card"><strong>${groups.filter(g => groupPrimaryStatus(g)==="Need to Buy").length}</strong><span>Ready to purchase</span></article>
+        </section>
+
+        <div class="restock-list">
+          ${groups.length ? groups.map(group => renderRestockGroup(group)).join("") : `
+            <section class="panel empty-restock">
+              <div class="placeholder-icon">✓</div>
+              <h3>Nothing needs to be purchased.</h3>
+              <p>Materials marked unavailable in Production Planning will appear here automatically.</p>
+            </section>`}
+        </div>
+      </section>
+    `;
+  }
+
+  function renderRestockGroup(group) {
+    const status = groupPrimaryStatus(group);
+    return `
+      <article class="restock-card panel">
+        <div class="restock-card-header">
+          <div>
+            <p class="eyebrow">${escapeHTML(status)}</p>
+            <h3>${escapeHTML(group.name)}</h3>
+            <p>Needed for ${group.items.length} active item${group.items.length === 1 ? "" : "s"}.</p>
+          </div>
+          <div class="item-action-group">
+            <button class="button secondary small" data-action="restock-status-all" data-material-id="${group.id}" data-status="Ordered">Mark Ordered</button>
+            <button class="button primary small" data-action="restock-status-all" data-material-id="${group.id}" data-status="Available">Mark Available</button>
+          </div>
+        </div>
+        <div class="restock-items">
+          ${group.items.map(item => `
+            <div class="restock-item">
+              <div>
+                <strong>${escapeHTML(item.customerName)} · Etsy #${escapeHTML(item.etsyOrderNumber)}</strong>
+                <span>${escapeHTML(item.productName)} · ${escapeHTML(item.color)}</span>
+              </div>
+              <div class="item-action-group">
+                <span class="badge ${item.status === "Backordered" ? "waiting" : "status"}">${escapeHTML(item.status)}</span>
+                <button class="text-button" data-action="open-order" data-order-id="${item.orderId}" data-item-id="${item.itemId}">Open item</button>
+              </div>
+            </div>
+          `).join("")}
+        </div>
+      </article>
+    `;
+  }
+
+  function updateMaterialStatusAcrossOrders(materialId,status) {
+    let changed = 0;
+    data.orders.forEach(order => {
+      if (order.status === "Completed") return;
+      order.items.forEach(item => {
+        const product = productById(item.productId);
+        if (!product?.materials.some(material => material.id === materialId)) return;
+        const current = item.workflow.materialStatuses[materialId];
+        if (current && current !== "Available") {
+          item.workflow.materialStatuses[materialId] = status;
+          touchOrder(order,item);
+          changed += 1;
+        }
+      });
+    });
+    const materialName = window.SUW_SAMPLE_DATA.products
+      .flatMap(product => product.materials)
+      .find(material => material.id === materialId)?.name || "Material";
+    data.activity.unshift({text:`Marked ${materialName} as ${status} for ${changed} active item${changed === 1 ? "" : "s"}`,time:"Just now"});
+    saveData();
+    showToast(`${materialName} marked ${status}.`);
+    renderRestockView();
   }
 
   function renderDashboardView() {
@@ -225,9 +359,20 @@
     }
 
     const lowStock = data.inventory.filter(item => item.quantity <= item.minimum);
-    document.getElementById("inventoryAlerts").innerHTML = `<div class="alert-list">${lowStock.map(item => `
+    const restockGroups = getRestockGroups();
+    const urgentRestock = restockGroups.map(group => `
+      <div class="alert-item order-material-alert">
+        <div>
+          <strong>${escapeHTML(group.name)}</strong>
+          <span>Needed for ${group.items.length} active item${group.items.length === 1 ? "" : "s"} · ${escapeHTML(groupPrimaryStatus(group))}</span>
+        </div>
+        <button class="badge warning alert-button" data-view="inventory">View</button>
+      </div>
+    `).join("");
+    const stockAlerts = lowStock.map(item => `
       <div class="alert-item"><div><strong>${escapeHTML(item.name)}</strong><span>${item.quantity} remaining · ${escapeHTML(item.category)}</span></div><span class="badge warning">Low stock</span></div>
-    `).join("") || "<p>No inventory alerts.</p>"}</div>`;
+    `).join("");
+    document.getElementById("inventoryAlerts").innerHTML = `<div class="alert-list">${urgentRestock}${stockAlerts}${!urgentRestock && !stockAlerts ? "<p>No inventory alerts.</p>" : ""}</div>`;
 
     document.getElementById("activeOrders").innerHTML = `<div class="order-list">${activeOrders().slice(0,5).map(order => `
       <div class="order-item"><button data-action="open-order" data-order-id="${order.id}">
@@ -782,7 +927,7 @@
   function resetItem(orderId,itemId) {
     const order=data.orders.find(o => o.id===orderId);
     const item=order?.items.find(i => i.id===itemId);
-    showModal("Reset this item?",`<p>This returns <strong>${escapeHTML(item.productName)}</strong> to New and clears its workflow and notes. Inventory is not affected in Version 0.3.1.</p>`,[
+    showModal("Reset this item?",`<p>This returns <strong>${escapeHTML(item.productName)}</strong> to New and clears its workflow and notes. Inventory is not affected in Version 0.3.2.</p>`,[
       {label:"Keep Progress"},
       {label:"Reset Item",kind:"danger",onClick:() => {
         const reset=migrateItem({id:item.id,productId:item.productId,productName:item.productName,color:item.color,status:"New"},item.unitNumber-1);
@@ -855,6 +1000,7 @@
     if (action==="ready-mail") markReadyMail(orderId);
     if (action==="print-care-sheet") printCareSheet();
     if (action==="external-link") openExternal(link);
+    if (action==="restock-status-all") updateMaterialStatusAcrossOrders(button.dataset.materialId,button.dataset.status);
     if (action==="reset-item") resetItem(orderId,itemId);
     if (action==="reset-order") resetOrder(orderId);
     if (action==="cancel-order") cancelOrder(orderId);
