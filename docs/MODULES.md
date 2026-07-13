@@ -2,10 +2,8 @@
 
 ## Dashboard
 
-Working in Version 0.2.0:
-
 - Today’s Focus
-- Resume current item
+- Resume exact production item
 - Workshop counts
 - Inventory alerts
 - Active order preview
@@ -14,24 +12,26 @@ Working in Version 0.2.0:
 
 ## Workshop
 
-Working in Version 0.2.0:
+### Orders
 
 - Manual order entry
 - Multiple products per Etsy order
 - Independent physical units
-- Order workspace
-- Per-item statuses
-- Order and item notes
-- Edit, reset, and cancel actions
-- Status filters
+- Edit, reset, cancel, notes, and filters
 
-Future additions:
+### Processing Area
 
-- Fulfillment choice
-- Preparation checklists
-- Manufacturing checklists
-- Package planning
-- Packing and shipping checklists
+Each item includes:
+
+- Production Planning
+- Manufacturing & Assembly
+- Pack & Ship
+
+The active item, active tab, fulfillment choice, checklists, and notes persist locally.
+
+### Final Shipping
+
+The order-level checklist covers the shared care sheet, packing slip, Shippo, label, company sticker, and sealed mailer confirmation.
 
 ## Batch Production
 
@@ -49,12 +49,17 @@ Planned groups:
 
 ## Products & Recipes
 
-Current product and color data already supports order entry. Detailed recipes are planned.
+The three current products now supply built-in preparation, manufacturing, and packing checklists.
 
 ## Resources
 
-Planned shortcuts and printing tools for Etsy, Shippo, Cricut Design Space, care instructions, packing slips, and suppliers.
+The Processing Area currently offers basic Etsy, Shippo, Cricut, and care-sheet actions. A full Resources module remains planned.
 
 ## Settings
 
 Planned stock thresholds, resource links, backup and restore, and future Google Drive options.
+
+
+## Production Traveler Rules
+
+Materials are informational during Production Planning and do not block manufacturing. The app only asks about unavailable materials when the user attempts to finish Manufacturing & Assembly.

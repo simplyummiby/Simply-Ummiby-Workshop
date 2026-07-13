@@ -1,48 +1,67 @@
 # Simply Ummiby Workshop
 
-**Version 0.2.0**
+**Version 0.3.1**
 
-Simply Ummiby Workshop is a private, local-first web app for managing the production work behind the Simply Ummiby Etsy shop.
+This release refines the Processing Area into a more realistic handmade production traveler.
 
-## Open the app
+## What changed
 
-Open `index.html` in a modern browser. For the most dependable local use, open the folder with a lightweight local server such as the VS Code Live Server extension.
+### Production Planning
 
-## Version 0.2.0 includes
+The first tab is now **Production Planning**.
 
-- Manual Etsy order entry
-- Multiple product lines per order
-- Quantity expanded into independently tracked physical items
-- Customer name and Etsy order number
-- Order notes and item notes
-- Active Workshop order list
-- Individual order workspace
-- Independent item statuses
-- Next Stage and Previous controls
-- Resume from the dashboard
-- Today’s Focus dashboard card
-- Edit order
-- Reset an item
-- Reset a whole order
-- Cancel an order
-- Workshop filters
-- Local browser persistence
-- Downloadable JSON backups
-- Automatic migration of Version 0.1 local data
+The only requirement before moving forward is choosing a fulfillment method:
 
-## Initial statuses
+- Use Finished Inventory
+- Use Fabrication Kit
+- Build From Raw Materials
 
-- New
-- Preparing
-- Manufacturing
-- Waiting on Material
-- Ready for Packing
-- Packed
-- Ready to Mail
-- Completed
+Materials no longer block manufacturing.
 
-Inventory deductions and detailed preparation/manufacturing checklists are intentionally reserved for later versions.
+### Materials Status
 
-## Data storage
+Each product shows its needed materials with one of four statuses:
 
-Version 0.2.0 stores working data in browser `localStorage`. Use **Download Backup** regularly.
+- Available
+- Need to Buy
+- Ordered
+- Backordered
+
+For the paper towel holder, this includes:
+
+- Macramé cord
+- Wooden ring
+- Wooden dowel
+- End caps (2)
+
+You may begin the macramé work even when the wooden ring, dowel, or end caps are not yet available.
+
+### Manufacturing & Assembly
+
+The second tab is now divided into meaningful sections.
+
+For the paper towel holder:
+
+- Macramé
+- Assembly
+
+This allows you to complete the knotting work first and add the hardware later.
+
+When every manufacturing and assembly step is checked but a material is still marked unavailable, the app asks whether to:
+
+- continue anyway, or
+- move the item to Waiting on Material.
+
+### Existing features retained
+
+- Multi-item Etsy orders
+- Independent item progress
+- Pack & Ship tab
+- Whole-order final shipping checklist
+- Resume functionality
+- Local browser storage
+- Downloadable backups
+
+## Important note
+
+Automatic inventory deductions are not included yet.

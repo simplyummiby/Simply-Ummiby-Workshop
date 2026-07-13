@@ -245,3 +245,249 @@ textarea { resize: vertical; }
   .focus-panel, .workshop-heading, .workspace-order-header, .order-hero { align-items: stretch; flex-direction: column; }
   .line-item-row { grid-template-columns: 1fr; }
 }
+
+
+/* Version 0.3 Processing Workflow */
+.processing-intro { margin-bottom: 18px; background: linear-gradient(135deg, #fff, var(--rose-50)); }
+.processing-intro h3 { margin: 5px 0 6px; }
+.processing-intro p:last-child { color: var(--muted); margin-bottom: 0; }
+
+.process-tabs {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0,1fr));
+  gap: 8px;
+  padding: 8px;
+  border-radius: 16px;
+  background: var(--rose-50);
+  margin-bottom: 20px;
+}
+.process-tab {
+  border: 0;
+  padding: 12px 14px;
+  border-radius: 12px;
+  background: transparent;
+  color: var(--muted);
+  font-weight: 850;
+}
+.process-tab.active {
+  background: white;
+  color: var(--rose-700);
+  box-shadow: 0 4px 14px rgba(79,85,84,.08);
+}
+.process-pane { min-height: 260px; }
+.process-pane-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 18px;
+  margin-bottom: 18px;
+}
+.process-pane-heading h4 { margin: 5px 0 5px; font-size: 1.2rem; }
+.process-pane-heading p:last-child { margin: 0; color: var(--muted); }
+
+.fulfillment-grid {
+  display: grid;
+  grid-template-columns: repeat(3,minmax(0,1fr));
+  gap: 12px;
+  margin-bottom: 18px;
+}
+.fulfillment-card {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  grid-template-areas: "dot title" ". copy";
+  column-gap: 10px;
+  row-gap: 4px;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  padding: 16px;
+  background: white;
+  cursor: pointer;
+}
+.fulfillment-card input { position: absolute; opacity: 0; pointer-events: none; }
+.fulfillment-card.selected { border-color: var(--rose-500); background: var(--rose-50); box-shadow: 0 0 0 3px rgba(217,109,123,.1); }
+.fulfillment-dot {
+  grid-area: dot;
+  width: 18px;
+  height: 18px;
+  border: 2px solid var(--rose-300);
+  border-radius: 50%;
+  margin-top: 2px;
+}
+.fulfillment-card.selected .fulfillment-dot { border: 5px solid var(--rose-500); }
+.fulfillment-card strong { grid-area: title; }
+.fulfillment-card small { grid-area: copy; color: var(--muted); line-height: 1.4; }
+
+.checklist-card {
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  padding: 18px;
+  background: #fff;
+}
+.checklist-heading { display: flex; justify-content: space-between; gap: 15px; align-items: center; margin-bottom: 10px; }
+.checklist-heading h5 { margin: 0; font-size: 1rem; }
+.checklist-heading span { color: var(--muted); font-weight: 800; font-size: .83rem; }
+
+.process-checklist { display: grid; gap: 9px; }
+.process-check {
+  display: grid;
+  grid-template-columns: auto auto 1fr;
+  align-items: center;
+  gap: 11px;
+  border: 1px solid var(--line);
+  border-radius: 13px;
+  padding: 12px 13px;
+  background: var(--cream);
+  font-weight: 700;
+  cursor: pointer;
+}
+.process-check input { position: absolute; opacity: 0; pointer-events: none; }
+.process-check.checked { background: var(--success-bg); border-color: #cde3d2; color: #385f42; }
+.check-box {
+  width: 23px;
+  height: 23px;
+  border: 2px solid var(--rose-300);
+  border-radius: 7px;
+  display: grid;
+  place-items: center;
+  color: white;
+  background: white;
+  font-size: .82rem;
+}
+.process-check.checked .check-box { background: var(--success); border-color: var(--success); }
+.step-number {
+  width: 27px;
+  height: 27px;
+  border-radius: 9px;
+  display: grid;
+  place-items: center;
+  background: var(--rose-100);
+  color: var(--rose-700);
+  font-size: .8rem;
+  font-weight: 900;
+}
+.process-check.checked .step-number { background: white; color: var(--success); }
+
+.process-footer {
+  margin-top: 18px;
+  padding-top: 16px;
+  border-top: 1px solid var(--line);
+  display: flex;
+  justify-content: space-between;
+  gap: 14px;
+  align-items: center;
+}
+.process-footer span { color: var(--muted); font-size: .88rem; }
+.button:disabled { opacity: .45; cursor: not-allowed; }
+
+.item-notes-box {
+  margin-top: 20px;
+  padding-top: 18px;
+  border-top: 1px solid var(--line);
+}
+.shipping-rule, .shipping-notice {
+  padding: 13px 15px;
+  border-radius: 13px;
+  background: var(--warning-bg);
+  color: var(--warning);
+  margin-bottom: 14px;
+  font-size: .9rem;
+}
+.resource-shortcuts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 14px;
+}
+.order-shipping { margin-top: 22px; }
+.order-shipping .panel-heading p:last-child { margin: 6px 0 0; color: var(--muted); }
+
+@media (max-width: 850px) {
+  .fulfillment-grid { grid-template-columns: 1fr; }
+}
+@media (max-width: 600px) {
+  .process-tabs { grid-template-columns: 1fr; }
+  .process-pane-heading, .process-footer { flex-direction: column; align-items: stretch; }
+  .process-footer .button { width: 100%; }
+}
+
+
+/* Version 0.3.1 Production Traveler refinements */
+.materials-card {
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  padding: 18px;
+  background: #fff;
+}
+.materials-list {
+  display: grid;
+  gap: 10px;
+}
+.material-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 14px;
+  border: 1px solid var(--line);
+  border-radius: 13px;
+  padding: 12px 13px;
+  background: var(--cream);
+}
+.material-row > div {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+}
+.material-row select {
+  width: min(190px, 48%);
+}
+.material-status-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  display: inline-block;
+  background: var(--success);
+}
+.material-status-dot.need-to-buy { background: #d19b35; }
+.material-status-dot.ordered { background: #7d8fb3; }
+.material-status-dot.backordered { background: var(--danger); }
+
+.traveler-sections {
+  display: grid;
+  gap: 16px;
+}
+.traveler-section {
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  padding: 18px;
+  background: white;
+}
+.traveler-section-heading {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+.traveler-section-heading > span {
+  width: 32px;
+  height: 32px;
+  display: grid;
+  place-items: center;
+  border-radius: 10px;
+  background: var(--rose-100);
+  color: var(--rose-700);
+  font-weight: 900;
+}
+.traveler-section-heading h5 {
+  margin: 0;
+  font-size: 1rem;
+}
+
+@media (max-width: 620px) {
+  .material-row {
+    align-items: stretch;
+    flex-direction: column;
+  }
+  .material-row select {
+    width: 100%;
+  }
+}

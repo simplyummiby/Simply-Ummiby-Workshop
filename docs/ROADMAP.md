@@ -2,58 +2,49 @@
 
 ## Version 0.1.0 — Foundation — Complete
 
-- Project structure and documentation
-- Pink Simply Ummiby theme
-- Dashboard shell
-- Local browser storage
-- Starter order form
-- JSON backup download
+- Theme, navigation, dashboard shell, local storage, backups, and documentation
 
 ## Version 0.2.0 — Workshop Orders — Complete
 
-- Full manual order creation
-- Multiple products per Etsy order
-- Independently tracked physical items
-- Product and color selection
-- Order and item notes
-- Active order list
-- Individual order workspace
-- Status filtering
-- Resume functionality
-- Edit, reset, and cancel controls
+- Manual orders, multiple products, independent items, order workspace, statuses, notes, resume, edit/reset/cancel
 
-## Version 0.2.5 — Illustration & Polish Pass
+## Version 0.3.0 — Processing Workflow — Complete
 
-- Dashboard hero illustration
-- Workshop illustration
-- Empty-state artwork
-- Module illustrations
-- Custom hand-drawn icon set
-- Visual consistency guide
+- Prepare, Manufacture, and Pack & Ship tabs
+- Fulfillment method
+- Product-specific checklists
+- Saved checklist progress
+- Waiting on Material
+- Whole-order final shipping checklist
+- Ready to Mail workflow
+- External shortcuts and temporary care-sheet printing
 
-## Version 0.3.0 — Preparation & Manufacturing
+## Version 0.3.1 — Production Traveler Refinement — Complete
 
-- Fulfillment path: finished item, fabrication kit, or raw materials
-- Product-specific preparation checklists
-- Manufacturing checklists
-- Waiting on Material workflow
-- Focus Mode
-- Checklist progress persistence
+- Nonblocking materials status
+- Production Planning
+- Manufacturing & Assembly sections
+- Missing-material completion warning
 
-## Version 0.4.0 — Packing & Shipping
+## Version 0.3.5 — Recipe Refinement
 
-- Package planner
-- Paper towel holder shipping rules
-- Packed state per item
-- Multiple mailers per Etsy order
-- Packing checklist
-- Ready to Mail at whole-order level
+- Review real production checklists
+- Correct wording and order based on actual use
+- Add custom-order exceptions
+- Improve care-sheet and resource links
+
+## Version 0.4.0 — Package Planner
+
+- Build one or more mailers per Etsy order
+- Assign items to packages
+- Enforce paper towel holder mailing rules
+- Separate tags, care sheets, stickers, labels, and packing slips by package
 
 ## Version 0.5.0 — Inventory
 
 - Raw materials
 - Fabrication kits by product and color
-- Finished inventory by product and color
+- Finished inventory
 - Packaging and printed supplies
 - Automatic deductions and undo
 - Stock thresholds and supplier links
@@ -67,7 +58,7 @@
 
 ## Version 0.7.0 — Resources
 
-- Care instruction printing
+- Final care-instruction printing
 - Etsy, Shippo, Cricut, Canva, and supplier shortcuts
 
 ## Version 0.8.0 — Backup & Restore

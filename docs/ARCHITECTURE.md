@@ -1,6 +1,6 @@
 # Architecture
 
-## Version 0.2.0
+## Version 0.3.1
 
 Simply Ummiby Workshop remains a static, local-first web application.
 
@@ -12,57 +12,65 @@ Simply Ummiby Workshop remains a static, local-first web application.
 - Browser `localStorage`
 - JSON backup download
 
-## Working entities
+## Core entities
 
 ### Product
 
-Stores the product name and allowed colors.
+Stores:
+
+- product name,
+- colors,
+- preparation checklist,
+- manufacturing checklist,
+- packing checklist.
 
 ### Customer Order
 
 Stores:
 
-- customer name,
-- Etsy order number,
+- customer and Etsy order information,
 - order notes,
-- calculated order status,
+- production items,
+- final shipping checklist,
 - timestamps,
-- and several independently tracked production items.
+- calculated status.
 
 ### Production Item
 
 Stores:
 
-- product,
-- color,
-- unit number,
-- current status,
+- product and color,
+- independent status,
 - notes,
-- and last-updated timestamp.
+- fulfillment method,
+- active processing tab,
+- preparation checks,
+- manufacturing checks,
+- packing checks,
+- timestamps.
 
-### Inventory Item
+## Migration
 
-Currently supplies dashboard alert data. Full deductions are planned later.
+Version 0.3.0 migrates Version 0.2 local data in place. Existing production items receive the correct product recipe and empty workflow checklists without deleting the order.
 
-### Activity Entry
+## External resources
 
-Records meaningful order and progress changes.
+Version 0.3.0 opens Etsy, Shippo, and Cricut as external shortcuts. URLs live under `settings.externalLinks`.
 
-## Local data migration
+## Printing
 
-Version 0.2.0 reads the same `localStorage` key used by Version 0.1.0 and upgrades older order records in place. This protects test data already created in the first release.
+The current care sheet is generated in a temporary printable browser window. The final Resources module should link to the user’s approved PDF instead.
 
 ## Future entities
 
-- Product Recipe
-- Fabrication Kit
-- Finished Inventory Unit
 - Package
 - Inventory Transaction
-- Resource
+- Fabrication Kit
+- Finished Inventory Unit
 - Supplier
-- App Settings
+- Saved Resource
 
-## Backup direction
 
-Downloaded JSON remains the canonical restoration format. Google Drive can later store that JSON, while Google Sheets can provide a readable overview.
+## Version 0.3.1 workflow model
+
+Production items now store `materialStatuses` and nested `manufacturingChecks`. The migration maps earlier flat manufacturing checklists into the new sectioned traveler model.
