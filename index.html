@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#d96d7b" />
+  <title>Simply Ummiby Workshop</title>
+  <link rel="stylesheet" href="css/styles.css" />
+</head>
+<body>
+  <div class="app-shell">
+    <aside class="sidebar" id="sidebar">
+      <div class="brand">
+        <img src="assets/images/simply-ummiby-logo-transparent.png" alt="Simply Ummiby logo" />
+        <div>
+          <h1>Simply Ummiby</h1>
+          <p>Workshop</p>
+        </div>
+      </div>
+
+      <nav class="main-nav" aria-label="Main navigation">
+        <button class="nav-link active" data-view="dashboard"><span class="nav-icon">⌂</span> Dashboard</button>
+        <button class="nav-link" data-view="workshop"><span class="nav-icon">✂</span> Workshop</button>
+        <button class="nav-link" data-view="batch"><span class="nav-icon">▦</span> Batch Production</button>
+        <button class="nav-link" data-view="inventory"><span class="nav-icon">□</span> Inventory</button>
+        <button class="nav-link" data-view="products"><span class="nav-icon">◇</span> Products & Recipes</button>
+        <button class="nav-link" data-view="resources"><span class="nav-icon">↗</span> Resources</button>
+        <button class="nav-link" data-view="settings"><span class="nav-icon">⚙</span> Settings</button>
+      </nav>
+
+      <div class="sidebar-footer">
+        <p>Local workspace</p>
+        <span>Version 0.2.0</span>
+      </div>
+    </aside>
+
+    <main class="main-content">
+      <header class="topbar">
+        <button class="menu-button" id="menuButton" aria-label="Open menu">☰</button>
+        <div>
+          <p class="eyebrow">Handmade production & inventory</p>
+          <h2 id="pageTitle">Dashboard</h2>
+        </div>
+        <div class="topbar-actions">
+          <button class="button secondary" id="backupButton">Download Backup</button>
+          <button class="button primary" data-action="new-order">+ New Order</button>
+        </div>
+      </header>
+
+      <section id="viewContainer" class="view-container" aria-live="polite"></section>
+    </main>
+  </div>
+
+  <div class="modal-backdrop hidden" id="modalBackdrop">
+    <section class="modal" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+      <div class="modal-heading">
+        <h3 id="modalTitle">Confirm</h3>
+        <button class="icon-button" id="modalClose" aria-label="Close">×</button>
+      </div>
+      <div id="modalBody"></div>
+      <div class="modal-actions" id="modalActions"></div>
+    </section>
+  </div>
+
+  <template id="dashboardTemplate">
+    <section class="hero-panel">
+      <div>
+        <p class="eyebrow">Today in your workshop</p>
+        <h3>Good day, Sherrie. Your workshop is ready.</h3>
+        <p>Start an order, resume production, or handle anything that needs restocking.</p>
+      </div>
+      <img src="assets/images/simply-ummiby-logo-transparent.png" alt="" />
+    </section>
+
+    <section class="focus-panel panel" id="todayFocus"></section>
+    <section class="metric-grid" id="metricGrid"></section>
+
+    <section class="dashboard-grid">
+      <article class="panel">
+        <div class="panel-heading">
+          <div><p class="eyebrow">Needs attention</p><h3>Inventory alerts</h3></div>
+          <button class="text-button" data-view="inventory">View inventory</button>
+        </div>
+        <div id="inventoryAlerts"></div>
+      </article>
+
+      <article class="panel">
+        <div class="panel-heading">
+          <div><p class="eyebrow">Get moving</p><h3>Quick actions</h3></div>
+        </div>
+        <div class="quick-actions">
+          <button class="quick-card" data-action="new-order"><strong>New order</strong><span>Add an Etsy order manually</span></button>
+          <button class="quick-card" data-action="resume-focus"><strong>Resume production</strong><span>Continue the most recently touched item</span></button>
+          <button class="quick-card" data-view="batch"><strong>Batch production</strong><span>Make kits, products, tags, or printables</span></button>
+          <button class="quick-card" data-view="resources"><strong>Print resources</strong><span>Care sheets, stickers, and shortcuts</span></button>
+        </div>
+      </article>
+    </section>
+
+    <section class="dashboard-grid lower">
+      <article class="panel">
+        <div class="panel-heading">
+          <div><p class="eyebrow">Order flow</p><h3>Active workshop</h3></div>
+          <button class="text-button" data-view="workshop">Open workshop</button>
+        </div>
+        <div id="activeOrders"></div>
+      </article>
+
+      <article class="panel">
+        <div class="panel-heading">
+          <div><p class="eyebrow">Recent changes</p><h3>Activity</h3></div>
+        </div>
+        <div id="activityFeed"></div>
+      </article>
+    </section>
+  </template>
+
+  <template id="newOrderTemplate">
+    <section class="page-section wide">
+      <div class="section-heading">
+        <div>
+          <p class="eyebrow">Manual Etsy order</p>
+          <h3 id="orderFormTitle">Create a workshop order</h3>
+          <p>Add every product in this Etsy order. Each physical item will be tracked independently.</p>
+        </div>
+      </div>
+
+      <form id="newOrderForm" class="order-form panel">
+        <div class="form-grid">
+          <label>Customer name<input name="customerName" required /></label>
+          <label>Etsy order number<input name="etsyOrderNumber" required /></label>
+          <label class="full-width">Order notes<textarea name="notes" rows="3" placeholder="Deadline, custom request, or anything important..."></textarea></label>
+        </div>
+
+        <div class="form-divider"></div>
+        <div class="item-builder-heading">
+          <div><p class="eyebrow">Products</p><h4>Items in this order</h4></div>
+          <button type="button" class="button secondary" id="addLineItem">+ Add Product</button>
+        </div>
+        <div id="lineItems" class="line-items"></div>
+
+        <div class="form-actions">
+          <button type="button" class="button secondary" data-view="workshop">Cancel</button>
+          <button type="submit" class="button primary">Save Order</button>
+        </div>
+      </form>
+    </section>
+  </template>
+
+  <template id="workshopTemplate">
+    <section class="page-section wide">
+      <div class="section-heading workshop-heading">
+        <div>
+          <p class="eyebrow">Active production</p>
+          <h3>Workshop Orders</h3>
+          <p>Each Etsy order stays grouped while its individual items move independently.</p>
+        </div>
+        <button class="button primary" data-action="new-order">+ New Order</button>
+      </div>
+
+      <div class="filter-row" id="workshopFilters"></div>
+      <div id="workshopOrders" class="workspace-order-list"></div>
+    </section>
+  </template>
+
+  <template id="orderWorkspaceTemplate">
+    <section class="page-section wide">
+      <button class="back-button" data-view="workshop">← Back to Workshop</button>
+      <div id="orderWorkspace"></div>
+    </section>
+  </template>
+
+  <template id="placeholderTemplate">
+    <section class="placeholder-page">
+      <div class="placeholder-icon">SU</div>
+      <p class="eyebrow">Planned module</p>
+      <h3></h3>
+      <p class="placeholder-copy"></p>
+      <div class="placeholder-card"></div>
+    </section>
+  </template>
+
+  <script src="js/data/sample-data.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
