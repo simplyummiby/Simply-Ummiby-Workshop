@@ -67,7 +67,7 @@ Materials are informational during Production Planning and do not block manufact
 
 ## Purchase to Restock
 
-Working in Version 0.3.2:
+Working in Version 0.4.0:
 
 - Collects all unavailable materials from active Production Planning records
 - Groups repeated material needs

@@ -1,43 +1,24 @@
 # Simply Ummiby Workshop
 
-**Version 0.3.2**
+**Version 0.4.0**
 
-This release adds an order-driven Purchase to Restock center.
+Version 0.4.0 introduces **Workshop Recipes**: a permanent digital home for cut sheets, patterns, measurements, production milestones, workshop wisdom, quality checks, and packing instructions.
 
-## What is new
+## Included
 
-When a material is marked inside Production Planning as:
+- Workshop Recipes library
+- Full Macramé Paper Towel Holder recipe
+- Starter recipe shells for the Toilet Paper Holder and Crochet Oven-Door Towel Holder
+- Production methods
+- Materials and tools
+- Large quick-reference cards
+- Expandable detailed instructions
+- Meaningful stage checkpoints
+- Workshop Wisdom
+- Packing instructions
+- Recipe history
+- Focus View
+- Print Cut Sheet
+- Recipe links from active order travelers
 
-- Need to Buy
-- Ordered
-- Backordered
-
-it now appears automatically in two places:
-
-1. Dashboard Inventory Alerts
-2. Inventory → Purchase to Restock
-
-## Purchase to Restock
-
-Materials are grouped so several orders needing the same supply do not create a cluttered list.
-
-For each material, the app shows:
-
-- number of active production items affected,
-- customer,
-- Etsy order number,
-- product,
-- color,
-- current material status,
-- a shortcut back to the affected item.
-
-You can also mark all active instances of that material:
-
-- Ordered
-- Available
-
-These changes sync back into the affected Production Planning records.
-
-## Still planned
-
-This is an order-driven restock list, not full counted inventory yet. Supplier links, exact purchase quantities, stock receipts, fabrication-kit counts, and automatic deductions remain planned for the Inventory release.
+The Paper Towel Holder recipe was created from the live production process documented in July 2026.

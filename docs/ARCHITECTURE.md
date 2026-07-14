@@ -1,6 +1,6 @@
 # Architecture
 
-## Version 0.3.2
+## Version 0.4.0
 
 Simply Ummiby Workshop remains a static, local-first web application.
 
@@ -78,4 +78,4 @@ Production items now store `materialStatuses` and nested `manufacturingChecks`. 
 
 ## Derived restock data
 
-Version 0.3.2 does not store a second independent shopping list. The Purchase to Restock center is derived from active production-item `materialStatuses`. This avoids duplicate records and keeps the central view synchronized with Production Planning.
+Version 0.4.0 does not store a second independent shopping list. The Purchase to Restock center is derived from active production-item `materialStatuses`. This avoids duplicate records and keeps the central view synchronized with Production Planning.

@@ -26,7 +26,7 @@
 - Manufacturing & Assembly sections
 - Missing-material completion warning
 
-## Version 0.3.2 — Order-Driven Restock Alerts — Complete
+## Version 0.4.0 — Order-Driven Restock Alerts — Complete
 
 - Dashboard material alerts
 - Purchase to Restock center
