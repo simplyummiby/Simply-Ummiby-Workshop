@@ -1,24 +1,49 @@
 # Simply Ummiby Workshop
 
-**Version 0.4.0**
+**Version 0.4.1**
 
-Version 0.4.0 introduces **Workshop Recipes**: a permanent digital home for cut sheets, patterns, measurements, production milestones, workshop wisdom, quality checks, and packing instructions.
+Version 0.4.1 integrates the Workshop Recipe directly into each active order’s Manufacturing & Assembly tab.
 
-## Included
+## Corrected workflow
 
-- Workshop Recipes library
-- Full Macramé Paper Towel Holder recipe
-- Starter recipe shells for the Toilet Paper Holder and Crochet Oven-Door Towel Holder
-- Production methods
-- Materials and tools
-- Large quick-reference cards
-- Expandable detailed instructions
-- Meaningful stage checkpoints
-- Workshop Wisdom
-- Packing instructions
-- Recipe history
-- Focus View
-- Print Cut Sheet
-- Recipe links from active order travelers
+### Production Planning
 
-The Paper Towel Holder recipe was created from the live production process documented in July 2026.
+Now focuses on:
+
+- fulfillment choice,
+- current recorded inventory for the exact product and color,
+- fabrication-kit contents,
+- raw-material requirements,
+- material status.
+
+The three paths are visibly different:
+
+- **Finished Inventory** skips manufacturing.
+- **Fabrication Kit** skips Cord Preparation because the cords are already cut and the ring/end caps are in the kit.
+- **Build From Raw Materials** includes Cord Preparation and shows individual material requirements.
+
+Current kit and finished-product counts display as **0 recorded** until the full inventory module is populated.
+
+### Manufacturing & Assembly
+
+The live Production Traveler now embeds the working recipe directly inside the order.
+
+It includes:
+
+- quick-reference measurements,
+- production milestones,
+- expandable instructions,
+- saved order-specific checkpoints,
+- automatic opening of the next unfinished milestone.
+
+The permanent Workshop Recipe remains separate and can be opened only when needed. A **Return to This Order** button preserves the order and item context.
+
+### Pack & Ship
+
+The Final Shipping Checklist now appears only inside the Pack & Ship tab.
+
+It no longer appears below Production Planning or Manufacturing.
+
+## Data behavior
+
+Recipe milestone checks are saved to the specific production item and do not alter the master Workshop Recipe.

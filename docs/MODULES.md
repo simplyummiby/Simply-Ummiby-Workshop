@@ -74,3 +74,16 @@ Working in Version 0.4.0:
 - Shows affected orders and products
 - Allows central Ordered and Available updates
 - Syncs changes back to each production item
+
+
+## Integrated Production Traveler
+
+Working in Version 0.4.1:
+
+- Production Planning shows recorded inventory availability and method-specific details
+- Manufacturing & Assembly embeds the working recipe
+- Fabrication kits skip Cord Preparation
+- Raw-material builds include Cord Preparation
+- Checkpoints are saved per order item
+- Master recipe opens with a Return to This Order action
+- Final Shipping Checklist is visible only in Pack & Ship

@@ -1,6 +1,6 @@
 # Architecture
 
-## Version 0.4.0
+## Version 0.4.1
 
 Simply Ummiby Workshop remains a static, local-first web application.
 
@@ -79,3 +79,16 @@ Production items now store `materialStatuses` and nested `manufacturingChecks`. 
 ## Derived restock data
 
 Version 0.4.0 does not store a second independent shopping list. The Purchase to Restock center is derived from active production-item `materialStatuses`. This avoids duplicate records and keeps the central view synchronized with Production Planning.
+
+
+## Integrated traveler rendering
+
+The Manufacturing & Assembly tab reads stage instructions from the master recipe but stores completion in the production item’s `recipeStageChecks`.
+
+The selected fulfillment method determines stage visibility:
+
+- finished inventory: no manufacturing stages,
+- fabrication kit: skips `cord-preparation`,
+- raw materials: includes every master-recipe stage.
+
+The final shipping section is rendered only inside Pack & Ship.

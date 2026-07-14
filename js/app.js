@@ -1,6 +1,6 @@
 (() => {
   const STORAGE_KEY = "simplyUmmibyWorkshopData";
-  const VERSION = "0.4.0";
+  const VERSION = "0.4.1";
   const ITEM_STATUSES = ["New","Preparing","Manufacturing","Waiting on Material","Ready for Packing","Packed","Ready to Mail","Completed"];
   const STATUS_PROGRESS = {
     "New": 5, "Preparing": 20, "Manufacturing": 50, "Waiting on Material": 35,
@@ -344,7 +344,7 @@
     const r=recipeById(recipeId); if(!r)return showToast("Recipe not found.");
     pageTitle.textContent="Workshop Recipe"; setActiveNav("products");
     const order=orderId?data.orders.find(o=>o.id===orderId):null; const item=order?.items.find(i=>i.id===itemId);
-    viewContainer.innerHTML=`<section class="page-section wide"><button class="back-button" data-view="products">← Back to Workshop Recipes</button><section class="recipe-view-hero"><div><p class="eyebrow">${escapeHTML(r.category)} · Master Recipe v${escapeHTML(r.version)}</p><h3>${escapeHTML(r.title)}</h3><p>${escapeHTML(r.summary)}</p>${item?'<div class="recipe-order-context">Opened for an active production traveler.</div>':''}</div><div class="recipe-hero-actions"><button class="button secondary" data-action="recipe-focus" data-recipe-id="${r.id}">Focus View</button><button class="button primary" data-action="print-recipe" data-recipe-id="${r.id}">Print Cut Sheet</button></div></section><section class="recipe-overview-grid">${[['Estimated Time',r.estimatedTime],['Difficulty',r.difficulty],['Last Revised',r.lastRevised],['Recipe Status',r.status]].map(([a,b])=>`<article class="summary-card"><strong>${escapeHTML(b)}</strong><span>${escapeHTML(a)}</span></article>`).join('')}</section><section class="recipe-section panel"><div class="panel-heading"><div><p class="eyebrow">Choose the path</p><h3>Production Methods</h3></div></div><div class="recipe-method-grid">${r.methods.map(m=>`<article class="recipe-method-card"><strong>${escapeHTML(m.title)}</strong><p>${escapeHTML(m.description)}</p></article>`).join('')}</div></section><section class="recipe-section panel"><div class="panel-heading"><div><p class="eyebrow">At a glance</p><h3>Quick Reference</h3></div></div><div class="quick-reference-grid">${r.quickReference.map(q=>`<article class="quick-reference-card"><span>${escapeHTML(q.label)}</span><strong>${escapeHTML(q.value)}</strong><small>${escapeHTML(q.note||'')}</small></article>`).join('')}</div></section><section class="recipe-two-column"><article class="recipe-section panel"><div class="panel-heading"><div><p class="eyebrow">What you need</p><h3>Materials</h3></div></div><div class="recipe-list">${r.materials.map(m=>`<div><strong>${escapeHTML(m.name)}</strong><span>${escapeHTML(m.quantity)}</span></div>`).join('')}</div></article><article class="recipe-section panel"><div class="panel-heading"><div><p class="eyebrow">Worktable</p><h3>Tools</h3></div></div><div class="recipe-list simple">${r.tools.map(t=>`<div><strong>${escapeHTML(t)}</strong></div>`).join('')}</div></article></section><section class="recipe-section"><div class="section-heading"><p class="eyebrow">Build from scratch</p><h3>Production Stages</h3><p>Open details only when needed. Check off the meaningful milestone.</p></div><div class="recipe-stage-list">${r.stages.map((st,idx)=>renderRecipeStage(r,st,idx,orderId,itemId)).join('')}</div></section><section class="recipe-wisdom"><div><p class="eyebrow">Lessons from the workbench</p><h3>Workshop Wisdom</h3></div><div class="wisdom-list">${r.wisdom.map(w=>`<blockquote>${escapeHTML(w)}</blockquote>`).join('')}</div></section><section class="recipe-two-column"><article class="recipe-section panel"><div class="panel-heading"><div><p class="eyebrow">Before mailing</p><h3>Packing</h3></div></div><ol class="recipe-numbered-list">${r.packing.map(x=>`<li>${escapeHTML(x)}</li>`).join('')}</ol></article><article class="recipe-section panel"><div class="panel-heading"><div><p class="eyebrow">Master record</p><h3>Recipe History</h3></div></div><div class="recipe-history">${r.history.map(h=>`<div><strong>v${escapeHTML(h.version)} · ${escapeHTML(h.date)}</strong><p>${escapeHTML(h.changes)}</p></div>`).join('')}</div></article></section></section>`;
+    viewContainer.innerHTML=`<section class="page-section wide">${orderId ? `<button class="back-button" data-action="return-to-order" data-order-id="${orderId}" data-item-id="${itemId}">← Return to This Order</button>` : `<button class="back-button" data-view="products">← Back to Workshop Recipes</button>`}<section class="recipe-view-hero"><div><p class="eyebrow">${escapeHTML(r.category)} · Master Recipe v${escapeHTML(r.version)}</p><h3>${escapeHTML(r.title)}</h3><p>${escapeHTML(r.summary)}</p>${item?'<div class="recipe-order-context">Opened for an active production traveler.</div>':''}</div><div class="recipe-hero-actions"><button class="button secondary" data-action="recipe-focus" data-recipe-id="${r.id}">Focus View</button><button class="button primary" data-action="print-recipe" data-recipe-id="${r.id}">Print Cut Sheet</button></div></section><section class="recipe-overview-grid">${[['Estimated Time',r.estimatedTime],['Difficulty',r.difficulty],['Last Revised',r.lastRevised],['Recipe Status',r.status]].map(([a,b])=>`<article class="summary-card"><strong>${escapeHTML(b)}</strong><span>${escapeHTML(a)}</span></article>`).join('')}</section><section class="recipe-section panel"><div class="panel-heading"><div><p class="eyebrow">Choose the path</p><h3>Production Methods</h3></div></div><div class="recipe-method-grid">${r.methods.map(m=>`<article class="recipe-method-card"><strong>${escapeHTML(m.title)}</strong><p>${escapeHTML(m.description)}</p></article>`).join('')}</div></section><section class="recipe-section panel"><div class="panel-heading"><div><p class="eyebrow">At a glance</p><h3>Quick Reference</h3></div></div><div class="quick-reference-grid">${r.quickReference.map(q=>`<article class="quick-reference-card"><span>${escapeHTML(q.label)}</span><strong>${escapeHTML(q.value)}</strong><small>${escapeHTML(q.note||'')}</small></article>`).join('')}</div></section><section class="recipe-two-column"><article class="recipe-section panel"><div class="panel-heading"><div><p class="eyebrow">What you need</p><h3>Materials</h3></div></div><div class="recipe-list">${r.materials.map(m=>`<div><strong>${escapeHTML(m.name)}</strong><span>${escapeHTML(m.quantity)}</span></div>`).join('')}</div></article><article class="recipe-section panel"><div class="panel-heading"><div><p class="eyebrow">Worktable</p><h3>Tools</h3></div></div><div class="recipe-list simple">${r.tools.map(t=>`<div><strong>${escapeHTML(t)}</strong></div>`).join('')}</div></article></section><section class="recipe-section"><div class="section-heading"><p class="eyebrow">Build from scratch</p><h3>Production Stages</h3><p>Open details only when needed. Check off the meaningful milestone.</p></div><div class="recipe-stage-list">${r.stages.map((st,idx)=>renderRecipeStage(r,st,idx,orderId,itemId)).join('')}</div></section><section class="recipe-wisdom"><div><p class="eyebrow">Lessons from the workbench</p><h3>Workshop Wisdom</h3></div><div class="wisdom-list">${r.wisdom.map(w=>`<blockquote>${escapeHTML(w)}</blockquote>`).join('')}</div></section><section class="recipe-two-column"><article class="recipe-section panel"><div class="panel-heading"><div><p class="eyebrow">Before mailing</p><h3>Packing</h3></div></div><ol class="recipe-numbered-list">${r.packing.map(x=>`<li>${escapeHTML(x)}</li>`).join('')}</ol></article><article class="recipe-section panel"><div class="panel-heading"><div><p class="eyebrow">Master record</p><h3>Recipe History</h3></div></div><div class="recipe-history">${r.history.map(h=>`<div><strong>v${escapeHTML(h.version)} · ${escapeHTML(h.date)}</strong><p>${escapeHTML(h.changes)}</p></div>`).join('')}</div></article></section></section>`;
   }
 
   function renderRecipeStage(r,st,idx,orderId,itemId){ const order=orderId?data.orders.find(o=>o.id===orderId):null; const item=order?.items.find(i=>i.id===itemId); const checked=Boolean(item?.recipeStageChecks?.[st.id]); return `<article class="recipe-stage-card"><div class="recipe-stage-heading"><div class="recipe-stage-number">${idx+1}</div><div><p class="eyebrow">Stage ${idx+1}</p><h3>${escapeHTML(st.title)}</h3></div>${item?`<label class="recipe-checkpoint ${checked?'checked':''}"><input type="checkbox" data-action="recipe-stage-check" data-order-id="${orderId}" data-item-id="${itemId}" data-stage-id="${st.id}" ${checked?'checked':''}><span>${checked?'✓':''}</span>${escapeHTML(st.checkpoint)}</label>`:`<span class="badge status">${escapeHTML(st.checkpoint)}</span>`}</div><div class="recipe-stage-quick">${st.quick.map(x=>`<span>${escapeHTML(x)}</span>`).join('')}</div><details><summary>Show Detailed Instructions</summary><ol>${st.instructions.map(x=>`<li>${escapeHTML(x)}</li>`).join('')}</ol></details></article>`; }
@@ -574,7 +574,6 @@
 
       <section class="item-workspace-list">${order.items.map((item,index) => renderItemCard(order,item,index,focusItemId)).join("")}</section>
 
-      ${renderOrderShipping(order)}
       ${order.notes ? `<section class="order-notes"><h4>Order Notes</h4><p>${escapeHTML(order.notes)}</p></section>` : ""}
     `;
     touchOrder(order,focusItemId ? order.items.find(i => i.id===focusItemId) : order.items[0]);
@@ -591,7 +590,7 @@
         <div class="item-action-group"><span class="badge ${item.status==="Completed" ? "complete" : item.status==="Waiting on Material" ? "waiting" : "status"}">${workflowPercent(item)}%</span>
         <button class="button secondary small" data-action="open-item-recipe" data-order-id="${order.id}" data-item-id="${item.id}" data-recipe-id="${item.productId}">Open Recipe</button><button class="button secondary small" data-action="toggle-item" data-order-id="${order.id}" data-item-id="${item.id}">${expanded ? "Close" : "Open Processing"}</button></div></div>
         <div class="item-card-body">
-          <div class="traveler-recipe-strip"><div><span>Workshop Recipe</span><strong>Recipe v${escapeHTML(item.recipeVersion || recipeByProductId(item.productId)?.version || "0.1")}</strong></div><button class="text-button" data-action="open-item-recipe" data-order-id="${order.id}" data-item-id="${item.id}" data-recipe-id="${item.productId}">View Master Recipe</button></div><div class="process-tabs">
+          <div class="traveler-recipe-strip"><div><span>Production Traveler</span><strong>${escapeHTML(item.productName)} · Recipe v${escapeHTML(item.recipeVersion || recipeByProductId(item.productId)?.version || "0.1")}</strong></div><button class="text-button" data-action="open-item-recipe" data-order-id="${order.id}" data-item-id="${item.id}" data-recipe-id="${item.productId}">Open Workshop Recipe</button></div><div class="process-tabs">
             ${processTabButton("prepare","1. Production Planning",tab,order.id,item.id)}
             ${processTabButton("manufacture","2. Manufacturing & Assembly",tab,order.id,item.id)}
             ${processTabButton("pack","3. Pack & Ship",tab,order.id,item.id)}
@@ -612,6 +611,103 @@
     return renderPackPane(order,item);
   }
 
+
+  function recordedInventoryQuantity(id) {
+    const inventoryItem = data.inventory.find(entry => entry.id === id);
+    return Number.isFinite(Number(inventoryItem?.quantity)) ? Number(inventoryItem.quantity) : null;
+  }
+
+  function rawMaterialSnapshot(item) {
+    const product = productById(item.productId);
+    const rows = [];
+    if (item.productId === "macrame-paper-towel-holder") {
+      rows.push({name:"Macramé cord",needed:"4 × 340 cm + wrap cord",available:"Condition tracked",state:item.workflow.materialStatuses["cord"] || "Available"});
+      rows.push({name:"Wooden ring",needed:"1",available:recordedInventoryQuantity("wood-rings"),state:item.workflow.materialStatuses["wood-ring"] || "Available"});
+      rows.push({name:"Wooden dowel",needed:"1",available:null,state:item.workflow.materialStatuses["wood-dowel"] || "Available"});
+      rows.push({name:"End caps",needed:"2",available:recordedInventoryQuantity("end-caps"),state:item.workflow.materialStatuses["end-caps"] || "Available"});
+    } else if (item.productId === "macrame-toilet-paper-holder") {
+      rows.push({name:"Macramé cord",needed:"Recipe amount",available:"Condition tracked",state:item.workflow.materialStatuses["cord"] || "Available"});
+      rows.push({name:"Wooden ring",needed:"1",available:recordedInventoryQuantity("wood-rings"),state:item.workflow.materialStatuses["wood-ring"] || "Available"});
+    } else {
+      product.materials.forEach(material => rows.push({
+        name:material.name,
+        needed:"Recipe amount",
+        available:"Not counted",
+        state:item.workflow.materialStatuses[material.id] || "Available"
+      }));
+    }
+    return rows;
+  }
+
+  function renderAvailabilityValue(value) {
+    if (value === null || value === undefined) return "Not counted";
+    return String(value);
+  }
+
+  function renderInventorySnapshot(item) {
+    const method = item.workflow.fulfillmentMethod;
+    const kitContents = item.productId === "macrame-paper-towel-holder"
+      ? ["4 precut cords", "1 wooden ring", "2 end caps", "Dowel is separate"]
+      : item.productId === "macrame-toilet-paper-holder"
+        ? ["Precut cord", "1 wooden ring"]
+        : ["Prepared yarn and notions"];
+    const rawRows = rawMaterialSnapshot(item);
+
+    return `
+      <section class="planning-inventory">
+        <div class="checklist-heading">
+          <h5>Inventory for This Item</h5>
+          <span>Current recorded levels</span>
+        </div>
+        <div class="planning-path-grid">
+          <article class="planning-path ${method === "finished" ? "selected" : ""}">
+            <span>Finished Inventory</span>
+            <strong>0 recorded</strong>
+            <small>${escapeHTML(item.productName)} · ${escapeHTML(item.color)}</small>
+          </article>
+          <article class="planning-path ${method === "kit" ? "selected" : ""}">
+            <span>Fabrication Kits</span>
+            <strong>0 recorded</strong>
+            <small>${escapeHTML(item.productName)} · ${escapeHTML(item.color)}</small>
+          </article>
+          <article class="planning-path ${method === "raw" ? "selected" : ""}">
+            <span>Raw Materials</span>
+            <strong>${rawRows.filter(row => row.state === "Available").length} ready</strong>
+            <small>${rawRows.length} material groups</small>
+          </article>
+        </div>
+
+        ${method === "kit" ? `
+          <div class="path-detail-card">
+            <h6>What the fabrication kit covers</h6>
+            <ul>${kitContents.map(item => `<li>${escapeHTML(item)}</li>`).join("")}</ul>
+            <p><strong>Workflow difference:</strong> Cord Preparation is skipped. Manufacturing begins with the first arm or first making stage.</p>
+          </div>` : ""}
+
+        ${method === "raw" ? `
+          <div class="path-detail-card">
+            <h6>Raw-material requirements</h6>
+            <div class="inventory-table">
+              <div class="inventory-table-head"><span>Material</span><span>Needed</span><span>Recorded</span><span>Status</span></div>
+              ${rawRows.map(row => `
+                <div class="inventory-table-row">
+                  <strong>${escapeHTML(row.name)}</strong>
+                  <span>${escapeHTML(row.needed)}</span>
+                  <span>${escapeHTML(renderAvailabilityValue(row.available))}</span>
+                  <span class="inventory-state ${row.state.toLowerCase().replaceAll(" ","-")}">${escapeHTML(row.state)}</span>
+                </div>`).join("")}
+            </div>
+            <p><strong>Workflow difference:</strong> The working recipe begins with Cord Preparation or the first preparation stage.</p>
+          </div>` : ""}
+
+        ${method === "finished" ? `
+          <div class="path-detail-card">
+            <h6>Finished-product path</h6>
+            <p>This path skips Manufacturing & Assembly and sends the item directly to Pack & Ship.</p>
+          </div>` : ""}
+      </section>`;
+  }
+
   function renderPreparePane(order,item) {
     const product = productById(item.productId);
     const fulfillmentChosen = Boolean(item.workflow.fulfillmentMethod);
@@ -630,6 +726,8 @@
         ${fulfillmentChoice("kit","Use Fabrication Kit","Use a prepared product-and-color-specific kit.",item,order)}
         ${fulfillmentChoice("raw","Build From Raw Materials","Prepare the item from individual supplies.",item,order)}
       </div>
+
+      ${renderInventorySnapshot(item)}
 
       <div class="materials-card">
         <div class="checklist-heading">
@@ -670,39 +768,88 @@
       <span class="fulfillment-dot"></span><strong>${title}</strong><small>${copy}</small></label>`;
   }
 
+  function workingRecipeStages(item) {
+    const recipe = recipeByProductId(item.productId);
+    if (!recipe) return [];
+    if (item.workflow.fulfillmentMethod === "kit") {
+      return recipe.stages.filter(stage => stage.id !== "cord-preparation");
+    }
+    return recipe.stages;
+  }
+
   function renderManufacturePane(order,item) {
+    const recipe = recipeByProductId(item.productId);
+    const stages = workingRecipeStages(item);
+    const completed = stages.filter(stage => Boolean(item.recipeStageChecks?.[stage.id])).length;
     const product = productById(item.productId);
-    const totalSteps = product.manufacturingSections.reduce((sum, section) => sum + section.steps.length, 0);
-    const done = countDone(item.workflow.manufacturingChecks);
     const missing = product.materials.filter(material => item.workflow.materialStatuses[material.id] !== "Available");
+
+    if (item.workflow.fulfillmentMethod === "finished") {
+      return `
+        <div class="process-pane-heading">
+          <div><p class="eyebrow">Step 2</p><h4>Manufacturing & Assembly</h4><p>This item is using finished inventory, so manufacturing is skipped.</p></div>
+        </div>
+        <div class="shipping-notice">Continue to Pack & Ship for this item.</div>
+        <div class="process-footer">
+          <button class="button secondary" data-action="process-tab" data-tab="prepare" data-order-id="${order.id}" data-item-id="${item.id}">← Back to Planning</button>
+          <button class="button primary" data-action="process-tab" data-tab="pack" data-order-id="${order.id}" data-item-id="${item.id}">Go to Pack & Ship →</button>
+        </div>`;
+    }
+
     return `
       <div class="process-pane-heading">
         <div>
-          <p class="eyebrow">Step 2</p>
-          <h4>Manufacturing & Assembly</h4>
-          <p>Complete the making steps first, then the hardware or finishing steps. Missing later-stage materials do not stop you from starting.</p>
+          <p class="eyebrow">Step 2 · Production Traveler</p>
+          <h4>${escapeHTML(recipe?.title || item.productName)}</h4>
+          <p>This is the working copy for ${escapeHTML(order.customerName)}’s order. Checkpoints save only to this item.</p>
         </div>
-        <span class="badge status">${done} of ${totalSteps}</span>
+        <span class="badge status">${completed} of ${stages.length} milestones</span>
       </div>
 
       ${missing.length ? `<div class="shipping-rule"><strong>Still needed later:</strong> ${missing.map(material => `${escapeHTML(material.name)} (${escapeHTML(item.workflow.materialStatuses[material.id])})`).join(", ")}</div>` : ""}
 
-      <div class="traveler-sections">
-        ${product.manufacturingSections.map((section, sectionIndex) => `
-          <section class="traveler-section">
-            <div class="traveler-section-heading">
-              <span>${sectionIndex + 1}</span>
-              <h5>${escapeHTML(section.title)}</h5>
-            </div>
-            ${renderManufacturingChecklist(section.steps, item.workflow.manufacturingChecks, sectionIndex, order.id, item.id)}
-          </section>
-        `).join("")}
-      </div>
+      ${recipe ? `
+        <div class="working-quick-reference">
+          ${recipe.quickReference.map(ref => `<article><span>${escapeHTML(ref.label)}</span><strong>${escapeHTML(ref.value)}</strong><small>${escapeHTML(ref.note || "")}</small></article>`).join("")}
+        </div>
+
+        <div class="working-recipe-stages">
+          ${stages.map((stage,index) => renderWorkingRecipeStage(order,item,stage,index)).join("")}
+        </div>
+
+        <div class="working-recipe-footer">
+          <span>Need to change the permanent instructions?</span>
+          <button class="text-button" data-action="open-item-recipe" data-order-id="${order.id}" data-item-id="${item.id}" data-recipe-id="${item.productId}">Open Workshop Recipe</button>
+        </div>
+      ` : `<div class="shipping-notice">No Workshop Recipe is available for this product yet.</div>`}
 
       <div class="process-footer">
         <button class="button secondary" data-action="process-tab" data-tab="prepare" data-order-id="${order.id}" data-item-id="${item.id}">← Back to Planning</button>
-        <button class="button primary" data-action="complete-manufacture" data-order-id="${order.id}" data-item-id="${item.id}" ${done===totalSteps ? "" : "disabled"}>Ready for Packing →</button>
+        <button class="button primary" data-action="complete-working-recipe" data-order-id="${order.id}" data-item-id="${item.id}" ${completed === stages.length && stages.length ? "" : "disabled"}>Ready for Packing →</button>
       </div>`;
+  }
+
+  function renderWorkingRecipeStage(order,item,stage,index) {
+    const checked = Boolean(item.recipeStageChecks?.[stage.id]);
+    const shouldOpen = !checked && workingRecipeStages(item).find(current => !item.recipeStageChecks?.[current.id])?.id === stage.id;
+    return `
+      <article class="working-stage ${checked ? "complete" : ""}">
+        <div class="working-stage-heading">
+          <span>${checked ? "✓" : index + 1}</span>
+          <div><strong>${escapeHTML(stage.title)}</strong><small>${escapeHTML(stage.checkpoint)}</small></div>
+          <label class="working-stage-check">
+            <input type="checkbox" data-action="working-stage-check" data-order-id="${order.id}" data-item-id="${item.id}" data-stage-id="${stage.id}" ${checked ? "checked" : ""}>
+            <span>${checked ? "Complete" : "Mark Complete"}</span>
+          </label>
+        </div>
+        <div class="recipe-stage-quick">
+          ${stage.quick.map(line => `<span>${escapeHTML(line)}</span>`).join("")}
+        </div>
+        <details ${shouldOpen ? "open" : ""}>
+          <summary>Show Instructions</summary>
+          <ol>${stage.instructions.map(line => `<li>${escapeHTML(line)}</li>`).join("")}</ol>
+        </details>
+      </article>`;
   }
 
   function renderManufacturingChecklist(labels,checks,sectionIndex,orderId,itemId) {
@@ -722,7 +869,7 @@
     const product=productById(item.productId);
     const done=countDone(item.workflow.packingChecks);
     return `
-      <div class="process-pane-heading"><div><p class="eyebrow">Step 3</p><h4>Pack this item</h4><p>These item-level steps prepare it for the order’s final shipping checklist below.</p></div><span class="badge status">${done} of ${product.packingChecklist.length}</span></div>
+      <div class="process-pane-heading"><div><p class="eyebrow">Step 3</p><h4>Pack & Ship</h4><p>Pack this item, then complete the whole-order shipping steps below.</p></div><span class="badge status">${done} of ${product.packingChecklist.length}</span></div>
       <div class="shipping-rule">${item.productId==="macrame-paper-towel-holder" ? "<strong>Paper towel holder rule:</strong> Two or more paper towel holders must use separate mailers." : "<strong>Standard mailer:</strong> This product uses the shared smaller poly-mailer size."}</div>
       <div class="checklist-card">${renderChecklist(product.packingChecklist,item.workflow.packingChecks,"packing-check",order.id,item.id)}</div>
       <div class="resource-shortcuts">
@@ -731,8 +878,14 @@
         <button class="button secondary small" data-action="external-link" data-link="shippo">Open Shippo</button>
         <button class="button secondary small" data-action="external-link" data-link="cricut">Open Cricut</button>
       </div>
-      <div class="process-footer"><button class="button secondary" data-action="process-tab" data-tab="manufacture" data-order-id="${order.id}" data-item-id="${item.id}">← Back to Manufacture</button>
-      <button class="button primary" data-action="complete-pack" data-order-id="${order.id}" data-item-id="${item.id}" ${done===product.packingChecklist.length ? "" : "disabled"}>Mark Item Packed</button></div>`;
+      <div class="process-footer">
+        <button class="button secondary" data-action="process-tab" data-tab="manufacture" data-order-id="${order.id}" data-item-id="${item.id}">← Back to Manufacturing</button>
+        <button class="button primary" data-action="complete-pack" data-order-id="${order.id}" data-item-id="${item.id}" ${done===product.packingChecklist.length ? "" : "disabled"}>Mark Item Packed</button>
+      </div>
+
+      <div class="embedded-order-shipping">
+        ${renderOrderShipping(order)}
+      </div>`;
   }
 
   function renderChecklist(labels,checks,action,orderId,itemId,numbered=false) {
@@ -771,12 +924,13 @@
   }
 
   function workflowPercent(item) {
-    const product = productById(item.productId);
-    const manufacturingTotal = product.manufacturingSections.reduce((sum, section) => sum + section.steps.length, 0);
-    const total = manufacturingTotal + product.packingChecklist.length + 1;
-    const done = countDone(item.workflow.manufacturingChecks) + countDone(item.workflow.packingChecks) + (item.workflow.fulfillmentMethod ? 1 : 0);
+    const stages = workingRecipeStages(item);
+    const recipeDone = stages.filter(stage => Boolean(item.recipeStageChecks?.[stage.id])).length;
+    const packingTotal = productById(item.productId)?.packingChecklist?.length || 0;
+    const total = stages.length + packingTotal + 1;
+    const done = recipeDone + countDone(item.workflow.packingChecks) + (item.workflow.fulfillmentMethod ? 1 : 0);
     if (item.status === "Completed") return 100;
-    return Math.round((done / total) * 100);
+    return total ? Math.round((done / total) * 100) : 0;
   }
 
   function countDone(checks) { return Object.values(checks || {}).filter(Boolean).length; }
@@ -857,6 +1011,41 @@
     touchOrder(order,item);
     saveData();
     renderOrderWorkspace(order,item.id);
+  }
+
+  function completeWorkingRecipe(orderId,itemId) {
+    const order = data.orders.find(o => o.id === orderId);
+    const item = order?.items.find(i => i.id === itemId);
+    if (!item) return;
+    const stages = workingRecipeStages(item);
+    if (!stages.length || !stages.every(stage => Boolean(item.recipeStageChecks?.[stage.id]))) {
+      return showToast("Complete each production milestone first.");
+    }
+    const product = productById(item.productId);
+    const missing = product.materials.filter(material => item.workflow.materialStatuses[material.id] !== "Available");
+    const finish = () => {
+      item.status = "Ready for Packing";
+      item.workflow.activeTab = "pack";
+      touchOrder(order,item);
+      data.activity.unshift({text:`Finished manufacturing ${item.productName}`,time:"Just now"});
+      saveData();
+      renderOrderWorkspace(order,item.id);
+    };
+    if (!missing.length) return finish();
+    showModal(
+      "Some materials are still marked unavailable",
+      `<p>You still have: <strong>${missing.map(material => `${escapeHTML(material.name)} — ${escapeHTML(item.workflow.materialStatuses[material.id])}`).join(", ")}</strong>.</p><p>Continue if those statuses are out of date, or keep the item waiting on material.</p>`,
+      [
+        {label:"Waiting on Material",kind:"secondary",onClick:() => {
+          item.status = "Waiting on Material";
+          item.workflow.activeTab = "manufacture";
+          touchOrder(order,item);
+          saveData();
+          renderOrderWorkspace(order,item.id);
+        }},
+        {label:"Continue Anyway",kind:"primary",onClick:finish}
+      ]
+    );
   }
 
   function completeManufacture(orderId,itemId) {
@@ -1012,6 +1201,8 @@
     if (action==="recipe-focus") renderRecipeFocus(button.dataset.recipeId);
     if (action==="print-recipe") printRecipe(button.dataset.recipeId);
     if (action==="open-item-recipe") openRecipe(button.dataset.recipeId,orderId,itemId);
+    if (action==="return-to-order") openOrder(orderId,itemId);
+    if (action==="complete-working-recipe") completeWorkingRecipe(orderId,itemId);
     if (action==="open-order") openOrder(orderId,itemId);
     if (action==="resume-focus") { const focus=findFocus(); focus ? openOrder(focus.order.id,focus.item.id) : showNewOrder(); }
     if (action==="filter-workshop") { currentWorkshopFilter=filter; renderWorkshopFilters(); renderWorkshopOrders(); }
@@ -1044,6 +1235,19 @@
     if (action==="manufacturing-check") updateManufacturingCheck(orderId,itemId,key,el.checked);
     if (action==="packing-check") updatePackingCheck(orderId,itemId,index,el.checked);
     if (action==="shipping-check") updateShippingCheck(orderId,key,el.checked);
+    if (action==="working-stage-check") {
+      const order = data.orders.find(order => order.id === orderId);
+      const item = order?.items.find(item => item.id === itemId);
+      if (item) {
+        item.recipeStageChecks ||= {};
+        item.recipeStageChecks[el.dataset.stageId] = el.checked;
+        item.status = "Manufacturing";
+        item.workflow.activeTab = "manufacture";
+        touchOrder(order,item);
+        saveData();
+        renderOrderWorkspace(order,item.id);
+      }
+    }
     if (action==="recipe-stage-check") { const order=data.orders.find(o=>o.id===orderId); const item=order?.items.find(i=>i.id===itemId); if(item){ item.recipeStageChecks ||= {}; item.recipeStageChecks[el.dataset.stageId]=el.checked; touchOrder(order,item); saveData(); openRecipe(item.productId,orderId,itemId); } }
   });
 
