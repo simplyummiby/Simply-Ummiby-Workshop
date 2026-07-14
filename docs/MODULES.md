@@ -87,3 +87,21 @@ Working in Version 0.4.1:
 - Checkpoints are saved per order item
 - Master recipe opens with a Return to This Order action
 - Final Shipping Checklist is visible only in Pack & Ship
+
+
+## Inventory Catalog
+
+Working in Version 0.5.0:
+
+- Raw Materials
+- Fabrication Kits
+- Finished Inventory
+- Packaging Supplies
+- Print & Cricut Supplies
+- Quantity and condition tracking
+- Reorder and preferred-stock levels
+- Supplier and resource links
+- Add and edit inventory items
+- Purchase / Make / Print restock center
+- Active-order material needs
+- Production Planning quantity lookups

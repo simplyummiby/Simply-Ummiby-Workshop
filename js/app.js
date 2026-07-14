@@ -1,6 +1,6 @@
 (() => {
   const STORAGE_KEY = "simplyUmmibyWorkshopData";
-  const VERSION = "0.4.1";
+  const VERSION = "0.5.0";
   const ITEM_STATUSES = ["New","Preparing","Manufacturing","Waiting on Material","Ready for Packing","Packed","Ready to Mail","Completed"];
   const STATUS_PROGRESS = {
     "New": 5, "Preparing": 20, "Manufacturing": 50, "Waiting on Material": 35,
@@ -42,6 +42,8 @@
       ...(initial.settings.externalLinks || {})
     };
 
+    initial.inventoryCatalog = migrateInventoryCatalog(initial.inventoryCatalog, initial.inventory);
+
     initial.orders = initial.orders.map(order => ({
       id: order.id || uid("order"),
       customerName: order.customerName || "Unnamed Customer",
@@ -73,6 +75,64 @@
       manufacturingSections: def.manufacturingSections,
       packingChecklist: def.packingChecklist
     }));
+  }
+
+
+  function migrateInventoryCatalog(savedCatalog, legacyInventory) {
+    const defaults = structuredClone(window.SUW_INVENTORY_CATALOG);
+    const savedItems = savedCatalog?.items || [];
+    const legacyMap = new Map((legacyInventory || []).map(item => [item.id, item]));
+
+    defaults.items = defaults.items.map(defaultItem => {
+      const saved = savedItems.find(item => item.id === defaultItem.id);
+      const legacy = legacyMap.get(defaultItem.id);
+      const merged = {...defaultItem, ...(legacy || {}), ...(saved || {})};
+      merged.id = defaultItem.id;
+      merged.category = defaultItem.category;
+      merged.name = saved?.name || defaultItem.name;
+      return merged;
+    });
+
+    savedItems.forEach(item => {
+      if (!defaults.items.some(existing => existing.id === item.id)) defaults.items.push(item);
+    });
+
+    return defaults;
+  }
+
+  function inventoryItems() {
+    return data.inventoryCatalog?.items || [];
+  }
+
+  function inventoryCategories() {
+    return data.inventoryCatalog?.categories || [];
+  }
+
+  function inventoryItemById(id) {
+    return inventoryItems().find(item => item.id === id);
+  }
+
+  function inventoryStatus(item) {
+    if (item.tracking === "condition") {
+      if (item.condition === "Out") return "Out";
+      if (["Replace Soon","Getting Low"].includes(item.condition)) return "Low";
+      return "Good";
+    }
+    const quantity = Number(item.quantity || 0);
+    const reorderAt = Number(item.reorderAt || 0);
+    if (quantity <= 0) return "Out";
+    if (quantity <= reorderAt) return "Low";
+    return "Good";
+  }
+
+  function inventoryNeedsAttention(item) {
+    return inventoryStatus(item) !== "Good";
+  }
+
+  function categoryTotal(categoryId) {
+    return inventoryItems()
+      .filter(item => item.category === categoryId)
+      .reduce((sum,item) => sum + (item.tracking === "quantity" ? Number(item.quantity || 0) : 0), 0);
   }
 
   function migrateItem(item, index) {
@@ -181,7 +241,7 @@
     editingOrderId = null;
     if (view === "dashboard") return renderDashboardView();
     if (view === "workshop") return renderWorkshopView();
-    if (view === "inventory") return renderRestockView();
+    if (view === "inventory") return renderInventoryCatalog();
     if (view === "products") return renderRecipeLibrary();
 
     const config = viewContent[view];
@@ -239,6 +299,269 @@
     if (group.statuses.has("Need to Buy")) return "Need to Buy";
     if (group.statuses.has("Ordered")) return "Ordered";
     return "Available";
+  }
+
+
+  function renderInventoryCatalog(activeCategory = "overview") {
+    pageTitle.textContent = "Inventory";
+    setActiveNav("inventory");
+    const categories = inventoryCategories();
+    const attentionItems = inventoryItems().filter(inventoryNeedsAttention);
+    const orderNeeds = getRestockGroups();
+
+    viewContainer.innerHTML = `
+      <section class="page-section wide">
+        <section class="inventory-hero">
+          <div>
+            <p class="eyebrow">Your workshop stockroom</p>
+            <h3>Inventory Catalog</h3>
+            <p>Record what you have on hand, keep preferred stock levels, and see purchase, make, and print needs in one place.</p>
+          </div>
+          <button class="button primary" data-action="add-inventory-item">+ Add Inventory Item</button>
+        </section>
+
+        <section class="inventory-overview-grid">
+          ${categories.map(category => `
+            <button class="inventory-category-card" data-action="inventory-category" data-category="${category.id}">
+              <span>${escapeHTML(category.name)}</span>
+              <strong>${category.id === "raw-materials" ? inventoryItems().filter(i => i.category === category.id).length : categoryTotal(category.id)}</strong>
+              <small>${category.id === "raw-materials" ? "catalog items" : "units recorded"}</small>
+            </button>
+          `).join("")}
+        </section>
+
+        <section class="inventory-tabs">
+          <button class="${activeCategory === "overview" ? "active" : ""}" data-action="inventory-category" data-category="overview">Overview</button>
+          ${categories.map(category => `<button class="${activeCategory === category.id ? "active" : ""}" data-action="inventory-category" data-category="${category.id}">${escapeHTML(category.name)}</button>`).join("")}
+          <button class="${activeCategory === "restock" ? "active" : ""}" data-action="inventory-category" data-category="restock">Restock Center</button>
+        </section>
+
+        <div id="inventoryContent">
+          ${activeCategory === "overview"
+            ? renderInventoryOverview(attentionItems, orderNeeds)
+            : activeCategory === "restock"
+              ? renderCombinedRestockCenter(attentionItems, orderNeeds)
+              : renderInventoryCategory(activeCategory)}
+        </div>
+      </section>
+    `;
+  }
+
+  function renderInventoryOverview(attentionItems, orderNeeds) {
+    return `
+      <section class="inventory-dashboard-grid">
+        <article class="panel">
+          <div class="panel-heading"><div><p class="eyebrow">Needs attention</p><h3>Low or Empty Stock</h3></div></div>
+          <div class="inventory-alert-stack">
+            ${attentionItems.length ? attentionItems.slice(0,8).map(item => renderInventoryAlert(item)).join("") : "<p>Nothing is currently below its preferred threshold.</p>"}
+          </div>
+        </article>
+        <article class="panel">
+          <div class="panel-heading"><div><p class="eyebrow">Active orders</p><h3>Order Material Needs</h3></div></div>
+          <div class="inventory-alert-stack">
+            ${orderNeeds.length ? orderNeeds.map(group => `
+              <div class="inventory-alert-row">
+                <div><strong>${escapeHTML(group.name)}</strong><span>${group.items.length} active item${group.items.length === 1 ? "" : "s"} · ${escapeHTML(groupPrimaryStatus(group))}</span></div>
+                <button class="text-button" data-action="inventory-category" data-category="restock">Review</button>
+              </div>
+            `).join("") : "<p>No active orders are waiting on materials.</p>"}
+          </div>
+        </article>
+      </section>
+
+      <section class="panel inventory-recent-section">
+        <div class="panel-heading"><div><p class="eyebrow">Quick edit</p><h3>All Inventory</h3></div></div>
+        <div class="inventory-catalog-grid">
+          ${inventoryItems().map(item => renderInventoryCard(item)).join("")}
+        </div>
+      </section>`;
+  }
+
+  function renderInventoryCategory(categoryId) {
+    const category = inventoryCategories().find(category => category.id === categoryId);
+    const items = inventoryItems().filter(item => item.category === categoryId);
+    return `
+      <section class="inventory-category-heading">
+        <div><p class="eyebrow">Inventory category</p><h3>${escapeHTML(category?.name || "Inventory")}</h3><p>${escapeHTML(category?.description || "")}</p></div>
+      </section>
+      <div class="inventory-catalog-grid">
+        ${items.length ? items.map(item => renderInventoryCard(item)).join("") : `<section class="panel"><p>No items are recorded in this category yet.</p></section>`}
+      </div>`;
+  }
+
+  function renderInventoryCard(item) {
+    const status = inventoryStatus(item);
+    const statusClass = status.toLowerCase();
+    return `
+      <article class="inventory-item-card">
+        <div class="inventory-item-top">
+          <div>
+            <p class="eyebrow">${escapeHTML(item.restockType === "purchase" ? "Purchase to restock" : item.restockType === "make" ? "Make to restock" : "Print to restock")}</p>
+            <h4>${escapeHTML(item.name)}</h4>
+          </div>
+          <span class="inventory-stock-badge ${statusClass}">${escapeHTML(status)}</span>
+        </div>
+
+        ${item.tracking === "quantity" ? `
+          <div class="inventory-quantity">
+            <button data-action="adjust-inventory" data-item-id="${item.id}" data-delta="-1">−</button>
+            <strong>${Number(item.quantity || 0)}</strong>
+            <button data-action="adjust-inventory" data-item-id="${item.id}" data-delta="1">+</button>
+          </div>
+          <div class="inventory-thresholds">
+            <span>Reorder at <strong>${Number(item.reorderAt || 0)}</strong></span>
+            <span>Preferred <strong>${Number(item.preferredStock || 0)}</strong></span>
+          </div>
+        ` : `
+          <label class="inventory-condition-label">Stock condition
+            <select data-action="inventory-condition" data-item-id="${item.id}">
+              ${["Available","Getting Low","Replace Soon","Out"].map(value => `<option value="${value}" ${item.condition === value ? "selected" : ""}>${value}</option>`).join("")}
+            </select>
+          </label>
+        `}
+
+        ${item.contents?.length ? `<div class="kit-contents"><strong>Contains</strong><ul>${item.contents.map(content => `<li>${escapeHTML(content)}</li>`).join("")}</ul></div>` : ""}
+
+        <div class="inventory-card-actions">
+          <button class="button secondary small" data-action="edit-inventory-item" data-item-id="${item.id}">Edit Details</button>
+          ${item.purchaseUrl ? `<button class="button secondary small" data-action="open-inventory-link" data-item-id="${item.id}">Open Supplier</button>` : ""}
+        </div>
+      </article>`;
+  }
+
+  function renderInventoryAlert(item) {
+    return `
+      <div class="inventory-alert-row">
+        <div><strong>${escapeHTML(item.name)}</strong><span>${item.tracking === "quantity" ? `${Number(item.quantity || 0)} on hand · reorder at ${Number(item.reorderAt || 0)}` : escapeHTML(item.condition || "Not set")}</span></div>
+        <button class="text-button" data-action="edit-inventory-item" data-item-id="${item.id}">Update</button>
+      </div>`;
+  }
+
+  function renderCombinedRestockCenter(attentionItems, orderNeeds) {
+    const purchase = attentionItems.filter(item => item.restockType === "purchase");
+    const make = attentionItems.filter(item => item.restockType === "make");
+    const print = attentionItems.filter(item => item.restockType === "print");
+
+    return `
+      <section class="restock-section-group">
+        ${renderRestockBucket("Purchase to Restock","Supplies to order from a vendor.",purchase,"purchase")}
+        ${renderRestockBucket("Make to Restock","Fabrication kits or finished products to make ahead.",make,"make")}
+        ${renderRestockBucket("Print to Restock","Tags, care sheets, and company stickers to print or cut.",print,"print")}
+
+        <section class="panel">
+          <div class="panel-heading"><div><p class="eyebrow">Active-order needs</p><h3>Materials Needed for Current Orders</h3></div></div>
+          ${orderNeeds.length ? orderNeeds.map(group => renderRestockGroup(group)).join("") : "<p>No active order materials are currently flagged.</p>"}
+        </section>
+      </section>`;
+  }
+
+  function renderRestockBucket(title,description,items,type) {
+    return `
+      <section class="panel restock-bucket">
+        <div class="panel-heading">
+          <div><p class="eyebrow">${escapeHTML(type)}</p><h3>${escapeHTML(title)}</h3><p>${escapeHTML(description)}</p></div>
+        </div>
+        <div class="inventory-alert-stack">
+          ${items.length ? items.map(item => `
+            <div class="inventory-alert-row">
+              <div>
+                <strong>${escapeHTML(item.name)}</strong>
+                <span>${item.tracking === "quantity" ? `${Number(item.quantity || 0)} on hand · target ${Number(item.preferredStock || 0)}` : escapeHTML(item.condition || "Not set")}</span>
+              </div>
+              <button class="button secondary small" data-action="edit-inventory-item" data-item-id="${item.id}">${type === "purchase" ? "Update / Supplier" : type === "make" ? "Adjust Stock" : "Adjust / Print Link"}</button>
+            </div>
+          `).join("") : `<p>Nothing currently needs to be ${type === "purchase" ? "purchased" : type === "make" ? "made" : "printed"}.</p>`}
+        </div>
+      </section>`;
+  }
+
+  function adjustInventory(itemId,delta) {
+    const item = inventoryItemById(itemId);
+    if (!item || item.tracking !== "quantity") return;
+    const next = Math.max(0, Number(item.quantity || 0) + Number(delta));
+    item.quantity = next;
+    data.activity.unshift({text:`Adjusted ${item.name} to ${next}`,time:"Just now"});
+    saveData();
+    renderInventoryCatalog(document.querySelector(".inventory-tabs button.active")?.dataset.category || "overview");
+  }
+
+  function updateInventoryCondition(itemId,condition) {
+    const item = inventoryItemById(itemId);
+    if (!item) return;
+    item.condition = condition;
+    data.activity.unshift({text:`Marked ${item.name} as ${condition}`,time:"Just now"});
+    saveData();
+    renderInventoryCatalog(document.querySelector(".inventory-tabs button.active")?.dataset.category || "overview");
+  }
+
+  function showInventoryItemEditor(itemId = null) {
+    const item = itemId ? inventoryItemById(itemId) : null;
+    const categoryOptions = inventoryCategories().map(category => `<option value="${category.id}" ${item?.category === category.id ? "selected" : ""}>${escapeHTML(category.name)}</option>`).join("");
+    const isCondition = item?.tracking === "condition";
+    showModal(
+      item ? "Edit Inventory Item" : "Add Inventory Item",
+      `
+        <form id="inventoryItemForm" class="inventory-editor-form">
+          <label>Name<input name="name" value="${escapeHTML(item?.name || "")}" required></label>
+          <label>Category<select name="category">${categoryOptions}</select></label>
+          <label>Tracking<select name="tracking">
+            <option value="quantity" ${!isCondition ? "selected" : ""}>Quantity</option>
+            <option value="condition" ${isCondition ? "selected" : ""}>Condition</option>
+          </select></label>
+          <label>Restock Type<select name="restockType">
+            <option value="purchase" ${item?.restockType === "purchase" ? "selected" : ""}>Purchase</option>
+            <option value="make" ${item?.restockType === "make" ? "selected" : ""}>Make</option>
+            <option value="print" ${item?.restockType === "print" ? "selected" : ""}>Print</option>
+          </select></label>
+          <label>Quantity<input name="quantity" type="number" min="0" value="${Number(item?.quantity || 0)}"></label>
+          <label>Reorder At<input name="reorderAt" type="number" min="0" value="${Number(item?.reorderAt || 0)}"></label>
+          <label>Preferred Stock<input name="preferredStock" type="number" min="0" value="${Number(item?.preferredStock || 0)}"></label>
+          <label>Condition<select name="condition">
+            ${["Available","Getting Low","Replace Soon","Out"].map(value => `<option value="${value}" ${item?.condition === value ? "selected" : ""}>${value}</option>`).join("")}
+          </select></label>
+          <label>Supplier<input name="supplier" value="${escapeHTML(item?.supplier || "")}"></label>
+          <label>Supplier / Resource URL<input name="purchaseUrl" value="${escapeHTML(item?.purchaseUrl || item?.resourceUrl || "")}" placeholder="https://..."></label>
+          <label class="full-width">Notes<textarea name="notes" rows="3">${escapeHTML(item?.notes || "")}</textarea></label>
+        </form>`,
+      [
+        {label:"Cancel"},
+        {label:item ? "Save Changes" : "Add Item",kind:"primary",onClick:() => saveInventoryItem(itemId)}
+      ]
+    );
+  }
+
+  function saveInventoryItem(itemId) {
+    const form = document.getElementById("inventoryItemForm");
+    if (!form) return;
+    const formData = new FormData(form);
+    const tracking = formData.get("tracking");
+    const existing = itemId ? inventoryItemById(itemId) : null;
+    const updated = {
+      ...(existing || {}),
+      id: existing?.id || uid("inventory"),
+      name: formData.get("name").trim(),
+      category: formData.get("category"),
+      tracking,
+      restockType: formData.get("restockType"),
+      quantity: Math.max(0, Number(formData.get("quantity") || 0)),
+      reorderAt: Math.max(0, Number(formData.get("reorderAt") || 0)),
+      preferredStock: Math.max(0, Number(formData.get("preferredStock") || 0)),
+      condition: formData.get("condition"),
+      supplier: formData.get("supplier").trim(),
+      purchaseUrl: formData.get("purchaseUrl").trim(),
+      notes: formData.get("notes").trim()
+    };
+    if (existing) Object.assign(existing,updated);
+    else data.inventoryCatalog.items.push(updated);
+    data.activity.unshift({text:`${existing ? "Updated" : "Added"} inventory item: ${updated.name}`,time:"Just now"});
+    saveData();
+    renderInventoryCatalog("overview");
+  }
+
+  function openInventoryLink(itemId) {
+    const item = inventoryItemById(itemId);
+    const url = item?.purchaseUrl || item?.resourceUrl;
+    if (url) window.open(url,"_blank","noopener");
   }
 
   function renderRestockView() {
@@ -384,7 +707,7 @@
       focusPanel.innerHTML = `<div class="focus-main"><div class="focus-flower">SU</div><div><p class="eyebrow">Today's focus</p><h3>Your worktable is ready.</h3><p>Create an order when you're ready to begin.</p></div></div><button class="button primary" data-action="new-order">Create Order</button>`;
     }
 
-    const lowStock = data.inventory.filter(item => item.quantity <= item.minimum);
+    const lowStock = inventoryItems().filter(inventoryNeedsAttention);
     const restockGroups = getRestockGroups();
     const urgentRestock = restockGroups.map(group => `
       <div class="alert-item order-material-alert">
@@ -396,7 +719,7 @@
       </div>
     `).join("");
     const stockAlerts = lowStock.map(item => `
-      <div class="alert-item"><div><strong>${escapeHTML(item.name)}</strong><span>${item.quantity} remaining · ${escapeHTML(item.category)}</span></div><span class="badge warning">Low stock</span></div>
+      <div class="alert-item"><div><strong>${escapeHTML(item.name)}</strong><span>${item.tracking === "quantity" ? `${Number(item.quantity || 0)} on hand` : escapeHTML(item.condition || "Not set")} · ${escapeHTML(item.restockType || "restock")}</span></div><span class="badge warning">Low stock</span></div>
     `).join("");
     document.getElementById("inventoryAlerts").innerHTML = `<div class="alert-list">${urgentRestock}${stockAlerts}${!urgentRestock && !stockAlerts ? "<p>No inventory alerts.</p>" : ""}</div>`;
 
@@ -613,7 +936,7 @@
 
 
   function recordedInventoryQuantity(id) {
-    const inventoryItem = data.inventory.find(entry => entry.id === id);
+    const inventoryItem = inventoryItemById(id);
     return Number.isFinite(Number(inventoryItem?.quantity)) ? Number(inventoryItem.quantity) : null;
   }
 
@@ -623,7 +946,7 @@
     if (item.productId === "macrame-paper-towel-holder") {
       rows.push({name:"Macramé cord",needed:"4 × 340 cm + wrap cord",available:"Condition tracked",state:item.workflow.materialStatuses["cord"] || "Available"});
       rows.push({name:"Wooden ring",needed:"1",available:recordedInventoryQuantity("wood-rings"),state:item.workflow.materialStatuses["wood-ring"] || "Available"});
-      rows.push({name:"Wooden dowel",needed:"1",available:null,state:item.workflow.materialStatuses["wood-dowel"] || "Available"});
+      rows.push({name:"Wooden dowel",needed:"1",available:recordedInventoryQuantity("paper-towel-dowels"),state:item.workflow.materialStatuses["wood-dowel"] || "Available"});
       rows.push({name:"End caps",needed:"2",available:recordedInventoryQuantity("end-caps"),state:item.workflow.materialStatuses["end-caps"] || "Available"});
     } else if (item.productId === "macrame-toilet-paper-holder") {
       rows.push({name:"Macramé cord",needed:"Recipe amount",available:"Condition tracked",state:item.workflow.materialStatuses["cord"] || "Available"});
@@ -652,6 +975,10 @@
         ? ["Precut cord", "1 wooden ring"]
         : ["Prepared yarn and notions"];
     const rawRows = rawMaterialSnapshot(item);
+    const matchingKit = inventoryItems().find(entry => entry.category === "fabrication-kits" && entry.productId === item.productId && entry.color === item.color);
+    const matchingFinished = inventoryItems().find(entry => entry.category === "finished-inventory" && entry.productId === item.productId && entry.color === item.color);
+    const kitQuantity = Number(matchingKit?.quantity || 0);
+    const finishedQuantity = Number(matchingFinished?.quantity || 0);
 
     return `
       <section class="planning-inventory">
@@ -662,12 +989,12 @@
         <div class="planning-path-grid">
           <article class="planning-path ${method === "finished" ? "selected" : ""}">
             <span>Finished Inventory</span>
-            <strong>0 recorded</strong>
+            <strong>${finishedQuantity} available</strong>
             <small>${escapeHTML(item.productName)} · ${escapeHTML(item.color)}</small>
           </article>
           <article class="planning-path ${method === "kit" ? "selected" : ""}">
             <span>Fabrication Kits</span>
-            <strong>0 recorded</strong>
+            <strong>${kitQuantity} available</strong>
             <small>${escapeHTML(item.productName)} · ${escapeHTML(item.color)}</small>
           </article>
           <article class="planning-path ${method === "raw" ? "selected" : ""}">
@@ -1197,6 +1524,11 @@
     if (!button) return;
     const {action,orderId,itemId,filter,tab,link}=button.dataset;
     if (action==="new-order") showNewOrder();
+    if (action==="inventory-category") renderInventoryCatalog(button.dataset.category);
+    if (action==="adjust-inventory") adjustInventory(button.dataset.itemId,button.dataset.delta);
+    if (action==="edit-inventory-item") showInventoryItemEditor(button.dataset.itemId);
+    if (action==="add-inventory-item") showInventoryItemEditor();
+    if (action==="open-inventory-link") openInventoryLink(button.dataset.itemId);
     if (action==="open-recipe") openRecipe(button.dataset.recipeId);
     if (action==="recipe-focus") renderRecipeFocus(button.dataset.recipeId);
     if (action==="print-recipe") printRecipe(button.dataset.recipeId);
@@ -1230,6 +1562,7 @@
   document.addEventListener("change",event => {
     const el=event.target;
     const {action,orderId,itemId,index,key}=el.dataset;
+    if (action==="inventory-condition") updateInventoryCondition(el.dataset.itemId,el.value);
     if (action==="fulfillment") selectFulfillment(orderId,itemId,el.value);
     if (action==="material-status") updateMaterialStatus(orderId,itemId,el.dataset.materialId,el.value);
     if (action==="manufacturing-check") updateManufacturingCheck(orderId,itemId,key,el.checked);

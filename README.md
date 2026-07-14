@@ -1,49 +1,74 @@
 # Simply Ummiby Workshop
 
-**Version 0.4.1**
+**Version 0.5.0**
 
-Version 0.4.1 integrates the Workshop Recipe directly into each active order’s Manufacturing & Assembly tab.
+Version 0.5.0 turns Inventory into a true workshop catalog.
 
-## Corrected workflow
+## Inventory Catalog
 
-### Production Planning
+Inventory is now organized into:
 
-Now focuses on:
+- Raw Materials
+- Fabrication Kits
+- Finished Inventory
+- Packaging Supplies
+- Print & Cricut Supplies
+- Restock Center
 
-- fulfillment choice,
-- current recorded inventory for the exact product and color,
-- fabrication-kit contents,
-- raw-material requirements,
-- material status.
+## Record what is on hand
 
-The three paths are visibly different:
+Quantity-tracked items include:
 
-- **Finished Inventory** skips manufacturing.
-- **Fabrication Kit** skips Cord Preparation because the cords are already cut and the ring/end caps are in the kit.
-- **Build From Raw Materials** includes Cord Preparation and shows individual material requirements.
+- on-hand quantity,
+- reorder threshold,
+- preferred stock,
+- purchase / make / print category,
+- supplier,
+- supplier or resource link,
+- notes.
 
-Current kit and finished-product counts display as **0 recorded** until the full inventory module is populated.
+Cord can still be tracked by condition:
 
-### Manufacturing & Assembly
+- Available
+- Getting Low
+- Replace Soon
+- Out
 
-The live Production Traveler now embeds the working recipe directly inside the order.
+## Quick adjustments
 
-It includes:
+Each quantity item has minus and plus controls for quick stock corrections.
 
-- quick-reference measurements,
-- production milestones,
-- expandable instructions,
-- saved order-specific checkpoints,
-- automatic opening of the next unfinished milestone.
+Use **Edit Details** to change:
 
-The permanent Workshop Recipe remains separate and can be opened only when needed. A **Return to This Order** button preserves the order and item context.
+- name,
+- category,
+- tracking method,
+- quantity,
+- reorder threshold,
+- preferred stock,
+- supplier,
+- URL,
+- notes.
 
-### Pack & Ship
+New inventory items can be added directly inside the app.
 
-The Final Shipping Checklist now appears only inside the Pack & Ship tab.
+## Restock Center
 
-It no longer appears below Production Planning or Manufacturing.
+The Restock Center separates:
 
-## Data behavior
+- Purchase to Restock
+- Make to Restock
+- Print to Restock
+- Materials needed for current active orders
 
-Recipe milestone checks are saved to the specific production item and do not alter the master Workshop Recipe.
+## Production Planning integration
+
+Production Planning now reads recorded quantities for:
+
+- matching fabrication kits,
+- matching finished products,
+- wooden rings,
+- paper towel dowels,
+- end caps.
+
+This release establishes counted inventory. Automatic deductions when kits are created, items are assigned, or packages are completed remain planned for later refinement.

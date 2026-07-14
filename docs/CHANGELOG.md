@@ -1,42 +1,44 @@
 # Changelog
 
-## 0.4.1 — 2026-07-14
-
-### Fixed
-
-- Removed the Final Shipping Checklist from the general order workspace
-- Final Shipping Checklist now appears only under Pack & Ship
-- Master Recipe no longer serves as the primary production screen
+## 0.5.0 — 2026-07-14
 
 ### Added
 
-- Embedded working recipe inside Manufacturing & Assembly
-- Order-specific recipe milestone checks
-- Quick-reference measurements inside the Production Traveler
-- Expandable instructions inside each live production stage
-- Automatically expanded next unfinished stage
-- Return to This Order navigation from the Workshop Recipe
-- Production Planning inventory snapshot
-- Clear visual differences between Finished Inventory, Fabrication Kit, and Raw Materials paths
-- Fabrication Kit path skips Cord Preparation
-- Raw Materials path includes Cord Preparation
+- Full Inventory Catalog
+- Raw Materials category
+- Fabrication Kits category
+- Finished Inventory category
+- Packaging Supplies category
+- Print & Cricut Supplies category
+- Inventory overview cards
+- On-hand quantity editing
+- Quick plus and minus adjustments
+- Condition tracking for cord
+- Reorder thresholds
+- Preferred stock targets
+- Supplier and resource links
+- Inventory notes
+- Add Inventory Item
+- Edit Inventory Item
+- Purchase / Make / Print restock categories
+- Combined Restock Center
+- Active-order material needs alongside stock alerts
+- Production Planning reads matching kit and finished-product quantities
+- Production Planning reads wooden ring, dowel, and end-cap quantities
+- Migration from the earlier small inventory list
 
-### Clarified
+### Not yet included
 
-Kit and finished-product counts show `0 recorded` until full inventory quantities are entered in a later release.
+- Automatic deduction when a fabrication kit is built
+- Automatic deduction when finished inventory is assigned
+- Automatic packaging-supply deductions
+- Transaction-level undo
+
+## 0.4.1 — 2026-07-14
+
+- Integrated the working recipe into Production Travelers
+- Moved final shipping checklist into Pack & Ship
 
 ## 0.4.0 — 2026-07-13
 
-- Added Workshop Recipes, Focus View, print cut sheet, and traveler recipe links
-
-## 0.3.2 — 2026-07-13
-
-- Added order-driven Purchase to Restock
-
-## 0.3.1 — 2026-07-13
-
-- Added Production Planning and nonblocking material statuses
-
-## 0.3.0 — 2026-07-13
-
-- Added Processing Area
+- Added Workshop Recipes

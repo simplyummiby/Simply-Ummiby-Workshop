@@ -1,6 +1,6 @@
 # Architecture
 
-## Version 0.4.1
+## Version 0.5.0
 
 Simply Ummiby Workshop remains a static, local-first web application.
 
@@ -92,3 +92,21 @@ The selected fulfillment method determines stage visibility:
 - raw materials: includes every master-recipe stage.
 
 The final shipping section is rendered only inside Pack & Ship.
+
+
+## Inventory catalog architecture
+
+Inventory catalog defaults live in `js/data/inventory-catalog.js`.
+
+The working catalog is persisted in `data.inventoryCatalog` and contains:
+
+- categories,
+- inventory items,
+- tracking type (`quantity` or `condition`),
+- restock type (`purchase`, `make`, or `print`),
+- on-hand levels,
+- thresholds,
+- supplier / resource details,
+- optional product and color links.
+
+Version 0.5.0 migrates legacy inventory quantities into matching catalog records.

@@ -47,7 +47,7 @@
 - Enforce paper towel holder mailing rules
 - Separate tags, care sheets, stickers, labels, and packing slips by package
 
-## Version 0.5.0 — Inventory
+## Version 0.5.0 — Inventory Catalog — Complete
 
 - Raw materials
 - Fabrication kits by product and color
@@ -77,3 +77,12 @@
 ## Version 1.0.0
 
 A stable local-first workshop management system ready for everyday use.
+
+
+## Version 0.5.1 — Inventory Transactions
+
+- Confirm and deduct fabrication kit
+- Confirm and deduct finished inventory
+- Build fabrication kits from raw materials
+- Packaging and print-supply deductions
+- Undo recent inventory transactions
