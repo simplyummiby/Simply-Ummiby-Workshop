@@ -1,33 +1,38 @@
 # Changelog
 
-## 0.5.3 — 2026-07-14
+## 0.6.0 — 2026-07-14
 
 ### Added
 
-- Product links on raw-material records
-- Products column in Raw Materials
-- Loose, Allocated in Kits, and Total Owned quantities
-- Prepared cord-set inventory items
-- Fabrication-kit component recipes
-- Build Kits transaction
-- Break Apart Kits transaction
-- Component availability validation
-- Inventory movement history
-- Reason-based stock adjustment
-- Broken/damaged, correction, outside-use, return, receipt, and other reasons
+- Product Master library
+- Product Master detail page
+- Product name, craft, status, and colors
+- Workshop Recipe link
+- Product bill of materials
+- Fabrication-kit definition
+- Separate-material definition
+- Packaging and resource relationships
+- Product Master editor
+- Add new product
+- Product list generated from Product Master
+- Automatic Used by Products calculation
+- Delete Inventory Item
+- Delete protection for referenced items
 
-### Inventory rule
+### Fixed
 
-Components moved into a fabrication kit are removed from loose inventory. Breaking the kit returns them. Complete kits are therefore trustworthy and components are not double counted.
+- Saving an inventory edit now returns to the category tab that was open
+- Deleting an inventory item returns to the current category tab
+
+### Changed
+
+- Product Master is now the single source of truth for products
+- Inventory product relationships are derived rather than manually maintained
+
+## 0.5.3 — 2026-07-14
+
+- Added materials and fabrication-kit transactions
 
 ## 0.5.2 — 2026-07-14
 
-- Widened editing modals and added sticky action controls
-
-## 0.5.1 — 2026-07-14
-
-- Added inventory tables, filtering, sorting, grouping, and photos
-
-## 0.5.0 — 2026-07-14
-
-- Added the full Inventory Catalog
+- Improved modal width and sticky actions

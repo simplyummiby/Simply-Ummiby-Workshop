@@ -1073,3 +1073,106 @@ textarea { resize: vertical; }
   .inventory-data-table-v053 .inventory-name-cell,
   .inventory-data-table-v053 .inventory-row-actions { grid-column:1 / -1; }
 }
+
+
+/* Version 0.6.0 Product Master */
+.product-master-hero {
+  display:flex;
+  justify-content:space-between;
+  gap:20px;
+  align-items:flex-start;
+  padding:28px;
+  margin-bottom:20px;
+  border:1px solid #efbec5;
+  border-radius:24px;
+  background:linear-gradient(135deg,var(--rose-200),#fff7f8);
+  box-shadow:var(--shadow);
+}
+.product-master-hero h3 { margin:6px 0; font-size:2rem; }
+.product-master-hero p:last-child { color:var(--muted); margin:0; }
+.product-master-actions { display:flex; gap:8px; flex-wrap:wrap; }
+.product-master-grid {
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:18px;
+  margin-bottom:18px;
+}
+.product-master-section { margin-bottom:18px; }
+.color-pill-list { display:flex; flex-wrap:wrap; gap:8px; }
+.color-pill-list span {
+  padding:7px 10px;
+  border-radius:999px;
+  background:var(--rose-100);
+  color:var(--rose-700);
+  font-size:.82rem;
+  font-weight:800;
+}
+.product-material-table { display:grid; gap:7px; }
+.product-material-head,
+.product-material-row {
+  display:grid;
+  grid-template-columns:2fr .5fr .8fr .7fr .7fr;
+  gap:10px;
+  align-items:center;
+  padding:10px 12px;
+  border-radius:11px;
+}
+.product-material-head {
+  background:var(--rose-50);
+  color:var(--muted);
+  font-size:.75rem;
+  font-weight:900;
+  text-transform:uppercase;
+}
+.product-material-row { border:1px solid var(--line); }
+.product-packaging-list { display:grid; gap:9px; }
+.product-packaging-list > div {
+  display:flex;
+  justify-content:space-between;
+  gap:14px;
+  padding:10px 12px;
+  border:1px solid var(--line);
+  border-radius:11px;
+}
+.product-packaging-list span { color:var(--muted); }
+.product-master-form {
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:14px;
+}
+.product-material-editor {
+  border:1px solid var(--line);
+  border-radius:14px;
+  padding:14px;
+}
+.product-material-editor legend { padding:0 5px; font-weight:850; }
+.product-material-edit-row {
+  display:grid;
+  grid-template-columns:2fr .7fr 1fr auto;
+  gap:8px;
+  align-items:end;
+  margin-bottom:8px;
+}
+.derived-product-note {
+  padding:12px;
+  border:1px solid var(--rose-200);
+  border-radius:13px;
+  background:var(--rose-50);
+}
+.derived-product-note p { margin:5px 0 0; color:var(--muted); }
+.recipe-card-art img {
+  width:100%;
+  height:150px;
+  object-fit:cover;
+}
+
+@media (max-width:780px) {
+  .product-master-hero,
+  .product-packaging-list > div { flex-direction:column; align-items:stretch; }
+  .product-master-grid,
+  .product-master-form { grid-template-columns:1fr; }
+  .product-material-head { display:none; }
+  .product-material-row { grid-template-columns:1fr 1fr; }
+  .product-material-row strong { grid-column:1 / -1; }
+  .product-material-edit-row { grid-template-columns:1fr; }
+}

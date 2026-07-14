@@ -1,6 +1,6 @@
 # Architecture
 
-## Version 0.5.3
+## Version 0.6.0
 
 Simply Ummiby Workshop remains a static, local-first web application.
 
@@ -128,3 +128,14 @@ Building a kit transfers quantities from loose component records into the kit co
 Breaking a kit reverses the transfer.
 
 Inventory movements are retained in `data.inventoryTransactions`. Product relationships are stored in `linkedProductIds`.
+
+
+## Product Master architecture
+
+Product Master defaults live in `js/data/product-masters.js`.
+
+The working records are stored in `data.productMasters`. The legacy `data.products` list is regenerated from Product Master for compatibility with order entry.
+
+Inventory product relationships are derived by scanning Product Master materials, kit definitions, separate materials, and packaging resource IDs.
+
+Inventory deletion is blocked while a Product Master or kit component references the record.

@@ -1,71 +1,56 @@
 # Simply Ummiby Workshop
 
-**Version 0.5.3**
+**Version 0.6.0**
 
-Version 0.5.3 connects raw materials to products and introduces trustworthy fabrication-kit transactions.
+Version 0.6.0 introduces Product Master as the single source of truth for each sellable product.
 
-## Raw materials and products
+## Product Master
 
-Raw-material records can now be linked to one or more products from the inventory editor.
+Each product can define:
 
-The Raw Materials table shows:
+- product name and craft,
+- status,
+- colors,
+- linked Workshop Recipe,
+- bill of materials,
+- fabrication-kit definition,
+- materials stored separately from the kit,
+- mailer type,
+- product tag,
+- care sheet,
+- company sticker,
+- packaging notes.
 
-- loose quantity,
-- quantity allocated inside complete fabrication kits,
-- total physically owned,
-- products that use the material.
+Orders continue to use the product list, but that list is now generated from Product Master.
 
-A component is never counted as both loose inventory and kit inventory.
+## Automatic inventory relationships
 
-## Fabrication-kit contents
+The Inventory editor no longer manually asks which products use an item.
 
-The initial kit recipes are:
+“Used by Products” is calculated automatically from Product Master:
 
-### Natural/Beige Paper Towel Holder Kit
+- material connections,
+- fabrication-kit contents,
+- separate required materials,
+- packaging resources.
 
-- 1 prepared paper towel holder cord set
-- 1 wooden ring
-- 2 end caps
-- paper towel dowel remains separate
+Adding a new Product Master makes it available to order entry and inventory relationships.
 
-### Natural/Beige Toilet Paper Holder Kit
+## Inventory modal behavior
 
-- 1 prepared toilet paper holder cord set
-- 1 wooden ring
+Saving or deleting an inventory item returns you to the Inventory category tab you were using, such as Raw Materials or Fabrication Kits.
 
-Prepared cord sets are quantity-tracked raw/prepared components.
+## Delete inventory items
 
-## Build Kits
+Inventory items can now be deleted from the edit modal.
 
-Building kits:
+Deletion is blocked when an item is still referenced by:
 
-1. checks loose component availability,
-2. deducts the required loose components,
-3. increases complete kit inventory,
-4. records every movement in inventory history.
+- a Product Master,
+- a fabrication-kit component definition.
 
-## Break Apart Kits
+The app explains which connections must be removed first. Transaction history remains available after deletion.
 
-Breaking a kit:
+## Existing modules
 
-1. decreases complete kit inventory,
-2. returns all listed components to loose inventory,
-3. records the transaction.
-
-Only complete kits count as fabrication-kit inventory.
-
-## Stock adjustments
-
-Use **Adjust** for broken, damaged, used, returned, received, or corrected stock. Inventory cannot go below zero.
-
-## Transaction history
-
-The Inventory overview includes recent movement history for:
-
-- quick quantity changes,
-- kit building,
-- kit breakdown,
-- damaged items,
-- count corrections,
-- received stock,
-- other adjustments.
+Workshop Recipes remain the permanent instruction library. Product Master links a product to its recipe and everything else needed to make, stock, and pack it.

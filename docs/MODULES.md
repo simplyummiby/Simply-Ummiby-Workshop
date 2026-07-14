@@ -124,3 +124,18 @@ Working in Version 0.5.3:
 - Prepared cord-set components
 - Reason-based stock adjustments
 - Recent transaction history
+
+
+## Product Master
+
+Working in Version 0.6.0:
+
+- Product identity and colors
+- Workshop Recipe relationship
+- Bill of materials
+- Fabrication-kit contents
+- Separate required materials
+- Packaging resources and rules
+- Product editor
+- Product creation
+- Automatic Inventory “Used by Products”

@@ -96,3 +96,13 @@ A stable local-first workshop management system ready for everyday use.
 - Break kits apart and return components
 - Reason-based stock adjustments
 - Inventory transaction history
+
+
+## Version 0.6.0 — Product Master — Complete
+
+- Single source of truth for sellable products
+- Colors, recipe, materials, kit, and packaging
+- Automatic inventory product relationships
+- Product creation and editing
+- Inventory deletion with reference protection
+- Return to current inventory tab after modal actions

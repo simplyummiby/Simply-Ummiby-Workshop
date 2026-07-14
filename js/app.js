@@ -1,12 +1,14 @@
 (() => {
   const STORAGE_KEY = "simplyUmmibyWorkshopData";
-  const VERSION = "0.5.3";
+  const VERSION = "0.6.0";
   const ITEM_STATUSES = ["New","Preparing","Manufacturing","Waiting on Material","Ready for Packing","Packed","Ready to Mail","Completed"];
   const STATUS_PROGRESS = {
     "New": 5, "Preparing": 20, "Manufacturing": 50, "Waiting on Material": 35,
     "Ready for Packing": 70, "Packed": 85, "Ready to Mail": 95, "Completed": 100
   };
   const data = loadData();
+  syncInventoryProductLinks();
+  saveData();
   const viewContainer = document.getElementById("viewContainer");
   const pageTitle = document.getElementById("pageTitle");
   const sidebar = document.getElementById("sidebar");
@@ -48,6 +50,12 @@
 
     initial.inventoryCatalog = migrateInventoryCatalog(initial.inventoryCatalog, initial.inventory);
     initial.inventoryTransactions ||= [];
+    initial.productMasters = migrateProductMasters(initial.productMasters);
+    initial.products = initial.productMasters.map(master => ({
+      id: master.id,
+      name: master.name,
+      colors: master.colors || []
+    }));
 
     initial.orders = initial.orders.map(order => ({
       id: order.id || uid("order"),
@@ -354,6 +362,49 @@
     </section>`;
   }
 
+
+  function migrateProductMasters(savedMasters) {
+    const defaults = structuredClone(window.SUW_PRODUCT_MASTERS || []);
+    const saved = savedMasters || [];
+    const merged = defaults.map(master => ({
+      ...master,
+      ...(saved.find(item => item.id === master.id) || {}),
+      packaging: {
+        ...(master.packaging || {}),
+        ...(saved.find(item => item.id === master.id)?.packaging || {})
+      },
+      materials: saved.find(item => item.id === master.id)?.materials || master.materials || [],
+      kitDefinition: saved.find(item => item.id === master.id)?.kitDefinition || master.kitDefinition || {contents:[],separateMaterials:[]}
+    }));
+    saved.forEach(master => {
+      if (!merged.some(item => item.id === master.id)) merged.push(master);
+    });
+    return merged;
+  }
+
+  function productMasters() {
+    return data.productMasters || [];
+  }
+
+  function productMasterById(id) {
+    return productMasters().find(master => master.id === id);
+  }
+
+  function productsUsingInventoryItem(itemId) {
+    return productMasters().filter(master =>
+      (master.materials || []).some(row => row.inventoryItemId === itemId) ||
+      (master.kitDefinition?.contents || []).some(row => row.inventoryItemId === itemId) ||
+      (master.kitDefinition?.separateMaterials || []).some(row => row.inventoryItemId === itemId) ||
+      Object.values(master.packaging || {}).includes(itemId)
+    );
+  }
+
+  function syncInventoryProductLinks() {
+    inventoryItems().forEach(item => {
+      item.linkedProductIds = productsUsingInventoryItem(item.id).map(master => master.id);
+    });
+  }
+
   function migrateItem(item, index) {
     const product = productById(item.productId) || productByName(item.productName) || window.SUW_SAMPLE_DATA.products[0];
     const workflow = item.workflow || {};
@@ -461,7 +512,7 @@
     if (view === "dashboard") return renderDashboardView();
     if (view === "workshop") return renderWorkshopView();
     if (view === "inventory") return renderInventoryCatalog();
-    if (view === "products") return renderRecipeLibrary();
+    if (view === "products") return renderProductMasterLibrary();
 
     const config = viewContent[view];
     if (!config) return;
@@ -610,10 +661,51 @@
     const item=itemId?inventoryItemById(itemId):null;
     const categoryOptions=inventoryCategories().map(category=>`<option value="${category.id}" ${item?.category===category.id?"selected":""}>${escapeHTML(category.name)}</option>`).join("");
     const isCondition=item?.tracking==="condition";
-    showModal(item?"Edit Inventory Item":"Add Inventory Item",`<form id="inventoryItemForm" class="inventory-editor-form"><label>Name<input name="name" value="${escapeHTML(item?.name||"")}" required></label><label>Category<select name="category">${categoryOptions}</select></label><label>Material / Item Type<input name="materialType" value="${escapeHTML(item?.materialType||"")}" placeholder="Wood, Cord/Yarn, Hardware..."></label><label>Craft<select name="craft">${["Macramé","Crochet","Shared","Other"].map(v=>`<option value="${v}" ${item?.craft===v?"selected":""}>${v}</option>`).join("")}</select></label><fieldset class="full-width inventory-product-links"><legend>Used by Products</legend>${data.products.map(product=>`<label><input type="checkbox" name="linkedProductIds" value="${product.id}" ${(item?.linkedProductIds||[]).includes(product.id)?"checked":""}> ${escapeHTML(product.name)}</label>`).join("")}</fieldset><label>Tracking<select name="tracking"><option value="quantity" ${!isCondition?"selected":""}>Quantity</option><option value="condition" ${isCondition?"selected":""}>Condition</option></select></label><label>Restock Type<select name="restockType"><option value="purchase" ${item?.restockType==="purchase"?"selected":""}>Purchase</option><option value="make" ${item?.restockType==="make"?"selected":""}>Make</option><option value="print" ${item?.restockType==="print"?"selected":""}>Print</option></select></label><label>Quantity<input name="quantity" type="number" min="0" value="${Number(item?.quantity||0)}"></label><label>Reorder At<input name="reorderAt" type="number" min="0" value="${Number(item?.reorderAt||0)}"></label><label>Preferred Stock<input name="preferredStock" type="number" min="0" value="${Number(item?.preferredStock||0)}"></label><label>Condition<select name="condition">${["Available","Getting Low","Replace Soon","Out"].map(v=>`<option value="${v}" ${item?.condition===v?"selected":""}>${v}</option>`).join("")}</select></label><label>Supplier<input name="supplier" value="${escapeHTML(item?.supplier||"")}"></label><label>Supplier / Resource URL<input name="purchaseUrl" value="${escapeHTML(item?.purchaseUrl||item?.resourceUrl||"")}" placeholder="https://..."></label><label class="full-width">Item Photo<input id="inventoryImageInput" type="file" accept="image/*"></label><div class="full-width inventory-image-preview" id="inventoryImagePreview">${item?.imageData?`<img src="${item.imageData}" alt="">`:`<span>No photo added</span>`}</div><label class="full-width">Notes<textarea name="notes" rows="3">${escapeHTML(item?.notes||"")}</textarea></label></form>`,[{label:"Cancel"},{label:item?"Save Changes":"Add Item",kind:"primary",onClick:()=>saveInventoryItem(itemId)}]);
+    showModal(item?"Edit Inventory Item":"Add Inventory Item",`<form id="inventoryItemForm" class="inventory-editor-form"><label>Name<input name="name" value="${escapeHTML(item?.name||"")}" required></label><label>Category<select name="category">${categoryOptions}</select></label><label>Material / Item Type<input name="materialType" value="${escapeHTML(item?.materialType||"")}" placeholder="Wood, Cord/Yarn, Hardware..."></label><label>Craft<select name="craft">${["Macramé","Crochet","Shared","Other"].map(v=>`<option value="${v}" ${item?.craft===v?"selected":""}>${v}</option>`).join("")}</select></label><div class="full-width derived-product-note"><strong>Used by Products</strong><p>Calculated automatically from Product Master material and packaging connections.</p></div><label>Tracking<select name="tracking"><option value="quantity" ${!isCondition?"selected":""}>Quantity</option><option value="condition" ${isCondition?"selected":""}>Condition</option></select></label><label>Restock Type<select name="restockType"><option value="purchase" ${item?.restockType==="purchase"?"selected":""}>Purchase</option><option value="make" ${item?.restockType==="make"?"selected":""}>Make</option><option value="print" ${item?.restockType==="print"?"selected":""}>Print</option></select></label><label>Quantity<input name="quantity" type="number" min="0" value="${Number(item?.quantity||0)}"></label><label>Reorder At<input name="reorderAt" type="number" min="0" value="${Number(item?.reorderAt||0)}"></label><label>Preferred Stock<input name="preferredStock" type="number" min="0" value="${Number(item?.preferredStock||0)}"></label><label>Condition<select name="condition">${["Available","Getting Low","Replace Soon","Out"].map(v=>`<option value="${v}" ${item?.condition===v?"selected":""}>${v}</option>`).join("")}</select></label><label>Supplier<input name="supplier" value="${escapeHTML(item?.supplier||"")}"></label><label>Supplier / Resource URL<input name="purchaseUrl" value="${escapeHTML(item?.purchaseUrl||item?.resourceUrl||"")}" placeholder="https://..."></label><label class="full-width">Item Photo<input id="inventoryImageInput" type="file" accept="image/*"></label><div class="full-width inventory-image-preview" id="inventoryImagePreview">${item?.imageData?`<img src="${item.imageData}" alt="">`:`<span>No photo added</span>`}</div><label class="full-width">Notes<textarea name="notes" rows="3">${escapeHTML(item?.notes||"")}</textarea></label></form>`,[{label:"Cancel"},{label:item?"Save Changes":"Add Item",kind:"primary",onClick:()=>saveInventoryItem(itemId)}]);
     const input=document.getElementById("inventoryImageInput"); if(input) input.addEventListener("change",async()=>{const file=input.files?.[0];if(!file)return;const compressed=await compressInventoryImage(file);input.dataset.imageData=compressed;document.getElementById("inventoryImagePreview").innerHTML=`<img src="${compressed}" alt="">`;});
   }
   function compressInventoryImage(file){return new Promise((resolve,reject)=>{const reader=new FileReader();reader.onerror=reject;reader.onload=()=>{const image=new Image();image.onerror=reject;image.onload=()=>{const max=480,scale=Math.min(1,max/Math.max(image.width,image.height)),canvas=document.createElement("canvas");canvas.width=Math.max(1,Math.round(image.width*scale));canvas.height=Math.max(1,Math.round(image.height*scale));canvas.getContext("2d").drawImage(image,0,0,canvas.width,canvas.height);resolve(canvas.toDataURL("image/jpeg",.72));};image.src=reader.result;};reader.readAsDataURL(file);});}
+
+
+  function inventoryItemReferences(itemId) {
+    const products = productsUsingInventoryItem(itemId);
+    const kits = inventoryItems().filter(item => (item.components || []).some(component => component.itemId === itemId));
+    return {products,kits};
+  }
+
+  function confirmDeleteInventoryItem(itemId) {
+    const item = inventoryItemById(itemId);
+    if (!item) return;
+    const refs = inventoryItemReferences(itemId);
+    const blocked = refs.products.length || refs.kits.length;
+    if (blocked) {
+      return showModal(
+        "This item is still in use",
+        `<p><strong>${escapeHTML(item.name)}</strong> cannot be deleted until its connections are removed.</p>
+        ${refs.products.length ? `<p>Used by products: ${refs.products.map(product => escapeHTML(product.name)).join(", ")}</p>` : ""}
+        ${refs.kits.length ? `<p>Used in kit definitions: ${refs.kits.map(kit => escapeHTML(kit.name)).join(", ")}</p>` : ""}`,
+        [{label:"Close"}]
+      );
+    }
+    showModal(
+      "Delete inventory item?",
+      `<p>This permanently removes <strong>${escapeHTML(item.name)}</strong> from the catalog. Existing transaction history remains.</p>`,
+      [
+        {label:"Keep Item"},
+        {label:"Delete Item",kind:"danger",onClick:() => deleteInventoryItem(itemId)}
+      ]
+    );
+  }
+
+  function deleteInventoryItem(itemId) {
+    const item = inventoryItemById(itemId);
+    if (!item) return;
+    data.inventoryCatalog.items = data.inventoryCatalog.items.filter(entry => entry.id !== itemId);
+    data.activity.unshift({text:`Deleted inventory item: ${item.name}`,time:"Just now"});
+    saveData();
+    renderInventoryCatalog(inventoryViewState.category || "overview");
+    showToast("Inventory item deleted.");
+  }
 
   function saveInventoryItem(itemId) {
     const form = document.getElementById("inventoryItemForm");
@@ -628,7 +720,6 @@
       category: formData.get("category"),
       materialType: formData.get("materialType").trim() || "Other",
       craft: formData.get("craft"),
-      linkedProductIds: formData.getAll("linkedProductIds"),
       tracking,
       restockType: formData.get("restockType"),
       quantity: Math.max(0, Number(formData.get("quantity") || 0)),
@@ -642,9 +733,10 @@
     };
     if (existing) Object.assign(existing,updated);
     else data.inventoryCatalog.items.push(updated);
+    syncInventoryProductLinks();
     data.activity.unshift({text:`${existing ? "Updated" : "Added"} inventory item: ${updated.name}`,time:"Just now"});
     saveData();
-    renderInventoryCatalog("overview");
+    renderInventoryCatalog(inventoryViewState.category || "overview");
   }
 
   function openInventoryLink(itemId) {
@@ -746,17 +838,244 @@
   function recipeById(id){ return (window.SUW_RECIPES||[]).find(r=>r.id===id); }
   function recipeByProductId(productId){ return (window.SUW_RECIPES||[]).find(r=>r.productId===productId); }
 
+
+  function renderProductMasterLibrary() {
+    pageTitle.textContent = "Product Master";
+    setActiveNav("products");
+    viewContainer.innerHTML = `
+      <section class="page-section wide">
+        <section class="recipe-library-hero">
+          <div>
+            <p class="eyebrow">Single source of truth</p>
+            <h3>Product Master</h3>
+            <p>Define each product once: colors, recipe, materials, fabrication kit, packaging, and inventory relationships.</p>
+          </div>
+          <button class="button primary" data-action="add-product-master">+ Add Product</button>
+        </section>
+        <section class="recipe-library-grid">
+          ${productMasters().map(master => `
+            <article class="recipe-library-card">
+              <div class="recipe-card-art">${master.imageData ? `<img src="${master.imageData}" alt="">` : master.craft === "Crochet" ? "⌁" : "✦"}</div>
+              <div class="recipe-card-body">
+                <p class="eyebrow">${escapeHTML(master.craft || "Other")} · ${escapeHTML(master.status || "Active")}</p>
+                <h3>${escapeHTML(master.name)}</h3>
+                <p>${master.colors?.length || 0} color${master.colors?.length === 1 ? "" : "s"} · ${(master.materials || []).length} material connection${(master.materials || []).length === 1 ? "" : "s"}</p>
+                <div class="recipe-card-meta">
+                  <span>${master.recipeId ? "Recipe linked" : "No recipe"}</span>
+                  <span>${escapeHTML(master.packaging?.mailerType || "No mailer")}</span>
+                </div>
+                <div class="inventory-card-actions">
+                  <button class="button primary" data-action="open-product-master" data-product-id="${master.id}">Open Product</button>
+                  <button class="button secondary" data-action="open-recipe" data-recipe-id="${master.recipeId || master.id}">Open Recipe</button>
+                </div>
+              </div>
+            </article>`).join("")}
+        </section>
+      </section>`;
+  }
+
+  function openProductMaster(productId) {
+    const master = productMasterById(productId);
+    if (!master) return showToast("Product not found.");
+    const recipe = recipeById(master.recipeId || master.id);
+    pageTitle.textContent = "Product Master";
+    setActiveNav("products");
+    viewContainer.innerHTML = `
+      <section class="page-section wide">
+        <button class="back-button" data-view="products">← Back to Product Master</button>
+        <section class="product-master-hero">
+          <div>
+            <p class="eyebrow">${escapeHTML(master.craft || "Other")} · ${escapeHTML(master.status || "Active")}</p>
+            <h3>${escapeHTML(master.name)}</h3>
+            <p>${escapeHTML(master.shortName || master.name)}</p>
+          </div>
+          <div class="product-master-actions">
+            <button class="button secondary" data-action="edit-product-master" data-product-id="${master.id}">Edit Product</button>
+            <button class="button primary" data-action="open-recipe" data-recipe-id="${master.recipeId || master.id}">Open Workshop Recipe</button>
+          </div>
+        </section>
+
+        <section class="product-master-grid">
+          <article class="panel">
+            <div class="panel-heading"><div><p class="eyebrow">Sellable options</p><h3>Colors</h3></div></div>
+            <div class="color-pill-list">${(master.colors || []).map(color => `<span>${escapeHTML(color)}</span>`).join("") || "<p>No colors added.</p>"}</div>
+          </article>
+          <article class="panel">
+            <div class="panel-heading"><div><p class="eyebrow">Permanent instructions</p><h3>Workshop Recipe</h3></div></div>
+            <p>${recipe ? `Linked to <strong>${escapeHTML(recipe.title)}</strong>, recipe v${escapeHTML(recipe.version)}` : "No Workshop Recipe is linked."}</p>
+          </article>
+        </section>
+
+        <section class="panel product-master-section">
+          <div class="panel-heading"><div><p class="eyebrow">Bill of materials</p><h3>Materials Used by This Product</h3></div>
+          <button class="button secondary small" data-action="edit-product-master" data-product-id="${master.id}">Edit Materials</button></div>
+          <div class="product-material-table">
+            <div class="product-material-head"><span>Inventory Item</span><span>Qty</span><span>Role</span><span>Loose</span><span>In Kits</span></div>
+            ${(master.materials || []).map(row => {
+              const item = inventoryItemById(row.inventoryItemId);
+              return `<div class="product-material-row">
+                <strong>${escapeHTML(item?.name || row.inventoryItemId)}</strong>
+                <span>${Number(row.quantity || 0)}</span>
+                <span>${escapeHTML(row.role || "raw")}</span>
+                <span>${item?.tracking === "quantity" ? Number(item.quantity || 0) : escapeHTML(item?.condition || "—")}</span>
+                <span>${item?.tracking === "quantity" ? allocatedInKits(item.id) : "—"}</span>
+              </div>`;
+            }).join("") || `<p>No materials connected.</p>`}
+          </div>
+        </section>
+
+        <section class="product-master-grid">
+          <article class="panel">
+            <div class="panel-heading"><div><p class="eyebrow">Fabrication kit</p><h3>Kit Definition</h3></div></div>
+            ${renderProductKitDefinition(master)}
+          </article>
+          <article class="panel">
+            <div class="panel-heading"><div><p class="eyebrow">Packing rules</p><h3>Packaging</h3></div></div>
+            <div class="product-packaging-list">
+              <div><strong>Mailer</strong><span>${escapeHTML(master.packaging?.mailerType || "Not set")}</span></div>
+              <div><strong>Product tag</strong><span>${escapeHTML(inventoryItemById(master.packaging?.productTagInventoryId)?.name || "Not set")}</span></div>
+              <div><strong>Care sheet</strong><span>${escapeHTML(inventoryItemById(master.packaging?.careSheetInventoryId)?.name || "Not set")}</span></div>
+              <div><strong>Company sticker</strong><span>${escapeHTML(inventoryItemById(master.packaging?.companyStickerInventoryId)?.name || "Not set")}</span></div>
+            </div>
+            ${master.packaging?.notes ? `<p class="modal-note">${escapeHTML(master.packaging.notes)}</p>` : ""}
+          </article>
+        </section>
+      </section>`;
+  }
+
+  function renderProductKitDefinition(master) {
+    const kit = inventoryItemById(master.kitDefinition?.inventoryItemId);
+    const contents = master.kitDefinition?.contents || [];
+    const separate = master.kitDefinition?.separateMaterials || [];
+    return `
+      <p><strong>${escapeHTML(kit?.name || "No kit inventory item linked")}</strong></p>
+      <div class="kit-component-list">
+        ${contents.map(row => {
+          const item = inventoryItemById(row.inventoryItemId);
+          return `<div class="kit-component-row"><strong>${escapeHTML(item?.name || row.inventoryItemId)}</strong><span>${row.quantity} per kit</span></div>`;
+        }).join("") || "<p>No kit contents defined.</p>"}
+      </div>
+      ${separate.length ? `<h4>Stored Separately</h4><div class="kit-component-list">${separate.map(row => {
+        const item = inventoryItemById(row.inventoryItemId);
+        return `<div class="kit-component-row"><strong>${escapeHTML(item?.name || row.inventoryItemId)}</strong><span>${row.quantity} per finished item</span></div>`;
+      }).join("")}</div>` : ""}`;
+  }
+
+  function showProductMasterEditor(productId = null) {
+    const master = productId ? productMasterById(productId) : null;
+    const recipes = window.SUW_RECIPES || [];
+    const inventoryOptions = inventoryItems().map(item => `<option value="${item.id}">${escapeHTML(item.name)}</option>`).join("");
+    showModal(
+      master ? "Edit Product Master" : "Add Product",
+      `<form id="productMasterForm" class="product-master-form">
+        <label>Product Name<input name="name" value="${escapeHTML(master?.name || "")}" required></label>
+        <label>Short Name<input name="shortName" value="${escapeHTML(master?.shortName || "")}"></label>
+        <label>Craft<select name="craft">${["Macramé","Crochet","Other"].map(value => `<option value="${value}" ${master?.craft === value ? "selected" : ""}>${value}</option>`).join("")}</select></label>
+        <label>Status<select name="status">${["Active","Coming Soon","Archived"].map(value => `<option value="${value}" ${master?.status === value ? "selected" : ""}>${value}</option>`).join("")}</select></label>
+        <label class="full-width">Colors
+          <input name="colors" value="${escapeHTML((master?.colors || []).join(", "))}" placeholder="Natural/Beige, White, Black">
+        </label>
+        <label>Workshop Recipe<select name="recipeId"><option value="">No recipe</option>${recipes.map(recipe => `<option value="${recipe.id}" ${master?.recipeId === recipe.id ? "selected" : ""}>${escapeHTML(recipe.title)}</option>`).join("")}</select></label>
+        <label>Mailer Type<input name="mailerType" value="${escapeHTML(master?.packaging?.mailerType || "")}"></label>
+        <label>Product Tag<select name="productTagInventoryId"><option value="">Not set</option>${inventoryOptions}</select></label>
+        <label>Care Sheet<select name="careSheetInventoryId"><option value="">Not set</option>${inventoryOptions}</select></label>
+        <label>Company Sticker<select name="companyStickerInventoryId"><option value="">Not set</option>${inventoryOptions}</select></label>
+        <label class="full-width">Packaging Notes<textarea name="packagingNotes" rows="3">${escapeHTML(master?.packaging?.notes || "")}</textarea></label>
+
+        <fieldset class="full-width product-material-editor">
+          <legend>Materials</legend>
+          <div id="productMaterialRows"></div>
+          <button type="button" class="button secondary small" id="addProductMaterial">+ Add Material</button>
+        </fieldset>
+      </form>`,
+      [
+        {label:"Cancel"},
+        {label:master ? "Save Product" : "Add Product",kind:"primary",onClick:() => saveProductMaster(productId)}
+      ]
+    );
+
+    const form = document.getElementById("productMasterForm");
+    if (master) {
+      form.productTagInventoryId.value = master.packaging?.productTagInventoryId || "";
+      form.careSheetInventoryId.value = master.packaging?.careSheetInventoryId || "";
+      form.companyStickerInventoryId.value = master.packaging?.companyStickerInventoryId || "";
+    }
+
+    const rows = document.getElementById("productMaterialRows");
+    const initial = master?.materials?.length ? master.materials : [];
+    initial.forEach(row => addProductMaterialRow(row));
+    document.getElementById("addProductMaterial").addEventListener("click",() => addProductMaterialRow());
+  }
+
+  function addProductMaterialRow(value = {}) {
+    const container = document.getElementById("productMaterialRows");
+    const row = document.createElement("div");
+    row.className = "product-material-edit-row";
+    row.innerHTML = `
+      <select class="pm-item">${inventoryItems().map(item => `<option value="${item.id}">${escapeHTML(item.name)}</option>`).join("")}</select>
+      <input class="pm-qty" type="number" min="0.01" step="0.01" value="${Number(value.quantity || 1)}">
+      <select class="pm-role">
+        ${["raw","kit","separate","packaging"].map(role => `<option value="${role}" ${value.role === role ? "selected" : ""}>${role}</option>`).join("")}
+      </select>
+      <button type="button" class="remove-line">×</button>`;
+    row.querySelector(".pm-item").value = value.inventoryItemId || inventoryItems()[0]?.id || "";
+    row.querySelector(".remove-line").addEventListener("click",() => row.remove());
+    container.appendChild(row);
+  }
+
+  function saveProductMaster(productId) {
+    const form = document.getElementById("productMasterForm");
+    if (!form) return;
+    const fd = new FormData(form);
+    const rows = [...document.querySelectorAll(".product-material-edit-row")].map(row => ({
+      inventoryItemId: row.querySelector(".pm-item").value,
+      quantity: Number(row.querySelector(".pm-qty").value || 1),
+      role: row.querySelector(".pm-role").value,
+      colorSpecific: false
+    }));
+    const existing = productId ? productMasterById(productId) : null;
+    const id = existing?.id || fd.get("name").trim().toLowerCase().replace(/[^a-z0-9]+/g,"-").replace(/^-|-$/g,"") || uid("product");
+    const updated = {
+      ...(existing || {}),
+      id,
+      name: fd.get("name").trim(),
+      shortName: fd.get("shortName").trim() || fd.get("name").trim(),
+      craft: fd.get("craft"),
+      status: fd.get("status"),
+      colors: fd.get("colors").split(",").map(value => value.trim()).filter(Boolean),
+      recipeId: fd.get("recipeId"),
+      materials: rows,
+      packaging: {
+        ...(existing?.packaging || {}),
+        mailerType: fd.get("mailerType").trim(),
+        productTagInventoryId: fd.get("productTagInventoryId"),
+        careSheetInventoryId: fd.get("careSheetInventoryId"),
+        companyStickerInventoryId: fd.get("companyStickerInventoryId"),
+        notes: fd.get("packagingNotes").trim()
+      },
+      kitDefinition: existing?.kitDefinition || {inventoryItemId:"",contents:[],separateMaterials:[]}
+    };
+    if (existing) Object.assign(existing,updated);
+    else data.productMasters.push(updated);
+    data.products = data.productMasters.map(master => ({id:master.id,name:master.name,colors:master.colors || []}));
+    syncInventoryProductLinks();
+    data.activity.unshift({text:`${existing ? "Updated" : "Added"} product: ${updated.name}`,time:"Just now"});
+    saveData();
+    openProductMaster(updated.id);
+  }
+
+
   function renderRecipeLibrary(){
-    pageTitle.textContent="Workshop Recipes"; setActiveNav("products");
+    pageTitle.textContent="Product Master"; setActiveNav("products");
     const recipes=window.SUW_RECIPES||[];
-    viewContainer.innerHTML=`<section class="page-section wide"><section class="recipe-library-hero"><div><p class="eyebrow">Your digital cut sheets</p><h3>Workshop Recipes</h3><p>Keep every measurement, pattern, milestone, quality check, and workshop tip in one permanent place.</p></div><div class="recipe-hero-mark">SU</div></section><section class="recipe-library-grid">${recipes.map(r=>`<article class="recipe-library-card"><div class="recipe-card-art">${r.category==="Crochet"?"⌁":"✦"}</div><div class="recipe-card-body"><p class="eyebrow">${escapeHTML(r.category)} · Recipe v${escapeHTML(r.version)}</p><h3>${escapeHTML(r.title)}</h3><p>${escapeHTML(r.summary)}</p><div class="recipe-card-meta"><span>${escapeHTML(r.estimatedTime)}</span><span>${escapeHTML(r.status)}</span></div><button class="button primary" data-action="open-recipe" data-recipe-id="${r.id}">Open Recipe</button></div></article>`).join("")}</section></section>`;
+    viewContainer.innerHTML=`<section class="page-section wide"><section class="recipe-library-hero"><div><p class="eyebrow">Your digital cut sheets</p><h3>Product Master</h3><p>Keep every measurement, pattern, milestone, quality check, and workshop tip in one permanent place.</p></div><div class="recipe-hero-mark">SU</div></section><section class="recipe-library-grid">${recipes.map(r=>`<article class="recipe-library-card"><div class="recipe-card-art">${r.category==="Crochet"?"⌁":"✦"}</div><div class="recipe-card-body"><p class="eyebrow">${escapeHTML(r.category)} · Recipe v${escapeHTML(r.version)}</p><h3>${escapeHTML(r.title)}</h3><p>${escapeHTML(r.summary)}</p><div class="recipe-card-meta"><span>${escapeHTML(r.estimatedTime)}</span><span>${escapeHTML(r.status)}</span></div><button class="button primary" data-action="open-recipe" data-recipe-id="${r.id}">Open Recipe</button></div></article>`).join("")}</section></section>`;
   }
 
   function openRecipe(recipeId,orderId=null,itemId=null){
     const r=recipeById(recipeId); if(!r)return showToast("Recipe not found.");
     pageTitle.textContent="Workshop Recipe"; setActiveNav("products");
     const order=orderId?data.orders.find(o=>o.id===orderId):null; const item=order?.items.find(i=>i.id===itemId);
-    viewContainer.innerHTML=`<section class="page-section wide">${orderId ? `<button class="back-button" data-action="return-to-order" data-order-id="${orderId}" data-item-id="${itemId}">← Return to This Order</button>` : `<button class="back-button" data-view="products">← Back to Workshop Recipes</button>`}<section class="recipe-view-hero"><div><p class="eyebrow">${escapeHTML(r.category)} · Master Recipe v${escapeHTML(r.version)}</p><h3>${escapeHTML(r.title)}</h3><p>${escapeHTML(r.summary)}</p>${item?'<div class="recipe-order-context">Opened for an active production traveler.</div>':''}</div><div class="recipe-hero-actions"><button class="button secondary" data-action="recipe-focus" data-recipe-id="${r.id}">Focus View</button><button class="button primary" data-action="print-recipe" data-recipe-id="${r.id}">Print Cut Sheet</button></div></section><section class="recipe-overview-grid">${[['Estimated Time',r.estimatedTime],['Difficulty',r.difficulty],['Last Revised',r.lastRevised],['Recipe Status',r.status]].map(([a,b])=>`<article class="summary-card"><strong>${escapeHTML(b)}</strong><span>${escapeHTML(a)}</span></article>`).join('')}</section><section class="recipe-section panel"><div class="panel-heading"><div><p class="eyebrow">Choose the path</p><h3>Production Methods</h3></div></div><div class="recipe-method-grid">${r.methods.map(m=>`<article class="recipe-method-card"><strong>${escapeHTML(m.title)}</strong><p>${escapeHTML(m.description)}</p></article>`).join('')}</div></section><section class="recipe-section panel"><div class="panel-heading"><div><p class="eyebrow">At a glance</p><h3>Quick Reference</h3></div></div><div class="quick-reference-grid">${r.quickReference.map(q=>`<article class="quick-reference-card"><span>${escapeHTML(q.label)}</span><strong>${escapeHTML(q.value)}</strong><small>${escapeHTML(q.note||'')}</small></article>`).join('')}</div></section><section class="recipe-two-column"><article class="recipe-section panel"><div class="panel-heading"><div><p class="eyebrow">What you need</p><h3>Materials</h3></div></div><div class="recipe-list">${r.materials.map(m=>`<div><strong>${escapeHTML(m.name)}</strong><span>${escapeHTML(m.quantity)}</span></div>`).join('')}</div></article><article class="recipe-section panel"><div class="panel-heading"><div><p class="eyebrow">Worktable</p><h3>Tools</h3></div></div><div class="recipe-list simple">${r.tools.map(t=>`<div><strong>${escapeHTML(t)}</strong></div>`).join('')}</div></article></section><section class="recipe-section"><div class="section-heading"><p class="eyebrow">Build from scratch</p><h3>Production Stages</h3><p>Open details only when needed. Check off the meaningful milestone.</p></div><div class="recipe-stage-list">${r.stages.map((st,idx)=>renderRecipeStage(r,st,idx,orderId,itemId)).join('')}</div></section><section class="recipe-wisdom"><div><p class="eyebrow">Lessons from the workbench</p><h3>Workshop Wisdom</h3></div><div class="wisdom-list">${r.wisdom.map(w=>`<blockquote>${escapeHTML(w)}</blockquote>`).join('')}</div></section><section class="recipe-two-column"><article class="recipe-section panel"><div class="panel-heading"><div><p class="eyebrow">Before mailing</p><h3>Packing</h3></div></div><ol class="recipe-numbered-list">${r.packing.map(x=>`<li>${escapeHTML(x)}</li>`).join('')}</ol></article><article class="recipe-section panel"><div class="panel-heading"><div><p class="eyebrow">Master record</p><h3>Recipe History</h3></div></div><div class="recipe-history">${r.history.map(h=>`<div><strong>v${escapeHTML(h.version)} · ${escapeHTML(h.date)}</strong><p>${escapeHTML(h.changes)}</p></div>`).join('')}</div></article></section></section>`;
+    viewContainer.innerHTML=`<section class="page-section wide">${orderId ? `<button class="back-button" data-action="return-to-order" data-order-id="${orderId}" data-item-id="${itemId}">← Return to This Order</button>` : `<button class="back-button" data-view="products">← Back to Product Master</button>`}<section class="recipe-view-hero"><div><p class="eyebrow">${escapeHTML(r.category)} · Master Recipe v${escapeHTML(r.version)}</p><h3>${escapeHTML(r.title)}</h3><p>${escapeHTML(r.summary)}</p>${item?'<div class="recipe-order-context">Opened for an active production traveler.</div>':''}</div><div class="recipe-hero-actions"><button class="button secondary" data-action="recipe-focus" data-recipe-id="${r.id}">Focus View</button><button class="button primary" data-action="print-recipe" data-recipe-id="${r.id}">Print Cut Sheet</button></div></section><section class="recipe-overview-grid">${[['Estimated Time',r.estimatedTime],['Difficulty',r.difficulty],['Last Revised',r.lastRevised],['Recipe Status',r.status]].map(([a,b])=>`<article class="summary-card"><strong>${escapeHTML(b)}</strong><span>${escapeHTML(a)}</span></article>`).join('')}</section><section class="recipe-section panel"><div class="panel-heading"><div><p class="eyebrow">Choose the path</p><h3>Production Methods</h3></div></div><div class="recipe-method-grid">${r.methods.map(m=>`<article class="recipe-method-card"><strong>${escapeHTML(m.title)}</strong><p>${escapeHTML(m.description)}</p></article>`).join('')}</div></section><section class="recipe-section panel"><div class="panel-heading"><div><p class="eyebrow">At a glance</p><h3>Quick Reference</h3></div></div><div class="quick-reference-grid">${r.quickReference.map(q=>`<article class="quick-reference-card"><span>${escapeHTML(q.label)}</span><strong>${escapeHTML(q.value)}</strong><small>${escapeHTML(q.note||'')}</small></article>`).join('')}</div></section><section class="recipe-two-column"><article class="recipe-section panel"><div class="panel-heading"><div><p class="eyebrow">What you need</p><h3>Materials</h3></div></div><div class="recipe-list">${r.materials.map(m=>`<div><strong>${escapeHTML(m.name)}</strong><span>${escapeHTML(m.quantity)}</span></div>`).join('')}</div></article><article class="recipe-section panel"><div class="panel-heading"><div><p class="eyebrow">Worktable</p><h3>Tools</h3></div></div><div class="recipe-list simple">${r.tools.map(t=>`<div><strong>${escapeHTML(t)}</strong></div>`).join('')}</div></article></section><section class="recipe-section"><div class="section-heading"><p class="eyebrow">Build from scratch</p><h3>Production Stages</h3><p>Open details only when needed. Check off the meaningful milestone.</p></div><div class="recipe-stage-list">${r.stages.map((st,idx)=>renderRecipeStage(r,st,idx,orderId,itemId)).join('')}</div></section><section class="recipe-wisdom"><div><p class="eyebrow">Lessons from the workbench</p><h3>Workshop Wisdom</h3></div><div class="wisdom-list">${r.wisdom.map(w=>`<blockquote>${escapeHTML(w)}</blockquote>`).join('')}</div></section><section class="recipe-two-column"><article class="recipe-section panel"><div class="panel-heading"><div><p class="eyebrow">Before mailing</p><h3>Packing</h3></div></div><ol class="recipe-numbered-list">${r.packing.map(x=>`<li>${escapeHTML(x)}</li>`).join('')}</ol></article><article class="recipe-section panel"><div class="panel-heading"><div><p class="eyebrow">Master record</p><h3>Recipe History</h3></div></div><div class="recipe-history">${r.history.map(h=>`<div><strong>v${escapeHTML(h.version)} · ${escapeHTML(h.date)}</strong><p>${escapeHTML(h.changes)}</p></div>`).join('')}</div></article></section></section>`;
   }
 
   function renderRecipeStage(r,st,idx,orderId,itemId){ const order=orderId?data.orders.find(o=>o.id===orderId):null; const item=order?.items.find(i=>i.id===itemId); const checked=Boolean(item?.recipeStageChecks?.[st.id]); return `<article class="recipe-stage-card"><div class="recipe-stage-heading"><div class="recipe-stage-number">${idx+1}</div><div><p class="eyebrow">Stage ${idx+1}</p><h3>${escapeHTML(st.title)}</h3></div>${item?`<label class="recipe-checkpoint ${checked?'checked':''}"><input type="checkbox" data-action="recipe-stage-check" data-order-id="${orderId}" data-item-id="${itemId}" data-stage-id="${st.id}" ${checked?'checked':''}><span>${checked?'✓':''}</span>${escapeHTML(st.checkpoint)}</label>`:`<span class="badge status">${escapeHTML(st.checkpoint)}</span>`}</div><div class="recipe-stage-quick">${st.quick.map(x=>`<span>${escapeHTML(x)}</span>`).join('')}</div><details><summary>Show Detailed Instructions</summary><ol>${st.instructions.map(x=>`<li>${escapeHTML(x)}</li>`).join('')}</ol></details></article>`; }
@@ -1613,6 +1932,9 @@
     if (!button) return;
     const {action,orderId,itemId,filter,tab,link}=button.dataset;
     if (action==="new-order") showNewOrder();
+    if (action==="open-product-master") openProductMaster(button.dataset.productId);
+    if (action==="edit-product-master") showProductMasterEditor(button.dataset.productId);
+    if (action==="add-product-master") showProductMasterEditor();
     if (action==="inventory-category") { inventoryViewState={category:button.dataset.category,search:"",craft:"All",materialType:"All",stock:"All",sort:"name-asc",group:"none"}; renderInventoryCatalog(button.dataset.category); }
     if (action==="adjust-inventory") adjustInventory(button.dataset.itemId,button.dataset.delta);
     if (action==="edit-inventory-item") showInventoryItemEditor(button.dataset.itemId);
