@@ -47,7 +47,7 @@
 - Enforce paper towel holder mailing rules
 - Separate tags, care sheets, stickers, labels, and packing slips by package
 
-## Version 0.5.0 — Inventory Catalog — Complete
+## Version 0.5.1 — Inventory Catalog — Complete
 
 - Raw materials
 - Fabrication kits by product and color

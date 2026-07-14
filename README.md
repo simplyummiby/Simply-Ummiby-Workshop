@@ -1,74 +1,27 @@
 # Simply Ummiby Workshop
 
-**Version 0.5.0**
+**Version 0.5.1**
 
-Version 0.5.0 turns Inventory into a true workshop catalog.
+Version 0.5.1 improves how inventory is browsed, filtered, sorted, grouped, and recognized visually.
 
-## Inventory Catalog
+## Inventory landing page
 
-Inventory is now organized into:
+The broad quantity summary cards have been removed. The overview now focuses on low or empty stock, active-order material needs, and clear category launchers.
 
-- Raw Materials
-- Fabrication Kits
-- Finished Inventory
-- Packaging Supplies
-- Print & Cricut Supplies
-- Restock Center
+## Raw Materials
 
-## Record what is on hand
+Raw Materials now uses a table-style view with item photo, item name, type, craft, on-hand amount or condition, reorder level, stock status, and quick actions.
 
-Quantity-tracked items include:
+Filters include search, craft, material/item type, and stock level. Sorting includes alphabetical order, quantity, and stock urgency.
 
-- on-hand quantity,
-- reorder threshold,
-- preferred stock,
-- purchase / make / print category,
-- supplier,
-- supplier or resource link,
-- notes.
+## Fabrication Kits and Finished Inventory
 
-Cord can still be tracked by condition:
+These retain cards and now support search, filters, sorting, and grouping by product, color, or stock level.
 
-- Available
-- Getting Low
-- Replace Soon
-- Out
+## Packaging and Print Supplies
 
-## Quick adjustments
+These use the compact table view.
 
-Each quantity item has minus and plus controls for quick stock corrections.
+## Optional photos
 
-Use **Edit Details** to change:
-
-- name,
-- category,
-- tracking method,
-- quantity,
-- reorder threshold,
-- preferred stock,
-- supplier,
-- URL,
-- notes.
-
-New inventory items can be added directly inside the app.
-
-## Restock Center
-
-The Restock Center separates:
-
-- Purchase to Restock
-- Make to Restock
-- Print to Restock
-- Materials needed for current active orders
-
-## Production Planning integration
-
-Production Planning now reads recorded quantities for:
-
-- matching fabrication kits,
-- matching finished products,
-- wooden rings,
-- paper towel dowels,
-- end caps.
-
-This release establishes counted inventory. Automatic deductions when kits are created, items are assigned, or packages are completed remain planned for later refinement.
+Inventory items can have an optional uploaded image. Images are resized and compressed before local storage.

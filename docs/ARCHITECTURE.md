@@ -1,6 +1,6 @@
 # Architecture
 
-## Version 0.5.0
+## Version 0.5.1
 
 Simply Ummiby Workshop remains a static, local-first web application.
 
@@ -109,4 +109,4 @@ The working catalog is persisted in `data.inventoryCatalog` and contains:
 - supplier / resource details,
 - optional product and color links.
 
-Version 0.5.0 migrates legacy inventory quantities into matching catalog records.
+Version 0.5.1 migrates legacy inventory quantities into matching catalog records.

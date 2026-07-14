@@ -91,7 +91,7 @@ Working in Version 0.4.1:
 
 ## Inventory Catalog
 
-Working in Version 0.5.0:
+Working in Version 0.5.1:
 
 - Raw Materials
 - Fabrication Kits
