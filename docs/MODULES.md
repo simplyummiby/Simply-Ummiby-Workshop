@@ -91,7 +91,7 @@ Working in Version 0.4.1:
 
 ## Inventory Catalog
 
-Working in Version 0.5.1:
+Working in Version 0.5.2:
 
 - Raw Materials
 - Fabrication Kits
@@ -105,3 +105,8 @@ Working in Version 0.5.1:
 - Purchase / Make / Print restock center
 - Active-order material needs
 - Production Planning quantity lookups
+
+
+## Dialog System
+
+Version 0.5.2 provides wide, responsive dialogs with a fixed heading, scrollable body, and always-visible action footer. This shared presentation applies to inventory editing and confirmation dialogs.

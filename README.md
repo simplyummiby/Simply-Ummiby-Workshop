@@ -1,27 +1,25 @@
 # Simply Ummiby Workshop
 
-**Version 0.5.1**
+**Version 0.5.2**
 
-Version 0.5.1 improves how inventory is browsed, filtered, sorted, grouped, and recognized visually.
+Version 0.5.2 improves long editing forms throughout the Workshop.
 
-## Inventory landing page
+## Wider dialogs
 
-The broad quantity summary cards have been removed. The overview now focuses on low or empty stock, active-order material needs, and clear category launchers.
+Application dialogs can now expand to a comfortable desktop width, making the two-column inventory form easier to read and edit.
 
-## Raw Materials
+## Sticky actions
 
-Raw Materials now uses a table-style view with item photo, item name, type, craft, on-hand amount or condition, reorder level, stock status, and quick actions.
+Modal dialogs now have:
 
-Filters include search, craft, material/item type, and stock level. Sorting includes alphabetical order, quantity, and stock urgency.
+- a sticky heading,
+- a scrollable content area,
+- a sticky action footer.
 
-## Fabrication Kits and Finished Inventory
+The **Save Changes** and **Cancel** buttons remain visible at the bottom of the dialog while the form itself scrolls.
 
-These retain cards and now support search, filters, sorting, and grouping by product, color, or stock level.
+## Responsive behavior
 
-## Packaging and Print Supplies
+On smaller screens, dialogs use nearly the full viewport and form fields collapse into a single column.
 
-These use the compact table view.
-
-## Optional photos
-
-Inventory items can have an optional uploaded image. Images are resized and compressed before local storage.
+All inventory quantities, filters, images, supplier information, and order data from Version 0.5.1 are preserved.

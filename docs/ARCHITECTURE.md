@@ -1,6 +1,6 @@
 # Architecture
 
-## Version 0.5.1
+## Version 0.5.2
 
 Simply Ummiby Workshop remains a static, local-first web application.
 
@@ -109,4 +109,9 @@ The working catalog is persisted in `data.inventoryCatalog` and contains:
 - supplier / resource details,
 - optional product and color links.
 
-Version 0.5.1 migrates legacy inventory quantities into matching catalog records.
+Version 0.5.2 migrates legacy inventory quantities into matching catalog records.
+
+
+## Dialog layout
+
+The shared modal is a three-row grid: heading, scrollable body, and action footer. The modal itself is constrained to the viewport so long forms never push the Save action off screen.
