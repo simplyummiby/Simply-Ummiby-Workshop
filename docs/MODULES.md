@@ -110,3 +110,17 @@ Working in Version 0.5.2:
 ## Dialog System
 
 Version 0.5.2 provides wide, responsive dialogs with a fixed heading, scrollable body, and always-visible action footer. This shared presentation applies to inventory editing and confirmation dialogs.
+
+
+## Materials & Kit Transactions
+
+Working in Version 0.5.3:
+
+- Raw-material product links
+- Bill-of-material-style fabrication-kit components
+- Loose versus allocated quantities
+- Build Kits
+- Break Apart Kits
+- Prepared cord-set components
+- Reason-based stock adjustments
+- Recent transaction history

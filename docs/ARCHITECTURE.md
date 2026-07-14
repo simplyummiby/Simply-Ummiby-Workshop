@@ -1,6 +1,6 @@
 # Architecture
 
-## Version 0.5.2
+## Version 0.5.3
 
 Simply Ummiby Workshop remains a static, local-first web application.
 
@@ -115,3 +115,16 @@ Version 0.5.2 migrates legacy inventory quantities into matching catalog records
 ## Dialog layout
 
 The shared modal is a three-row grid: heading, scrollable body, and action footer. The modal itself is constrained to the viewport so long forms never push the Save action off screen.
+
+
+## Inventory transactions and kit allocation
+
+Fabrication kits define `components` as inventory item IDs and quantities.
+
+Building a kit transfers quantities from loose component records into the kit count. Allocation is derived from:
+
+`kit quantity × component quantity`
+
+Breaking a kit reverses the transfer.
+
+Inventory movements are retained in `data.inventoryTransactions`. Product relationships are stored in `linkedProductIds`.

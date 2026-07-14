@@ -987,3 +987,89 @@ textarea { resize: vertical; }
     min-width: 0;
   }
 }
+
+
+/* Version 0.5.3 Materials and Kit Transactions */
+.inventory-data-table-v053 {
+  grid-template-columns:minmax(250px,2fr) .85fr 1.35fr .55fr .55fr .65fr .65fr 1.15fr;
+}
+.table-secondary { display:block; color:var(--muted); margin-top:3px; }
+.product-link-pill {
+  display:inline-block;
+  padding:4px 7px;
+  margin:2px 3px 2px 0;
+  border-radius:999px;
+  background:var(--rose-100);
+  color:var(--rose-700);
+  font-size:.7rem;
+  font-weight:800;
+}
+.kit-allocation-note {
+  margin-top:13px;
+  padding:11px;
+  border-radius:12px;
+  background:var(--rose-50);
+  border:1px solid var(--rose-200);
+}
+.kit-allocation-note strong,
+.kit-allocation-note span { display:block; }
+.kit-allocation-note span { margin-top:5px; color:var(--muted); font-size:.8rem; line-height:1.45; }
+.inventory-product-links {
+  border:1px solid var(--line);
+  border-radius:13px;
+  padding:12px;
+}
+.inventory-product-links legend { color:var(--charcoal); font-weight:800; padding:0 5px; }
+.inventory-product-links label {
+  display:flex;
+  grid-template-columns:none;
+  align-items:center;
+  gap:8px;
+  font-weight:650;
+  margin:7px 0;
+}
+.inventory-product-links input { width:auto; }
+.kit-component-list,
+.transaction-shortage-list { display:grid; gap:8px; margin:14px 0; }
+.kit-component-row,
+.transaction-shortage-list > div {
+  display:flex;
+  justify-content:space-between;
+  gap:12px;
+  padding:10px;
+  border:1px solid var(--line);
+  border-radius:11px;
+  background:var(--rose-50);
+}
+.kit-component-row span,
+.transaction-shortage-list span { color:var(--muted); font-size:.82rem; }
+.modal-note { color:var(--muted); font-size:.86rem; }
+.stock-adjustment-form { display:grid; gap:13px; }
+.inventory-transactions { margin-top:20px; }
+.transaction-list { display:grid; gap:8px; }
+.transaction-row {
+  display:flex;
+  justify-content:space-between;
+  gap:14px;
+  align-items:center;
+  padding:11px 13px;
+  border:1px solid var(--line);
+  border-radius:12px;
+}
+.transaction-row strong,
+.transaction-row span { display:block; }
+.transaction-row span { color:var(--muted); font-size:.8rem; margin-top:3px; }
+.transaction-quantity { font-weight:900; font-size:1.05rem; }
+.transaction-quantity.positive { color:var(--success); }
+.transaction-quantity.negative { color:var(--danger); }
+
+@media (max-width:1100px) {
+  .inventory-data-table-v053 { grid-template-columns:minmax(220px,2fr) 1fr 1fr .7fr .7fr .8fr 1fr; }
+  .inventory-data-table-v053 > :nth-child(2) { display:none; }
+}
+@media (max-width:850px) {
+  .inventory-data-table-v053 { grid-template-columns:1fr 1fr; }
+  .inventory-data-table-v053 > * { display:block !important; }
+  .inventory-data-table-v053 .inventory-name-cell,
+  .inventory-data-table-v053 .inventory-row-actions { grid-column:1 / -1; }
+}

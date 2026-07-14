@@ -86,3 +86,13 @@ A stable local-first workshop management system ready for everyday use.
 - Build fabrication kits from raw materials
 - Packaging and print-supply deductions
 - Undo recent inventory transactions
+
+
+## Version 0.5.3 — Materials & Kit Transactions — Complete
+
+- Link raw materials to products
+- Distinguish loose, allocated, and total owned
+- Build complete kits from loose components
+- Break kits apart and return components
+- Reason-based stock adjustments
+- Inventory transaction history

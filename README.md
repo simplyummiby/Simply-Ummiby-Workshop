@@ -1,25 +1,71 @@
 # Simply Ummiby Workshop
 
-**Version 0.5.2**
+**Version 0.5.3**
 
-Version 0.5.2 improves long editing forms throughout the Workshop.
+Version 0.5.3 connects raw materials to products and introduces trustworthy fabrication-kit transactions.
 
-## Wider dialogs
+## Raw materials and products
 
-Application dialogs can now expand to a comfortable desktop width, making the two-column inventory form easier to read and edit.
+Raw-material records can now be linked to one or more products from the inventory editor.
 
-## Sticky actions
+The Raw Materials table shows:
 
-Modal dialogs now have:
+- loose quantity,
+- quantity allocated inside complete fabrication kits,
+- total physically owned,
+- products that use the material.
 
-- a sticky heading,
-- a scrollable content area,
-- a sticky action footer.
+A component is never counted as both loose inventory and kit inventory.
 
-The **Save Changes** and **Cancel** buttons remain visible at the bottom of the dialog while the form itself scrolls.
+## Fabrication-kit contents
 
-## Responsive behavior
+The initial kit recipes are:
 
-On smaller screens, dialogs use nearly the full viewport and form fields collapse into a single column.
+### Natural/Beige Paper Towel Holder Kit
 
-All inventory quantities, filters, images, supplier information, and order data from Version 0.5.1 are preserved.
+- 1 prepared paper towel holder cord set
+- 1 wooden ring
+- 2 end caps
+- paper towel dowel remains separate
+
+### Natural/Beige Toilet Paper Holder Kit
+
+- 1 prepared toilet paper holder cord set
+- 1 wooden ring
+
+Prepared cord sets are quantity-tracked raw/prepared components.
+
+## Build Kits
+
+Building kits:
+
+1. checks loose component availability,
+2. deducts the required loose components,
+3. increases complete kit inventory,
+4. records every movement in inventory history.
+
+## Break Apart Kits
+
+Breaking a kit:
+
+1. decreases complete kit inventory,
+2. returns all listed components to loose inventory,
+3. records the transaction.
+
+Only complete kits count as fabrication-kit inventory.
+
+## Stock adjustments
+
+Use **Adjust** for broken, damaged, used, returned, received, or corrected stock. Inventory cannot go below zero.
+
+## Transaction history
+
+The Inventory overview includes recent movement history for:
+
+- quick quantity changes,
+- kit building,
+- kit breakdown,
+- damaged items,
+- count corrections,
+- received stock,
+- other adjustments.

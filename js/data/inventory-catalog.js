@@ -29,6 +29,7 @@ window.SUW_INVENTORY_CATALOG = {
   items: [
     {
       id: "wood-rings",
+      linkedProductIds: ["macrame-paper-towel-holder","macrame-toilet-paper-holder"],
       category: "raw-materials",
       name: "Wooden Rings",
       materialType: "Wood",
@@ -44,6 +45,7 @@ window.SUW_INVENTORY_CATALOG = {
     },
     {
       id: "paper-towel-dowels",
+      linkedProductIds: ["macrame-paper-towel-holder"],
       category: "raw-materials",
       name: "Paper Towel Dowels",
       materialType: "Wood",
@@ -59,6 +61,7 @@ window.SUW_INVENTORY_CATALOG = {
     },
     {
       id: "end-caps",
+      linkedProductIds: ["macrame-paper-towel-holder"],
       category: "raw-materials",
       name: "End Caps",
       materialType: "Hardware",
@@ -74,6 +77,7 @@ window.SUW_INVENTORY_CATALOG = {
     },
     {
       id: "cord-natural-beige",
+      linkedProductIds: ["macrame-paper-towel-holder","macrame-toilet-paper-holder"],
       category: "raw-materials",
       name: "3 mm Macramé Cord — Natural/Beige",
       materialType: "Cord/Yarn",
@@ -87,6 +91,7 @@ window.SUW_INVENTORY_CATALOG = {
     },
     {
       id: "cord-white",
+      linkedProductIds: ["macrame-paper-towel-holder","macrame-toilet-paper-holder"],
       category: "raw-materials",
       name: "3 mm Macramé Cord — White",
       materialType: "Cord/Yarn",
@@ -100,6 +105,7 @@ window.SUW_INVENTORY_CATALOG = {
     },
     {
       id: "cord-black",
+      linkedProductIds: ["macrame-paper-towel-holder","macrame-toilet-paper-holder"],
       category: "raw-materials",
       name: "3 mm Macramé Cord — Black",
       materialType: "Cord/Yarn",
@@ -113,6 +119,7 @@ window.SUW_INVENTORY_CATALOG = {
     },
     {
       id: "cord-gray",
+      linkedProductIds: ["macrame-paper-towel-holder","macrame-toilet-paper-holder"],
       category: "raw-materials",
       name: "3 mm Macramé Cord — Gray",
       materialType: "Cord/Yarn",
@@ -126,7 +133,49 @@ window.SUW_INVENTORY_CATALOG = {
     },
 
     {
+      id: "prepared-cord-paper-towel-natural",
+      category: "raw-materials",
+      name: "Prepared Cord Set — Paper Towel Holder — Natural/Beige",
+      materialType: "Prepared Component",
+      craft: "Macramé",
+      linkedProductIds: ["macrame-paper-towel-holder"],
+      productId: "macrame-paper-towel-holder",
+      color: "Natural/Beige",
+      tracking: "quantity",
+      quantity: 0,
+      reorderAt: 1,
+      preferredStock: 5,
+      restockType: "make",
+      supplier: "",
+      purchaseUrl: "",
+      notes: "Four main cords cut to 340 cm plus one 50–70 cm wrap-knot cord."
+    },
+    {
+      id: "prepared-cord-toilet-paper-natural",
+      category: "raw-materials",
+      name: "Prepared Cord Set — Toilet Paper Holder — Natural/Beige",
+      materialType: "Prepared Component",
+      craft: "Macramé",
+      linkedProductIds: ["macrame-toilet-paper-holder"],
+      productId: "macrame-toilet-paper-holder",
+      color: "Natural/Beige",
+      tracking: "quantity",
+      quantity: 0,
+      reorderAt: 1,
+      preferredStock: 5,
+      restockType: "make",
+      supplier: "",
+      purchaseUrl: "",
+      notes: "Precut cord set ready to place into a fabrication kit."
+    },
+
+    {
       id: "kit-paper-towel-natural",
+      components: [
+        { itemId: "prepared-cord-paper-towel-natural", quantity: 1 },
+        { itemId: "wood-rings", quantity: 1 },
+        { itemId: "end-caps", quantity: 2 }
+      ],
       category: "fabrication-kits",
       name: "Paper Towel Holder Kit — Natural/Beige",
       materialType: "Kit",
@@ -143,6 +192,10 @@ window.SUW_INVENTORY_CATALOG = {
     },
     {
       id: "kit-toilet-paper-natural",
+      components: [
+        { itemId: "prepared-cord-toilet-paper-natural", quantity: 1 },
+        { itemId: "wood-rings", quantity: 1 }
+      ],
       category: "fabrication-kits",
       name: "Toilet Paper Holder Kit — Natural/Beige",
       materialType: "Kit",
@@ -159,6 +212,7 @@ window.SUW_INVENTORY_CATALOG = {
     },
     {
       id: "kit-oven-door-natural",
+      components: [],
       category: "fabrication-kits",
       name: "Oven-Door Towel Holder Kit — Natural",
       materialType: "Kit",
