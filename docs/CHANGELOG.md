@@ -1,3 +1,12 @@
+## 0.6.5.2
+
+- Reorganized Inventory into Yarn & Cord, Accessories, Prepared Components, Finished Inventory, Packaging Supplies, and Print & Branding.
+- Split the former Raw Materials category without resetting existing quantities.
+- Moved prepared dowels, precut cord sets, and product-specific kits into Prepared Components.
+- Renamed Print & Cricut Supplies to Print & Branding.
+- Added migration rules for custom inventory items saved under legacy category IDs.
+- Updated all current release references to 0.6.5.2.
+
 # Changelog
 
 ## 0.6.5.1

@@ -192,3 +192,17 @@ Paper towel dowels now have two inventory states: raw Paper Towel Dowels and Pre
 
 Paper Towel Holder and Toilet Paper Holder dowels are separate raw and prepared inventory items. Preparing a Paper Towel Holder dowel consumes one raw PTH dowel and two end caps. Preparing a Toilet Paper Holder dowel consumes one raw TPH dowel and no end caps. Both may be prepared in batches or directly for an order, and Pack Mailer remains blocked until the correct prepared dowel is assigned.
 
+## Version 0.6.5.2 — Inventory Navigation
+
+The Inventory module now uses these browsable categories:
+
+- Overview
+- Yarn & Cord
+- Accessories
+- Prepared Components
+- Finished Inventory
+- Packaging Supplies
+- Print & Branding
+- Restock Center
+
+Prepared Components replaces the former Fabrication Kits label and also houses prepared dowels and precut cord sets.

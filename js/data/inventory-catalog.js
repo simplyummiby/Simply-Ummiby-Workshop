@@ -1,14 +1,19 @@
 window.SUW_INVENTORY_CATALOG = {
   categories: [
     {
-      id: "raw-materials",
-      name: "Raw Materials",
-      description: "Purchased components and cord used to make products or fabrication kits."
+      id: "yarn-cord",
+      name: "Yarn & Cord",
+      description: "Macramé cord, crochet yarn, and other fiber materials used in the workshop."
     },
     {
-      id: "fabrication-kits",
-      name: "Fabrication Kits",
-      description: "Product-and-color-specific kits prepared ahead of time."
+      id: "accessories",
+      name: "Accessories",
+      description: "Wood rings, end caps, raw dowels, beads, and other hardware or notions."
+    },
+    {
+      id: "prepared-components",
+      name: "Prepared Components",
+      description: "Precut cord sets, prepared dowels, and product-specific build components made ahead of time."
     },
     {
       id: "finished-inventory",
@@ -21,16 +26,16 @@ window.SUW_INVENTORY_CATALOG = {
       description: "Poly mailers, labels, and other packing materials."
     },
     {
-      id: "print-supplies",
-      name: "Print & Cricut Supplies",
-      description: "Care sheets, product tags, company stickers, and printed resources."
+      id: "print-branding",
+      name: "Print & Branding",
+      description: "Care sheets, product tags, company stickers, and other branded printed resources."
     }
   ],
   items: [
     {
       id: "wood-rings",
       linkedProductIds: ["macrame-paper-towel-holder","macrame-toilet-paper-holder"],
-      category: "raw-materials",
+      category: "accessories",
       name: "Wooden Rings",
       materialType: "Wood",
       craft: "Shared",
@@ -46,7 +51,7 @@ window.SUW_INVENTORY_CATALOG = {
     {
       id: "paper-towel-dowels",
       linkedProductIds: ["macrame-paper-towel-holder"],
-      category: "raw-materials",
+      category: "accessories",
       name: "Paper Towel Dowels",
       materialType: "Wood",
       craft: "Macramé",
@@ -62,7 +67,7 @@ window.SUW_INVENTORY_CATALOG = {
     {
       id: "toilet-paper-dowels",
       linkedProductIds: ["macrame-toilet-paper-holder"],
-      category: "raw-materials",
+      category: "accessories",
       name: "Toilet Paper Dowels",
       materialType: "Wood",
       craft: "Macramé",
@@ -81,7 +86,7 @@ window.SUW_INVENTORY_CATALOG = {
         { itemId: "toilet-paper-dowels", quantity: 1 }
       ],
       linkedProductIds: ["macrame-toilet-paper-holder"],
-      category: "raw-materials",
+      category: "prepared-components",
       name: "Prepared Toilet Paper Dowels",
       materialType: "Prepared Component",
       craft: "Macramé",
@@ -103,7 +108,7 @@ window.SUW_INVENTORY_CATALOG = {
         { itemId: "end-caps", quantity: 2 }
       ],
       linkedProductIds: ["macrame-paper-towel-holder"],
-      category: "raw-materials",
+      category: "prepared-components",
       name: "Prepared Paper Towel Dowels",
       materialType: "Prepared Component",
       craft: "Macramé",
@@ -121,7 +126,7 @@ window.SUW_INVENTORY_CATALOG = {
     {
       id: "end-caps",
       linkedProductIds: ["macrame-paper-towel-holder"],
-      category: "raw-materials",
+      category: "accessories",
       name: "End Caps",
       materialType: "Hardware",
       craft: "Macramé",
@@ -137,7 +142,7 @@ window.SUW_INVENTORY_CATALOG = {
     {
       id: "cord-natural-beige",
       linkedProductIds: ["macrame-paper-towel-holder","macrame-toilet-paper-holder"],
-      category: "raw-materials",
+      category: "yarn-cord",
       name: "3 mm Macramé Cord — Natural/Beige",
       materialType: "Cord/Yarn",
       craft: "Macramé",
@@ -151,7 +156,7 @@ window.SUW_INVENTORY_CATALOG = {
     {
       id: "cord-white",
       linkedProductIds: ["macrame-paper-towel-holder","macrame-toilet-paper-holder"],
-      category: "raw-materials",
+      category: "yarn-cord",
       name: "3 mm Macramé Cord — White",
       materialType: "Cord/Yarn",
       craft: "Macramé",
@@ -165,7 +170,7 @@ window.SUW_INVENTORY_CATALOG = {
     {
       id: "cord-black",
       linkedProductIds: ["macrame-paper-towel-holder","macrame-toilet-paper-holder"],
-      category: "raw-materials",
+      category: "yarn-cord",
       name: "3 mm Macramé Cord — Black",
       materialType: "Cord/Yarn",
       craft: "Macramé",
@@ -179,7 +184,7 @@ window.SUW_INVENTORY_CATALOG = {
     {
       id: "cord-gray",
       linkedProductIds: ["macrame-paper-towel-holder","macrame-toilet-paper-holder"],
-      category: "raw-materials",
+      category: "yarn-cord",
       name: "3 mm Macramé Cord — Gray",
       materialType: "Cord/Yarn",
       craft: "Macramé",
@@ -193,7 +198,7 @@ window.SUW_INVENTORY_CATALOG = {
 
     {
       id: "prepared-cord-paper-towel-natural",
-      category: "raw-materials",
+      category: "prepared-components",
       name: "Prepared Cord Set — Paper Towel Holder — Natural/Beige",
       materialType: "Prepared Component",
       craft: "Macramé",
@@ -211,7 +216,7 @@ window.SUW_INVENTORY_CATALOG = {
     },
     {
       id: "prepared-cord-toilet-paper-natural",
-      category: "raw-materials",
+      category: "prepared-components",
       name: "Prepared Cord Set — Toilet Paper Holder — Natural/Beige",
       materialType: "Prepared Component",
       craft: "Macramé",
@@ -234,7 +239,7 @@ window.SUW_INVENTORY_CATALOG = {
         { itemId: "prepared-cord-paper-towel-natural", quantity: 1 },
         { itemId: "wood-rings", quantity: 1 }
       ],
-      category: "fabrication-kits",
+      category: "prepared-components",
       name: "Paper Towel Holder Kit — Natural/Beige",
       materialType: "Kit",
       craft: "Macramé",
@@ -254,7 +259,7 @@ window.SUW_INVENTORY_CATALOG = {
         { itemId: "prepared-cord-toilet-paper-natural", quantity: 1 },
         { itemId: "wood-rings", quantity: 1 }
       ],
-      category: "fabrication-kits",
+      category: "prepared-components",
       name: "Toilet Paper Holder Kit — Natural/Beige",
       materialType: "Kit",
       craft: "Macramé",
@@ -271,7 +276,7 @@ window.SUW_INVENTORY_CATALOG = {
     {
       id: "kit-oven-door-natural",
       components: [],
-      category: "fabrication-kits",
+      category: "prepared-components",
       name: "Oven-Door Towel Holder Kit — Natural",
       materialType: "Kit",
       craft: "Crochet",
@@ -380,7 +385,7 @@ window.SUW_INVENTORY_CATALOG = {
 
     {
       id: "paper-towel-tags",
-      category: "print-supplies",
+      category: "print-branding",
       name: "Paper Towel Holder Tags",
       materialType: "Product Tag",
       craft: "Macramé",
@@ -394,7 +399,7 @@ window.SUW_INVENTORY_CATALOG = {
     },
     {
       id: "toilet-paper-tags",
-      category: "print-supplies",
+      category: "print-branding",
       name: "Toilet Paper Holder Tags",
       materialType: "Product Tag",
       craft: "Macramé",
@@ -408,7 +413,7 @@ window.SUW_INVENTORY_CATALOG = {
     },
     {
       id: "oven-door-tags",
-      category: "print-supplies",
+      category: "print-branding",
       name: "Oven-Door Towel Holder Tags",
       materialType: "Product Tag",
       craft: "Crochet",
@@ -422,7 +427,7 @@ window.SUW_INVENTORY_CATALOG = {
     },
     {
       id: "care-sheets",
-      category: "print-supplies",
+      category: "print-branding",
       name: "Care Instruction Sheet — Paper Towel and Toilet Paper Holders",
       materialType: "Care Sheet",
       craft: "Shared",
@@ -439,7 +444,7 @@ window.SUW_INVENTORY_CATALOG = {
     },
     {
       id: "company-stickers",
-      category: "print-supplies",
+      category: "print-branding",
       name: "Simply Ummiby Company Stickers",
       materialType: "Sticker",
       craft: "Shared",

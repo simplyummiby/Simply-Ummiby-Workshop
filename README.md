@@ -1,8 +1,18 @@
 # Simply Ummiby Workshop
 
-**Version 0.6.5.1**
+**Version 0.6.5.2**
 
-Version 0.6.5.1 separates the paper towel holder and toilet paper holder dowel workflows so each product consumes the correct materials.
+Version 0.6.5.2 reorganizes Inventory around the way supplies are found and prepared in the workshop. Existing quantities and custom inventory records are preserved through migration.
+
+## Version 0.6.5.2 highlights
+
+- Split Raw Materials into **Yarn & Cord** and **Accessories**.
+- Renamed **Print & Cricut Supplies** to **Print & Branding**.
+- Renamed **Fabrication Kits** to **Prepared Components**.
+- Moved prepared dowels and precut cord sets into Prepared Components.
+- Kept raw dowels, wooden rings, end caps, and future hardware under Accessories.
+- Kept poly mailers in the dedicated Packaging Supplies category.
+- Added safe category migration for existing and custom inventory records.
 
 ## Version 0.6.5.1 highlights
 
