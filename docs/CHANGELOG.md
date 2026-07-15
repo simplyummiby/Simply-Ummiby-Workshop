@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.6.2.1 — 2026-07-15
+
+### Fixed
+- Care-sheet printing now follows a true two-step workflow: open the printable first, then confirm successful output.
+- Opening or attempting to print the care sheet never changes inventory.
+- A failed or cancelled print can be closed with **Not Printed — Close** without adding stock.
+- The successfully printed quantity remains editable before inventory is updated.
+
 ## 0.6.2 — 2026-07-15
 
 ### Added

@@ -116,7 +116,7 @@ A stable local-first workshop management system ready for everyday use.
 - Zero-stock protection
 - Product-tag and care-sheet audit for upcoming releases
 
-## Version 0.6.2 — Care Sheet Inventory and Printing — Complete
+## Version 0.6.2.1 — Care Sheet Inventory and Printing — Complete
 
 - Count printed care sheets as Print & Cricut inventory
 - Default editable print batch of 10

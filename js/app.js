@@ -1,6 +1,6 @@
 (() => {
   const STORAGE_KEY = "simplyUmmibyWorkshopData";
-  const VERSION = "0.6.2";
+  const VERSION = "0.6.2.1";
   const ITEM_STATUSES = ["New","Preparing","Manufacturing","Waiting on Material","Ready for Packing","Packed","Ready to Mail","Completed"];
   const STATUS_PROGRESS = {
     "New": 5, "Preparing": 20, "Manufacturing": 50, "Waiting on Material": 35,
@@ -2033,16 +2033,28 @@
   function printCareSheet() {
     const careSheet = inventoryItemById("care-sheets");
     const printableFile = careSheet?.printableFile || "printables/caresheet-pt-tp.pdf";
+    const defaultQuantity = Math.max(1,Number(careSheet?.defaultPrintQuantity || 10));
+    showModal(
+      "Print Care Sheets",
+      `<p>Open the care sheet first. Inventory will not change until you confirm how many sheets printed successfully.</p><label>Planned quantity<input id="plannedCareSheetQuantity" type="number" min="1" step="1" value="${defaultQuantity}"></label>`,
+      [
+        {label:"Cancel"},
+        {label:"Open Care Sheet for Printing",kind:"primary",keepOpen:true,onClick:() => openCareSheetPrintable(printableFile,defaultQuantity)}
+      ]
+    );
+  }
+
+  function openCareSheetPrintable(printableFile,defaultQuantity) {
+    const plannedQuantity = Math.max(1,Math.floor(Number(document.getElementById("plannedCareSheetQuantity")?.value || defaultQuantity)));
     const popup = window.open(printableFile,"_blank");
     if (popup) popup.opener = null;
     if (!popup) return showToast("Please allow pop-ups to print the care sheet.");
-    const defaultQuantity = Math.max(1,Number(careSheet?.defaultPrintQuantity || 10));
     showModal(
-      "Add printed care sheets to inventory?",
-      `<p>The printable opened in a new tab. Add sheets only after they have printed successfully.</p><label>How many care sheets did you print?<input id="printedCareSheetQuantity" type="number" min="1" step="1" value="${defaultQuantity}"></label>`,
+      "Confirm Printed Care Sheets",
+      `<p>The printable is open in a new tab. Add only the number of sheets that actually printed successfully.</p><label>Quantity successfully printed<input id="printedCareSheetQuantity" type="number" min="1" step="1" value="${plannedQuantity}"></label>`,
       [
-        {label:"Not Yet"},
-        {label:"Add Printed Sheets",kind:"primary",onClick:() => addPrintedCareSheets(Number(document.getElementById("printedCareSheetQuantity")?.value || defaultQuantity))}
+        {label:"Not Printed — Close"},
+        {label:"Add Printed Sheets",kind:"primary",onClick:() => addPrintedCareSheets(Number(document.getElementById("printedCareSheetQuantity")?.value || plannedQuantity))}
       ]
     );
   }
@@ -2091,7 +2103,10 @@
       const button=document.createElement("button");
       button.className=`button ${action.kind || "secondary"}`;
       button.textContent=action.label;
-      button.addEventListener("click",() => { action.onClick?.(); hideModal(); });
+      button.addEventListener("click",() => {
+        action.onClick?.();
+        if (!action.keepOpen) hideModal();
+      });
       actionsEl.appendChild(button);
     });
     document.getElementById("modalBackdrop").classList.remove("hidden");

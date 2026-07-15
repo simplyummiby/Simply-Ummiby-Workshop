@@ -1,6 +1,6 @@
 # Architecture
 
-## Version 0.6.2
+## Version 0.6.2.1
 
 Simply Ummiby Workshop remains a static, local-first web application.
 
@@ -150,7 +150,7 @@ Consumption transactions record the inventory item, quantity, order ID, Etsy ord
 
 Legacy checked tasks without a stored transaction are preserved without making an automatic historical deduction. Clearing one of those tasks changes only the checklist state and shows a reconciliation notice.
 
-## Version 0.6.2 care-sheet inventory and printing
+## Version 0.6.2.1 care-sheet inventory and printing
 
 The `care-sheets` inventory record stores counted quantity, an editable low-stock threshold (`reorderAt`), editable `defaultPrintQuantity`, the repository-relative `printableFile`, and applicable product relationships. Catalog migration merges these new defaults into existing local data without resetting the user's saved quantity or thresholds.
 

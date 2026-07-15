@@ -140,7 +140,7 @@ Working in Version 0.6.0:
 - Product creation
 - Automatic Inventory “Used by Products”
 
-## Pack & Ship inventory behavior — Version 0.6.2
+## Pack & Ship inventory behavior — Version 0.6.2.1
 
 - Product mailer checklist steps display the resolved mailer and current quantity.
 - Completing a mailer step consumes one configured mailer for that order item.

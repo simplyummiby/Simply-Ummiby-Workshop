@@ -1,10 +1,10 @@
 # Simply Ummiby Workshop
 
-**Version 0.6.2**
+**Version 0.6.2.1**
 
-Version 0.6.2 treats printed care instruction sheets as counted physical inventory while keeping printing and inventory addition intentionally separate. Pack & Ship now shows live care-sheet stock, provides the print link beside the insertion step, consumes one sheet per order, and safely restores it when the step is reversed.
+Version 0.6.2.1 treats printed care instruction sheets as counted physical inventory while keeping printing and inventory addition intentionally separate. Pack & Ship now shows live care-sheet stock, provides the print link beside the insertion step, consumes one sheet per order, and safely restores it when the step is reversed.
 
-## Version 0.6.2 highlights
+## Version 0.6.2.1 highlights
 
 - Printed care sheets are tracked under Print & Cricut Supplies.
 - **Print More Care Sheets** opens `printables/caresheet-pt-tp.pdf`.
