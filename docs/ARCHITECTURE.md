@@ -254,3 +254,8 @@ Inventory items now carry an Active or Archived lifecycle status. Permanent dele
 ## Version 0.6.8.3.5 — Editable Inventory Product Links
 
 Inventory records store `linkedProductIds` as stable Product Master IDs. Ordinary material links synchronize with `productMasters[].materials`; packaging and prepared-component relationships remain automatic. Inventory product pills are rendered from these live relationships.
+
+
+## Version 0.6.8.3.6 — Navigation Icon System
+
+The main sidebar now uses inline, currentColor SVG icons so navigation symbols inherit theme and active-state colors without external icon dependencies.

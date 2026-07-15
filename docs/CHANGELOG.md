@@ -1,3 +1,9 @@
+## 0.6.8.3.6 — Sidebar SVG Icons
+
+- Replaced placeholder menu symbols with a consistent inline SVG icon set.
+- Added icons for Dashboard, Workshop, Batch Production, Inventory, Products, Resources, and Settings.
+- Improved icon alignment, sizing, active states, and hover feedback.
+
 ## 0.6.8.3.5 — Editable Product-to-Inventory Links
 
 ## 0.6.8.3.5

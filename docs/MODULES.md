@@ -248,3 +248,8 @@ Inventory includes Active, Archived, and All filters; Archive, Restore, and Dele
 ## Version 0.6.8.3.5 — Linked Products in Inventory
 
 The Inventory editor includes a Linked Products multi-select. The table displays the resulting product relationships as clickable pills without adding another column.
+
+
+## Version 0.6.8.3.6 — Sidebar Navigation
+
+All primary modules now have distinct SVG navigation icons: Dashboard, Workshop, Batch Production, Inventory, Products, Resources, and Settings.

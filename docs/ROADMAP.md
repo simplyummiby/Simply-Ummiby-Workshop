@@ -241,3 +241,8 @@ Inventory table readability pass completed: removed initials, simplified columns
 - Stable product IDs stored on inventory records.
 - Live product pills synchronized with Product Master materials.
 - Automatic packaging/component links preserved.
+
+
+## Version 0.6.8.3.6 — Completed
+
+Completed the sidebar SVG icon refresh and standardized navigation icon sizing and interaction states.
