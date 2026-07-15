@@ -1,6 +1,6 @@
 (() => {
   const STORAGE_KEY = "simplyUmmibyWorkshopData";
-  const VERSION = "0.6.8.3.2";
+  const VERSION = "0.6.8.3.3";
   const ITEM_STATUSES = ["New","Preparing","Manufacturing","Waiting on Material","Ready for Packing","Packed","Ready to Mail","Completed"];
   const STATUS_PROGRESS = {
     "New": 5, "Preparing": 20, "Manufacturing": 50, "Waiting on Material": 35,
@@ -1079,7 +1079,45 @@
   }
 
   function renderInventoryCategory(categoryId){const category=inventoryCategories().find(c=>c.id===categoryId);const items=filteredInventoryItems(categoryId);const cards=["prepared-components","finished-inventory"].includes(categoryId);return `<section class="inventory-category-heading"><div><p class="eyebrow">Inventory category</p><h3>${escapeHTML(category?.name||"Inventory")}</h3><p>${escapeHTML(category?.description||"")}</p></div></section>${renderInventoryControls(categoryId,{allowGroup:cards})}${cards?renderGroupedInventoryCards(items):renderInventoryTable(items)}`;}
-  function renderInventoryTable(items){return `<section class="inventory-table-card inventory-table-polished"><div class="inventory-data-table inventory-data-table-head inventory-data-table-polished"><span>Item</span><span>On Hand</span><span>Reorder At</span><span>Status</span><span>Actions</span></div>${items.length?items.map(item=>{const allocated=item.tracking==="quantity"?allocatedInKits(item.id):0;const supplierName=supplierNameForItem(item);const description=[supplierName,item.notes].filter(Boolean).join(" · ");const archived=item.status==="Archived";return `<article class="inventory-data-table inventory-data-table-polished ${archived?"is-archived":""}"><div class="inventory-name-cell inventory-name-cell-polished">${item.imageData?`<img class="inventory-thumb inventory-thumb-photo" src="${item.imageData}" alt="">`:""}<div class="inventory-item-copy"><strong>${escapeHTML(item.name)}</strong><div class="inventory-item-meta"><span>${escapeHTML(item.materialType||"Other")}</span><span>${escapeHTML(item.craft||"Shared")}</span>${archived?`<span class="inventory-archived-label">Archived</span>`:""}</div>${(item.linkedProductIds||[]).length?`<div class="inventory-product-pills">${(item.linkedProductIds||[]).map(id=>`<span class="product-link-pill">${escapeHTML(productNameById(id))}</span>`).join("")}</div>`:""}${description?`<small class="inventory-item-description" title="${escapeHTML(description)}">${escapeHTML(description)}</small>`:""}</div></div><div class="inventory-count-cell">${item.tracking==="quantity"?`<strong>${Number(item.quantity||0)}</strong>${allocated?`<small>${allocated} in prepared components · ${totalOwned(item)} total owned</small>`:"<small>Loose stock</small>"}`:`<strong>${escapeHTML(item.condition||"Not set")}</strong><small>Condition tracked</small>`}</div><div class="inventory-reorder-cell">${item.tracking==="quantity"?`<strong>${Number(item.reorderAt||0)}</strong><small>Preferred ${Number(item.preferredStock||0)}</small>`:"<strong>—</strong>"}</div><div><span class="inventory-stock-badge ${archived?"archived":inventoryStatus(item).toLowerCase()}">${archived?"Archived":escapeHTML(inventoryStatus(item))}</span></div><div class="inventory-row-actions inventory-row-actions-polished">${!archived&&item.tracking==="quantity"?`<div class="inventory-quick-adjust" aria-label="Quick quantity adjustment"><button title="Subtract one" aria-label="Subtract one ${escapeHTML(item.name)}" data-action="adjust-inventory" data-item-id="${item.id}" data-delta="-1">−</button><button title="Add one" aria-label="Add one ${escapeHTML(item.name)}" data-action="adjust-inventory" data-item-id="${item.id}" data-delta="1">+</button></div><button class="button secondary small" data-action="stock-adjustment" data-item-id="${item.id}">Adjust</button>`:""}<button class="button secondary small" data-action="edit-inventory-item" data-item-id="${item.id}">Edit</button>${archived?`<button class="button secondary small" data-action="restore-inventory-item" data-item-id="${item.id}">Restore</button>`:`<button class="button secondary small" data-action="archive-inventory-item" data-item-id="${item.id}">Archive</button>`}<button class="button secondary small danger-outline" data-action="delete-inventory-item" data-item-id="${item.id}">Delete</button></div></article>`}).join(""):`<div class="inventory-empty-filter">No inventory items match these filters.</div>`}</section>`;}
+  function renderInventoryTable(items){
+    return `<section class="inventory-table-card inventory-table-polished">
+      <div class="inventory-data-table inventory-data-table-head inventory-data-table-polished"><span>Item</span><span>On Hand</span><span>Reorder At</span><span>Status</span><span>Actions</span></div>
+      ${items.length ? items.map(item => {
+        const allocated = item.tracking === "quantity" ? allocatedInKits(item.id) : 0;
+        const supplierName = supplierNameForItem(item);
+        const linkedProducts = productsUsingInventoryItem(item.id);
+        const purchaseUrl = normalizeExternalUrl(item.purchaseUrl || item.resourceUrl);
+        const archived = item.status === "Archived";
+        return `<article class="inventory-data-table inventory-data-table-polished ${archived ? "is-archived" : ""}">
+          <div class="inventory-name-cell inventory-name-cell-polished">
+            ${item.imageData ? `<img class="inventory-thumb inventory-thumb-photo" src="${item.imageData}" alt="">` : ""}
+            <div class="inventory-item-copy">
+              <strong>${escapeHTML(item.name)}</strong>
+              <div class="inventory-item-meta">
+                <span>${escapeHTML(item.materialType || "Other")}</span>
+                <span>${escapeHTML(item.craft || "Shared")}</span>
+                ${supplierName ? `<span>${escapeHTML(supplierName)}</span>` : ""}
+                ${archived ? `<span class="inventory-archived-label">Archived</span>` : ""}
+              </div>
+              ${purchaseUrl ? `<button type="button" class="inventory-buy-link" data-action="open-inventory-link" data-item-id="${item.id}">Buy Online</button>` : ""}
+              ${linkedProducts.length ? `<div class="inventory-product-pills">${linkedProducts.map(master => `<button type="button" class="product-link-pill" data-action="open-product-master" data-product-id="${master.id}">${escapeHTML(master.name)}</button>`).join("")}</div>` : ""}
+              ${item.notes ? `<small class="inventory-item-description" title="${escapeHTML(item.notes)}">${escapeHTML(item.notes)}</small>` : ""}
+            </div>
+          </div>
+          <div class="inventory-count-cell">${item.tracking === "quantity" ? `<strong>${Number(item.quantity || 0)}</strong>${allocated ? `<small>${allocated} in prepared components · ${totalOwned(item)} total owned</small>` : "<small>Loose stock</small>"}` : `<strong>${escapeHTML(item.condition || "Not set")}</strong><small>Condition tracked</small>`}</div>
+          <div class="inventory-reorder-cell">${item.tracking === "quantity" ? `<strong>${Number(item.reorderAt || 0)}</strong><small>Preferred ${Number(item.preferredStock || 0)}</small>` : "<strong>—</strong>"}</div>
+          <div><span class="inventory-stock-badge ${archived ? "archived" : inventoryStatus(item).toLowerCase()}">${archived ? "Archived" : escapeHTML(inventoryStatus(item))}</span></div>
+          <div class="inventory-row-actions inventory-row-actions-polished">
+            ${!archived && item.tracking === "quantity" ? `<div class="inventory-quick-adjust" aria-label="Quick quantity adjustment"><button title="Subtract one" aria-label="Subtract one ${escapeHTML(item.name)}" data-action="adjust-inventory" data-item-id="${item.id}" data-delta="-1">−</button><button title="Add one" aria-label="Add one ${escapeHTML(item.name)}" data-action="adjust-inventory" data-item-id="${item.id}" data-delta="1">+</button></div><button class="button secondary small" data-action="stock-adjustment" data-item-id="${item.id}">Adjust</button>` : ""}
+            <button class="button secondary small" data-action="edit-inventory-item" data-item-id="${item.id}">Edit</button>
+            ${archived ? `<button class="button secondary small" data-action="restore-inventory-item" data-item-id="${item.id}">Restore</button>` : `<button class="button secondary small" data-action="archive-inventory-item" data-item-id="${item.id}">Archive</button>`}
+            <button class="button secondary small danger-outline" data-action="delete-inventory-item" data-item-id="${item.id}">Delete</button>
+          </div>
+        </article>`;
+      }).join("") : `<div class="inventory-empty-filter">No inventory items match these filters.</div>`}
+    </section>`;
+  }
+
   function renderGroupedInventoryCards(items){if(!items.length)return `<div class="inventory-empty-filter">No inventory items match these filters.</div>`;if(inventoryViewState.group==="none")return `<div class="inventory-catalog-grid">${items.map(renderInventoryCard).join("")}</div>`;const groups=new Map();items.forEach(item=>{const key=inventoryViewState.group==="product"?productDisplayName(item.productId):inventoryViewState.group==="color"?(item.color||"No color"):inventoryStatus(item);if(!groups.has(key))groups.set(key,[]);groups.get(key).push(item);});return [...groups.entries()].map(([label,groupItems])=>`<section class="inventory-card-group"><div class="inventory-card-group-heading"><h4>${escapeHTML(label)}</h4><span>${groupItems.length} item${groupItems.length===1?"":"s"}</span></div><div class="inventory-catalog-grid">${groupItems.map(renderInventoryCard).join("")}</div></section>`).join("");}
   function productDisplayName(productId){return data.products.find(p=>p.id===productId)?.name||"Other";}
   function renderInventoryThumb(item){return item.imageData?`<img class="inventory-thumb" src="${item.imageData}" alt="">`:"";}

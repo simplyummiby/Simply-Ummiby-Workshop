@@ -1512,3 +1512,42 @@ textarea { resize: vertical; }
 .supplier-picker-row select{flex:1 1 15rem;min-width:0}
 .supplier-inline-add{flex:0 0 auto;white-space:nowrap}
 @media (max-width:680px){.supplier-picker-row{flex-direction:column}.supplier-inline-add{width:100%}}
+
+/* v0.6.8.3.3 Live inventory relationships */
+.inventory-buy-link {
+  display:inline-flex;
+  align-items:center;
+  margin-top:7px;
+  padding:0;
+  border:0;
+  background:transparent;
+  color:var(--rose-700);
+  font:inherit;
+  font-size:.79rem;
+  font-weight:850;
+  text-decoration:underline;
+  text-underline-offset:3px;
+  cursor:pointer;
+}
+.inventory-buy-link:hover { color:var(--charcoal); }
+.inventory-product-pills { display:flex; flex-wrap:wrap; gap:6px; }
+.product-link-pill {
+  appearance:none;
+  border:1px solid var(--rose-200);
+  border-radius:999px;
+  background:var(--rose-50);
+  color:var(--rose-800);
+  padding:4px 8px;
+  font:inherit;
+  font-size:.72rem;
+  font-weight:850;
+  line-height:1.2;
+  cursor:pointer;
+  text-align:left;
+}
+.product-link-pill:hover,
+.product-link-pill:focus-visible {
+  border-color:var(--rose-400);
+  background:var(--rose-100);
+  outline:none;
+}

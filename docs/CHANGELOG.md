@@ -1,4 +1,12 @@
-## 0.6.8.3.2 — Inline Supplier Creation
+## 0.6.8.3.3 — Live Inventory Product and Purchase Links
+
+- Product pills beneath inventory items are generated from current Product Master relationships.
+- Each product pill opens the linked product record.
+- Supplier names remain compact, non-clickable metadata.
+- A Buy Online link appears only when an exact item purchase URL is available.
+- Workshop notes remain wrapped safely beneath the relationship details.
+
+## 0.6.8.3.3 — Inline Supplier Creation
 
 - Added **+ Add New Supplier** beside the Inventory supplier dropdown.
 - Preserved unsaved inventory values, notes, material type, quantities, URLs, and image data while creating a supplier.
@@ -6,7 +14,7 @@
 - Added a safe Back to Inventory Item action from the inline supplier form.
 - Kept supplier homepage records separate from item-specific purchase URLs.
 
-## 0.6.8.3.2 — Safe Inventory Management
+## 0.6.8.3.3 — Safe Inventory Management
 
 - Added Archive, Restore, and safe Delete actions.
 - Added reference checks across products, colors, prepared components, orders, and transaction history.

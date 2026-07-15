@@ -1,10 +1,10 @@
 # Simply Ummiby Workshop
 
-**Version 0.6.8.3.2**
+**Version 0.6.8.3.3**
 
-Version 0.6.8.3.2 adds inline supplier creation to the redesigned Inventory editor. A supplier can be created without closing or clearing the inventory item form, and the newly created supplier is selected automatically when returning to the item.
+Version 0.6.8.3.3 adds inline supplier creation to the redesigned Inventory editor. A supplier can be created without closing or clearing the inventory item form, and the newly created supplier is selected automatically when returning to the item.
 
-## Version 0.6.8.3.2 highlights
+## Version 0.6.8.3.3 highlights
 
 - Adds **+ Add New Supplier** directly beside the supplier dropdown.
 - Preserves all unsaved inventory fields and image data while the supplier form is open.
@@ -18,7 +18,7 @@ Version 0.6.8.3.2 adds inline supplier creation to the redesigned Inventory edit
 - Use a redesigned inventory editor with grouped, conditional fields.
 - Review a Where Used panel before archiving or deleting.
 
-## Version 0.6.8.3.2 fix
+## Version 0.6.8.3.3 fix
 
 Inventory row actions now have adequate width and consistent spacing. Edit, Archive/Restore, Delete, Adjust, and quick quantity controls no longer crowd, clip, or overlap.
 
