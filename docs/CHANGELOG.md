@@ -1,3 +1,15 @@
+# Changelog
+
+## 0.6.3.4 — 2026-07-15
+
+### Fixed
+
+- Restored the missing final fulfillment action after an order is packed.
+- Mark Order Packed now changes the order to Ready to Mail instead of completing it.
+- Added a visible Ready to Mail section with a separate Mark as Mailed control.
+- Marking an order mailed records a mailed timestamp, moves all items to Completed, and sets progress to 100%.
+- Added packed timestamps and safe migration defaults for existing orders.
+
 ## 0.6.3.3 — 2026-07-15
 
 ### Fixed
@@ -7,7 +19,6 @@
 - Completed tasks now use one consistent green text and green background treatment.
 - Mailer instructions and inventory details no longer override the completed-state styling.
 
-# Changelog
 
 ## 0.6.3.2 — 2026-07-15
 

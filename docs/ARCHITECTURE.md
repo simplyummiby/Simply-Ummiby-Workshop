@@ -182,3 +182,11 @@ Step 3 now follows one physical packing sequence: attach the product-specific ta
 ## Version 0.6.3.3 Pack & Ship visual consistency
 
 Pack & Ship checklist rows share one explicit font family, title size, and title weight. All rows render black text before completion and apply the same green background, border, title, supporting-copy, and inventory-detail treatment after completion.
+
+
+## Version 0.6.3.4 Ready to Mail completion
+
+- Packing and mailing are separate order states.
+- Mark Order Packed records `shipping.packedAt` and moves active items to `Ready to Mail`.
+- Mark as Mailed records `shipping.mailedAt`, moves all order items to `Completed`, and completes the order at 100%.
+- Existing saved orders migrate with nullable packed and mailed timestamps.

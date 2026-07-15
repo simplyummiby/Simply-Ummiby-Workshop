@@ -1256,3 +1256,36 @@ textarea { resize: vertical; }
   font-size: .86rem;
   font-weight: 600;
 }
+
+/* v0.6.3.4 Ready to Mail and mailed completion */
+.ready-mail-panel {
+  margin-top: 18px;
+  padding: 20px;
+  border: 1px solid var(--border);
+  border-radius: 18px;
+  background: #fff8e8;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+}
+.ready-mail-panel h3 { margin: 2px 0 6px; }
+.ready-mail-panel p { margin: 0; }
+.ready-mail-panel.complete { background: #edf8f0; border-color: #abd4b5; }
+.ready-mail-check {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 16px;
+  border-radius: 14px;
+  background: white;
+  border: 1px solid var(--border);
+  font-weight: 700;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.ready-mail-check input { position: absolute; opacity: 0; pointer-events: none; }
+@media (max-width: 720px) {
+  .ready-mail-panel { align-items: flex-start; flex-direction: column; }
+  .ready-mail-check { width: 100%; justify-content: center; }
+}

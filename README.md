@@ -1,26 +1,18 @@
 # Simply Ummiby Workshop
 
-**Version 0.6.3.3**
+**Version 0.6.3.4**
 
-Version 0.6.3.3 standardizes the unified Pack & Ship typography and completed-state styling while preserving the packing-table workflow. Product tags, the care sheet with Etsy packing slip, mailer loading, Shippo label printing, the branding sticker, sealing, and the final packed status now appear as one continuous sequence.
+Version 0.6.3.4 restores the final fulfillment stage after packing. Marking an order packed now places it in a visible **Ready to Mail** state, and a separate **Mark as Mailed** action completes the order at 100%.
 
-## Version 0.6.3.3 highlights
+## Version 0.6.3.4 highlights
 
-- Consistent black task titles before completion
-- Matching title font family, size, and weight across every Pack & Ship row
-- Consistent green text and background after a task is checked
-- Supporting mailer and inventory text follows the same completed-state treatment
-
-- Product-specific tag tasks remain linked to stable inventory-item IDs.
-- **Prepare Care Sheet & Etsy Packing Slip** includes an **Open Etsy Orders** button on the same row.
-- The Etsy packing slip is treated as printing on the reverse side of the single care sheet consumed for the order.
-- Each **Pack Mailer** task lists all contents inserted together: tagged product, care sheet/packing slip, and prepared dowel when required.
-- Pack Mailer consumes the correct product-specific mailer inventory.
-- **Print & Attach Shipping Label** is one task with an **Open Shippo** button on the same row.
-- Branding sticker application and package sealing follow the label step.
-- The old item-level Confirm Finished and Mark Item Packed controls were removed from Step 3.
-- One final **Mark Order Packed** action moves the completed order to **Ready to Mail**.
-- Inventory quantities, low-stock warnings, safe reversals, and transaction history remain intact.
+- **Mark Order Packed** now records when packing was completed.
+- Packed orders remain active with a clear **Ready to Mail** panel.
+- **Mark as Mailed** appears only after the order is packed.
+- Marking the order mailed records the mailed date and time.
+- Every order item moves to **Completed**, and progress becomes 100%.
+- Completed orders display a mailed confirmation instead of the active mailing control.
+- Existing Pack & Ship inventory deductions and workflow steps remain unchanged.
 
 ## Care-sheet printable
 

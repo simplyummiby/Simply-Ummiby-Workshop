@@ -1,6 +1,6 @@
 (() => {
   const STORAGE_KEY = "simplyUmmibyWorkshopData";
-  const VERSION = "0.6.3.3";
+  const VERSION = "0.6.3.4";
   const ITEM_STATUSES = ["New","Preparing","Manufacturing","Waiting on Material","Ready for Packing","Packed","Ready to Mail","Completed"];
   const STATUS_PROGRESS = {
     "New": 5, "Preparing": 20, "Manufacturing": 50, "Waiting on Material": 35,
@@ -72,6 +72,8 @@
         labelAttached: Boolean(order.shipping?.labelAttached),
         companyStickerAttached: Boolean(order.shipping?.companyStickerAttached),
         mailerSealed: Boolean(order.shipping?.mailerSealed),
+        packedAt: order.shipping?.packedAt || null,
+        mailedAt: order.shipping?.mailedAt || null,
         productTagChecks: { ...(order.shipping?.productTagChecks || {}) },
         inventoryTaskTransactions: { ...(order.shipping?.inventoryTaskTransactions || {}) }
       },
@@ -1445,7 +1447,7 @@
       const product=data.products.find(p => p.id===spec.productId);
       for (let n=0;n<spec.quantity;n++) items.push(migrateItem({id:uid("item"),productId:product.id,productName:product.name,color:spec.color,status:"New",updatedAt:now},items.length));
     });
-    const order={id:uid("order"),customerName:form.customerName.value.trim(),etsyOrderNumber:form.etsyOrderNumber.value.trim(),notes:form.notes.value.trim(),status:"New",items,createdAt:now,updatedAt:now,shipping:{careSheetPrinted:false,packingSlipPrinted:false,shippoOpened:false,labelAttached:false,companyStickerAttached:false,mailerSealed:false,productTagChecks:{},inventoryTaskTransactions:{}}};
+    const order={id:uid("order"),customerName:form.customerName.value.trim(),etsyOrderNumber:form.etsyOrderNumber.value.trim(),notes:form.notes.value.trim(),status:"New",items,createdAt:now,updatedAt:now,shipping:{careSheetPrinted:false,packingSlipPrinted:false,shippoOpened:false,labelAttached:false,companyStickerAttached:false,mailerSealed:false,packedAt:null,mailedAt:null,productTagChecks:{},inventoryTaskTransactions:{}}};
     data.orders.unshift(order);
     data.activity.unshift({text:`Created order for ${order.customerName}`,time:"Just now"});
     touchOrder(order,items[0]);
@@ -1864,8 +1866,19 @@
         <label class="process-check inventory-aware-check ${stickerDone ? "checked" : ""}"><input type="checkbox" ${stickerDone ? "checked" : ""} data-action="shipping-check" data-key="companyStickerAttached" data-order-id="${order.id}"><span class="check-box">${stickerDone ? "✓" : ""}</span><span class="process-check-copy"><span>Apply Simply Ummiby Branding Sticker</span><small class="inventory-task-detail ${Number(sticker?.quantity || 0) <= 0 ? "out" : ""}">${sticker ? `${Number(sticker.quantity || 0)} available · Required 1 · ${escapeHTML(sticker.name)}` : "Company sticker inventory link missing"}</small></span></label>
         <label class="process-check ${sealedDone ? "checked" : ""}"><input type="checkbox" ${sealedDone ? "checked" : ""} data-action="shipping-check" data-key="mailerSealed" data-order-id="${order.id}"><span class="check-box">${sealedDone ? "✓" : ""}</span><span class="process-check-copy"><span>Close & Seal Package</span></span></label>
       </div>
-      <div class="process-footer"><span>${ready ? "Everything is packed. This order is ready to mail." : "Complete the packing sequence, then mark the order packed."}</span><button class="button primary" data-action="ready-mail" data-order-id="${order.id}" ${ready ? "" : "disabled"}>Mark Order Packed</button></div>
+      <div class="process-footer"><span>${order.status === "Ready to Mail" || order.status === "Completed" ? "Everything is packed." : ready ? "Everything is packed. Mark the order packed when you are finished." : "Complete the packing sequence, then mark the order packed."}</span>${order.status === "Ready to Mail" || order.status === "Completed" ? "" : `<button class="button primary" data-action="ready-mail" data-order-id="${order.id}" ${ready ? "" : "disabled"}>Mark Order Packed</button>`}</div>
+      ${renderReadyToMailSection(order)}
     </section>`;
+  }
+
+  function renderReadyToMailSection(order) {
+    if (!['Ready to Mail','Completed'].includes(order.status)) return '';
+    const packedLabel = order.shipping?.packedAt ? new Date(order.shipping.packedAt).toLocaleString() : 'Packed';
+    if (order.status === 'Completed') {
+      const mailedLabel = order.shipping?.mailedAt ? new Date(order.shipping.mailedAt).toLocaleString() : 'Mailed';
+      return `<section class="ready-mail-panel complete"><div><p class="eyebrow">Order complete</p><h3>Mailed</h3><p>This order was marked mailed on ${escapeHTML(mailedLabel)}.</p></div><span class="badge complete">100%</span></section>`;
+    }
+    return `<section class="ready-mail-panel"><div><p class="eyebrow">Final step</p><h3>Ready to Mail</h3><p>Packed ${escapeHTML(packedLabel)}. Check this off after the package has actually been mailed.</p></div><label class="ready-mail-check"><input type="checkbox" data-action="mark-mailed" data-order-id="${order.id}"><span class="check-box"></span><span>Mark as Mailed</span></label></section>`;
   }
 
   function workflowPercent(item) {
@@ -1875,6 +1888,7 @@
     const total = stages.length + packingTotal + 1;
     const done = recipeDone + countDone(item.workflow.packingChecks) + (item.workflow.fulfillmentMethod ? 1 : 0);
     if (item.status === "Completed") return 100;
+    if (item.status === "Ready to Mail") return 95;
     return total ? Math.round((done / total) * 100) : 0;
   }
 
@@ -2106,7 +2120,22 @@
     const tagsDone=productTagGroupsForOrder(order).every(group => Boolean(order.shipping.productTagChecks?.[group.taskKey]));
     if (!productionReady || !mailersDone || !shippingDone || !tagsDone) return showToast("Complete the full packing sequence first.");
     order.items.forEach(i => { if (i.status!=="Completed") i.status="Ready to Mail"; });
+    order.shipping.packedAt ||= new Date().toISOString();
+    order.shipping.mailedAt = null;
     touchOrder(order); data.activity.unshift({text:`Packed order for ${order.customerName}; ready to mail`,time:"Just now"}); saveData(); renderOrderWorkspace(order);
+  }
+
+  function markOrderMailed(orderId) {
+    const order=data.orders.find(o => o.id===orderId);
+    if (!order) return;
+    if (order.status !== "Ready to Mail") return showToast("Mark the order packed before marking it mailed.");
+    order.shipping.mailedAt = new Date().toISOString();
+    order.items.forEach(item => { item.status = "Completed"; item.updatedAt = order.shipping.mailedAt; });
+    touchOrder(order);
+    data.activity.unshift({text:`Mailed order for ${order.customerName}; order complete`,time:"Just now"});
+    saveData();
+    showToast("Order marked mailed and completed.");
+    renderOrderWorkspace(order);
   }
 
   function printCareSheet() {
@@ -2285,6 +2314,7 @@
     if (action==="complete-pack") completePack(orderId,itemId);
     if (action==="wait-material") waitOnMaterial(orderId,itemId);
     if (action==="ready-mail") markReadyMail(orderId);
+    if (action==="mark-mailed") markOrderMailed(orderId);
     if (action==="print-care-sheet") printCareSheet();
     if (action==="external-link") openExternal(link);
     if (action==="restock-status-all") updateMaterialStatusAcrossOrders(button.dataset.materialId,button.dataset.status);
