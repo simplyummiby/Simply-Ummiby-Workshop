@@ -1,6 +1,6 @@
 (() => {
   const STORAGE_KEY = "simplyUmmibyWorkshopData";
-  const VERSION = "0.6.8.3.1";
+  const VERSION = "0.6.8.3.2";
   const ITEM_STATUSES = ["New","Preparing","Manufacturing","Waiting on Material","Ready for Packing","Packed","Ready to Mail","Completed"];
   const STATUS_PROGRESS = {
     "New": 5, "Preparing": 20, "Manufacturing": 50, "Waiting on Material": 35,
@@ -1133,19 +1133,20 @@
     renderInventoryCatalog(inventoryViewState.category || "overview");
   }
 
-  function showInventoryItemEditor(itemId = null) {
-    const item=itemId?inventoryItemById(itemId):null;
+  function showInventoryItemEditor(itemId = null, draft = null) {
+    const existingItem=itemId?inventoryItemById(itemId):null;
+    const item=draft?{...(existingItem||{}),...draft}:existingItem;
     const currentType=item?.materialType||"";
     const typeOptions=inventoryMaterialTypes().filter(type=>type.status!=="Inactive" || type.name===currentType).sort((a,b)=>a.name.localeCompare(b.name)).map(type=>`<option value="${escapeHTML(type.name)}" ${currentType===type.name?"selected":""}>${escapeHTML(type.name)}</option>`).join("");
     const isCondition=item?.tracking==="condition";
-    const whereUsed=item?inventoryReferenceSummary(item.id):`<p class="where-used-empty">Save this item to see where it is used.</p>`;
+    const whereUsed=existingItem?inventoryReferenceSummary(existingItem.id):`<p class="where-used-empty">Save this item to see where it is used.</p>`;
     const footer=[{label:"Cancel"}];
-    if(item){footer.push({label:item.status==="Archived"?"Restore":"Archive",kind:"secondary",onClick:()=>{hideModal();item.status==="Archived"?setInventoryItemArchived(item.id,false):confirmArchiveInventoryItem(item.id);}});footer.push({label:"Delete",kind:"danger",onClick:()=>{hideModal();confirmDeleteInventoryItem(item.id);}});}
-    footer.push({label:item?"Save Changes":"Add Item",kind:"primary",keepOpen:true,onClick:()=>saveInventoryItem(itemId)});
-    showModal(item?"Edit Inventory Item":"Add Inventory Item",`<form id="inventoryItemForm" class="inventory-editor-form inventory-editor-redesign">
-      <section class="inventory-form-section inventory-basics-section"><div class="inventory-form-heading"><span>Inventory basics</span><h4>Item Details</h4><p>Name the item and decide where it belongs in your workshop inventory.</p></div><div class="inventory-form-grid"><label class="inventory-field"><span>Item Name <em>*</em></span><input name="name" value="${escapeHTML(item?.name||"")}" required></label><label class="inventory-field"><span>Material / Item Type <em>*</em></span><select name="materialType" required><option value="">Select a material type</option>${typeOptions}<option value="__new__">+ Add a new material type…</option></select><small>The selected type controls its Inventory tab.</small></label><label class="inventory-field full-width inventory-new-type-field"><span>New Material Type</span><input name="newMaterialType" placeholder="Example: Beads, Fabric, Ribbon"><small>New raw-material types appear as Inventory tabs.</small></label><label class="inventory-field"><span>Craft</span><select name="craft">${["Macramé","Crochet","Shared","Other"].map(v=>`<option value="${v}" ${item?.craft===v?"selected":""}>${v}</option>`).join("")}</select></label><label class="inventory-field"><span>Status</span><select name="status"><option value="Active" ${item?.status!=="Archived"?"selected":""}>Active</option><option value="Archived" ${item?.status==="Archived"?"selected":""}>Archived</option></select></label></div></section>
+    if(existingItem){footer.push({label:existingItem.status==="Archived"?"Restore":"Archive",kind:"secondary",onClick:()=>{hideModal();existingItem.status==="Archived"?setInventoryItemArchived(existingItem.id,false):confirmArchiveInventoryItem(existingItem.id);}});footer.push({label:"Delete",kind:"danger",onClick:()=>{hideModal();confirmDeleteInventoryItem(existingItem.id);}});}
+    footer.push({label:existingItem?"Save Changes":"Add Item",kind:"primary",keepOpen:true,onClick:()=>saveInventoryItem(itemId)});
+    showModal(existingItem?"Edit Inventory Item":"Add Inventory Item",`<form id="inventoryItemForm" class="inventory-editor-form inventory-editor-redesign">
+      <section class="inventory-form-section inventory-basics-section"><div class="inventory-form-heading"><span>Inventory basics</span><h4>Item Details</h4><p>Name the item and decide where it belongs in your workshop inventory.</p></div><div class="inventory-form-grid"><label class="inventory-field"><span>Item Name <em>*</em></span><input name="name" value="${escapeHTML(item?.name||"")}" required></label><label class="inventory-field"><span>Material / Item Type <em>*</em></span><select name="materialType" required><option value="">Select a material type</option>${typeOptions}<option value="__new__">+ Add a new material type…</option></select><small>The selected type controls its Inventory tab.</small></label><label class="inventory-field full-width inventory-new-type-field"><span>New Material Type</span><input name="newMaterialType" value="${escapeHTML(item?.newMaterialType||"")}" placeholder="Example: Beads, Fabric, Ribbon"><small>New raw-material types appear as Inventory tabs.</small></label><label class="inventory-field"><span>Craft</span><select name="craft">${["Macramé","Crochet","Shared","Other"].map(v=>`<option value="${v}" ${item?.craft===v?"selected":""}>${v}</option>`).join("")}</select></label><label class="inventory-field"><span>Status</span><select name="status"><option value="Active" ${item?.status!=="Archived"?"selected":""}>Active</option><option value="Archived" ${item?.status==="Archived"?"selected":""}>Archived</option></select></label></div></section>
       <section class="inventory-form-section inventory-stock-section"><div class="inventory-form-heading"><span>Stock & reordering</span><h4>Inventory Levels</h4><p>Track counted stock or the condition of reusable workshop items.</p></div><div class="inventory-form-grid"><label class="inventory-field"><span>Tracking</span><select name="tracking"><option value="quantity" ${!isCondition?"selected":""}>Quantity</option><option value="condition" ${isCondition?"selected":""}>Condition</option></select></label><label class="inventory-field"><span>Restock Method</span><select name="restockType"><option value="purchase" ${item?.restockType==="purchase"?"selected":""}>Purchase</option><option value="make" ${item?.restockType==="make"?"selected":""}>Make</option><option value="print" ${item?.restockType==="print"?"selected":""}>Print</option></select></label><label class="inventory-field quantity-field"><span>Current Quantity</span><input name="quantity" type="number" min="0" value="${Number(item?.quantity||0)}"></label><label class="inventory-field quantity-field"><span>Reorder At</span><input name="reorderAt" type="number" min="0" value="${Number(item?.reorderAt||0)}"></label><label class="inventory-field quantity-field"><span>Preferred Stock</span><input name="preferredStock" type="number" min="0" value="${Number(item?.preferredStock||0)}"></label><label class="inventory-field condition-field"><span>Condition</span><select name="condition">${["Available","Getting Low","Replace Soon","Out"].map(v=>`<option value="${v}" ${item?.condition===v?"selected":""}>${v}</option>`).join("")}</select></label></div></section>
-      <section class="inventory-form-section inventory-purchasing-section"><div class="inventory-form-heading"><span>Supplier & purchasing</span><h4>Where It Comes From</h4><p>Keep the supplier directory separate from the exact product purchase link.</p></div><div class="inventory-form-grid"><label class="inventory-field"><span>Supplier</span><select name="supplierId"><option value="">No supplier selected</option>${suppliers().filter(supplier=>supplier.status!=="Inactive" || supplier.id===item?.supplierId).sort((a,b)=>a.name.localeCompare(b.name)).map(supplier=>`<option value="${supplier.id}" ${item?.supplierId===supplier.id?"selected":""}>${escapeHTML(supplier.name)}</option>`).join("")}</select></label><label class="inventory-field"><span>Purchase URL</span><input name="purchaseUrl" value="${escapeHTML(item?.purchaseUrl||item?.resourceUrl||"")}" placeholder="Exact item listing"></label></div></section>
+      <section class="inventory-form-section inventory-purchasing-section"><div class="inventory-form-heading"><span>Supplier & purchasing</span><h4>Where It Comes From</h4><p>Keep the supplier directory separate from the exact product purchase link.</p></div><div class="inventory-form-grid"><div class="inventory-field supplier-picker-field"><span>Supplier</span><div class="supplier-picker-row"><select name="supplierId"><option value="">No supplier selected</option>${suppliers().filter(supplier=>supplier.status!=="Inactive" || supplier.id===item?.supplierId).sort((a,b)=>a.name.localeCompare(b.name)).map(supplier=>`<option value="${supplier.id}" ${item?.supplierId===supplier.id?"selected":""}>${escapeHTML(supplier.name)}</option>`).join("")}</select><button type="button" class="button secondary small supplier-inline-add" data-action="add-supplier-from-inventory" data-item-id="${itemId||""}">+ Add New Supplier</button></div><small>Create a supplier without losing this inventory form.</small></div><label class="inventory-field"><span>Purchase URL</span><input name="purchaseUrl" value="${escapeHTML(item?.purchaseUrl||item?.resourceUrl||"")}" placeholder="Exact item listing"></label></div></section>
       <section class="inventory-form-section inventory-print-section"><div class="inventory-form-heading"><span>Print settings</span><h4>Printable Inventory</h4><p>These fields appear for care sheets, product tags, stickers, and other printed supplies.</p></div><div class="inventory-form-grid"><label class="inventory-field"><span>Default Print Quantity</span><input name="defaultPrintQuantity" type="number" min="1" value="${Number(item?.defaultPrintQuantity||10)}"></label><label class="inventory-field"><span>Printable File</span><input name="printableFile" value="${escapeHTML(item?.printableFile||"")}" placeholder="printables/example.pdf"></label></div></section>
       <section class="inventory-form-section inventory-photo-section"><div class="inventory-form-heading"><span>Photo</span><h4>Item Image</h4><p>Add a workshop reference photo when it helps distinguish similar supplies.</p></div><div class="inventory-photo-layout"><label class="inventory-photo-control"><span>Choose Photo</span><input id="inventoryImageInput" type="file" accept="image/*"></label><div class="inventory-image-preview" id="inventoryImagePreview">${item?.imageData?`<img src="${item.imageData}" alt="">`:`<span>No photo added</span>`}</div></div></section>
       <section class="inventory-form-section inventory-notes-section"><div class="inventory-form-heading"><span>Notes</span><h4>Workshop Notes</h4><p>Record dimensions, supplier details, or anything useful when restocking.</p></div><label class="inventory-field"><span>Description / Notes</span><textarea name="notes" rows="4">${escapeHTML(item?.notes||"")}</textarea></label></section>
@@ -1265,6 +1266,33 @@
     hideModal();
   }
 
+  function collectInventoryItemDraft() {
+    const form=document.getElementById("inventoryItemForm");
+    if(!form) return null;
+    const fd=new FormData(form);
+    const imageInput=document.getElementById("inventoryImageInput");
+    const existingImage=document.querySelector("#inventoryImagePreview img")?.getAttribute("src") || "";
+    return {
+      name:String(fd.get("name")||""),
+      materialType:String(fd.get("materialType")||""),
+      newMaterialType:String(fd.get("newMaterialType")||""),
+      craft:String(fd.get("craft")||"Shared"),
+      status:String(fd.get("status")||"Active"),
+      tracking:String(fd.get("tracking")||"quantity"),
+      restockType:String(fd.get("restockType")||"purchase"),
+      quantity:Number(fd.get("quantity")||0),
+      reorderAt:Number(fd.get("reorderAt")||0),
+      preferredStock:Number(fd.get("preferredStock")||0),
+      condition:String(fd.get("condition")||"Available"),
+      supplierId:String(fd.get("supplierId")||""),
+      purchaseUrl:String(fd.get("purchaseUrl")||""),
+      defaultPrintQuantity:Number(fd.get("defaultPrintQuantity")||10),
+      printableFile:String(fd.get("printableFile")||""),
+      notes:String(fd.get("notes")||""),
+      imageData:imageInput?.dataset.imageData || existingImage
+    };
+  }
+
   function renderSuppliersTable() {
     const rows = suppliers().slice().sort((a,b) => a.name.localeCompare(b.name));
     return `<section class="inventory-category-heading"><div><p class="eyebrow">Inventory directory</p><h3>Suppliers</h3><p>Maintain one reusable supplier record and link inventory items to it.</p></div><button class="button primary" data-action="add-supplier">+ Add Supplier</button></section>
@@ -1277,7 +1305,7 @@
       </section>`;
   }
 
-  function showSupplierEditor(supplierId = null) {
+  function showSupplierEditor(supplierId = null, options = {}) {
     const supplier = supplierId ? supplierById(supplierId) : null;
     const linkedItems = supplier ? itemsForSupplier(supplier.id) : [];
     showModal(supplier ? "Edit Supplier" : "Add Supplier", `<form id="supplierForm" class="product-editor-form">
@@ -1285,10 +1313,13 @@
       <section class="product-form-section"><div class="product-section-heading"><span>Contact</span><h4>Contact Information</h4></div><div class="product-form-grid"><label class="product-field"><span class="field-label">Contact Name</span><input name="contactName" value="${escapeHTML(supplier?.contactName || "")}"></label><label class="product-field"><span class="field-label">Email</span><input type="email" name="email" value="${escapeHTML(supplier?.email || "")}"></label><label class="product-field"><span class="field-label">Phone</span><input name="phone" value="${escapeHTML(supplier?.phone || "")}"></label><label class="product-field"><span class="field-label">Typical Lead Time (days)</span><input type="number" min="0" name="leadTimeDays" value="${escapeHTML(String(supplier?.leadTimeDays ?? ""))}"></label></div></section>
       <section class="product-form-section"><div class="product-section-heading"><span>Purchasing</span><h4>Ordering Notes</h4></div><div class="product-form-grid"><label class="product-field"><span class="field-label">Minimum Order</span><input name="minimumOrder" value="${escapeHTML(supplier?.minimumOrder || "")}"></label><label class="product-field"><span class="field-label">Free Shipping Threshold</span><input name="freeShippingThreshold" value="${escapeHTML(supplier?.freeShippingThreshold || "")}"></label><label class="product-field full-width"><span class="field-label">Notes</span><textarea name="notes" rows="3">${escapeHTML(supplier?.notes || "")}</textarea></label></div></section>
       ${supplier ? `<section class="product-form-section"><div class="product-section-heading"><span>Inventory usage</span><h4>Items Supplied</h4><p>${linkedItems.length ? linkedItems.map(item=>escapeHTML(item.name)).join(" · ") : "No inventory items are linked yet."}</p></div></section>` : ""}
-    </form>`, [{label:"Cancel"},{label:supplier?"Save Changes":"Add Supplier",kind:"primary",onClick:()=>saveSupplier(supplierId)}]);
+    </form>`, options.returnToInventory ? [
+      {label:"Back to Inventory Item",keepOpen:true,onClick:()=>showInventoryItemEditor(options.returnToInventory.itemId || null, options.returnToInventory.draft)},
+      {label:supplier?"Save Changes":"Add Supplier",kind:"primary",keepOpen:true,onClick:()=>saveSupplier(supplierId,options)}
+    ] : [{label:"Cancel"},{label:supplier?"Save Changes":"Add Supplier",kind:"primary",keepOpen:true,onClick:()=>saveSupplier(supplierId,options)}]);
   }
 
-  function saveSupplier(supplierId = null) {
+  function saveSupplier(supplierId = null, options = {}) {
     const form = document.getElementById("supplierForm");
     if (!form) return;
     const fd = new FormData(form);
@@ -1304,7 +1335,14 @@
     if (existing) Object.assign(existing, updated); else data.suppliers.push(updated);
     inventoryItems().forEach(item => { if (item.supplierId === updated.id) item.supplier = updated.name; });
     data.activity.unshift({text:`${existing ? "Updated" : "Added"} supplier: ${updated.name}`,time:"Just now"});
-    saveData(); renderInventoryCatalog("suppliers"); showToast(existing ? "Supplier updated." : "Supplier added.");
+    saveData();
+    if(options.returnToInventory){
+      const draft={...(options.returnToInventory.draft||{}),supplierId:updated.id,supplier:updated.name};
+      showInventoryItemEditor(options.returnToInventory.itemId || null,draft);
+      showToast(existing ? "Supplier updated and selected." : "Supplier added and selected.");
+      return;
+    }
+    hideModal(); renderInventoryCatalog("suppliers"); showToast(existing ? "Supplier updated." : "Supplier added.");
   }
 
   function openInventoryLink(itemId) {
@@ -3031,6 +3069,7 @@
     if (action==="delete-inventory-item") confirmDeleteInventoryItem(button.dataset.itemId);
     if (action==="add-inventory-item") showInventoryItemEditor();
     if (action==="add-supplier") showSupplierEditor();
+    if (action==="add-supplier-from-inventory") { const draft=collectInventoryItemDraft(); if(draft) showSupplierEditor(null,{returnToInventory:{itemId:button.dataset.itemId||null,draft}}); }
     if (action==="edit-supplier") showSupplierEditor(button.dataset.supplierId);
     if (action==="open-inventory-link") openInventoryLink(button.dataset.itemId);
     if (action==="kit-transaction") showKitTransaction(button.dataset.itemId,button.dataset.mode);

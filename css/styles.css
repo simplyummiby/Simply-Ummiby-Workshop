@@ -1505,3 +1505,10 @@ textarea { resize: vertical; }
 @media(max-width:850px){
   .inventory-row-actions-polished { padding-top:2px; }
 }
+
+/* v0.6.8.3.2 Inline supplier creation */
+.supplier-picker-field{display:flex;flex-direction:column;gap:.45rem}
+.supplier-picker-row{display:flex;align-items:stretch;gap:.65rem;flex-wrap:wrap}
+.supplier-picker-row select{flex:1 1 15rem;min-width:0}
+.supplier-inline-add{flex:0 0 auto;white-space:nowrap}
+@media (max-width:680px){.supplier-picker-row{flex-direction:column}.supplier-inline-add{width:100%}}

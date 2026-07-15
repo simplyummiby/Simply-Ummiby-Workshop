@@ -1,4 +1,12 @@
-## 0.6.8.3.1 — Safe Inventory Management
+## 0.6.8.3.2 — Inline Supplier Creation
+
+- Added **+ Add New Supplier** beside the Inventory supplier dropdown.
+- Preserved unsaved inventory values, notes, material type, quantities, URLs, and image data while creating a supplier.
+- Automatically selects a newly created supplier when returning to the Inventory editor.
+- Added a safe Back to Inventory Item action from the inline supplier form.
+- Kept supplier homepage records separate from item-specific purchase URLs.
+
+## 0.6.8.3.2 — Safe Inventory Management
 
 - Added Archive, Restore, and safe Delete actions.
 - Added reference checks across products, colors, prepared components, orders, and transaction history.
