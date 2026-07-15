@@ -227,9 +227,17 @@ Inventory table readability pass completed: removed initials, simplified columns
 - Safe migration of existing inventory type names and quantities.
 
 
-## Version 0.6.8.3.3 — Completed
+## Version 0.6.8.3 — Completed
 
 - Safe inventory archive, restore, and deletion
 - Reference checking before removal
 - Redesigned inventory editor
 - Where Used relationship summary
+
+
+## Version 0.6.8.3.4 — Completed
+
+- Editable Linked Products field in Inventory.
+- Stable product IDs stored on inventory records.
+- Live product pills synchronized with Product Master materials.
+- Automatic packaging/component links preserved.

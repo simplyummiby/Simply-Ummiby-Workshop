@@ -1,6 +1,6 @@
 (() => {
   const STORAGE_KEY = "simplyUmmibyWorkshopData";
-  const VERSION = "0.6.8.3.3";
+  const VERSION = "0.6.8.3.4";
   const ITEM_STATUSES = ["New","Preparing","Manufacturing","Waiting on Material","Ready for Packing","Packed","Ready to Mail","Completed"];
   const STATUS_PROGRESS = {
     "New": 5, "Preparing": 20, "Manufacturing": 50, "Waiting on Material": 35,
@@ -801,19 +801,46 @@
     return productMasters().find(master => master.id === id);
   }
 
-  function productsUsingInventoryItem(itemId) {
-    return productMasters().filter(master =>
-      (master.materials || []).some(row => row.inventoryItemId === itemId) ||
-      (master.kitDefinition?.contents || []).some(row => row.inventoryItemId === itemId) ||
+  function productUsesInventoryItemAutomatically(master, itemId) {
+    return (master.kitDefinition?.contents || []).some(row => row.inventoryItemId === itemId) ||
       (master.kitDefinition?.separateMaterials || []).some(row => row.inventoryItemId === itemId) ||
-      Object.values(master.packaging || {}).includes(itemId)
+      Object.values(master.packaging || {}).includes(itemId);
+  }
+
+  function productsUsingInventoryItem(itemId) {
+    const item = inventoryItemById(itemId);
+    const explicitIds = new Set(item?.linkedProductIds || []);
+    return productMasters().filter(master =>
+      explicitIds.has(master.id) ||
+      (master.materials || []).some(row => row.inventoryItemId === itemId) ||
+      productUsesInventoryItemAutomatically(master, itemId)
     );
   }
 
   function syncInventoryProductLinks() {
     inventoryItems().forEach(item => {
-      item.linkedProductIds = productsUsingInventoryItem(item.id).map(master => master.id);
+      const linked = new Set(item.linkedProductIds || []);
+      productMasters().forEach(master => {
+        if ((master.materials || []).some(row => row.inventoryItemId === item.id) || productUsesInventoryItemAutomatically(master, item.id)) linked.add(master.id);
+      });
+      item.linkedProductIds = [...linked].filter(id => productMasterById(id));
     });
+  }
+
+  function syncProductLinksFromInventoryItem(item, selectedProductIds) {
+    const selected = new Set(selectedProductIds || []);
+    productMasters().forEach(master => {
+      const automatic = productUsesInventoryItemAutomatically(master, item.id);
+      const hasMaterial = (master.materials || []).some(row => row.inventoryItemId === item.id);
+      if (selected.has(master.id) && !automatic && !hasMaterial) {
+        master.materials ||= [];
+        master.materials.push({inventoryItemId:item.id, quantity:1, role:"Linked inventory item", linkedFromInventory:true});
+      }
+      if (!selected.has(master.id) && !automatic) {
+        master.materials = (master.materials || []).filter(row => row.inventoryItemId !== item.id);
+      }
+    });
+    item.linkedProductIds = productMasters().filter(master => selected.has(master.id) || productUsesInventoryItemAutomatically(master, item.id)).map(master => master.id);
   }
 
   function migrateItem(item, index) {
@@ -1187,6 +1214,7 @@
       <section class="inventory-form-section inventory-purchasing-section"><div class="inventory-form-heading"><span>Supplier & purchasing</span><h4>Where It Comes From</h4><p>Keep the supplier directory separate from the exact product purchase link.</p></div><div class="inventory-form-grid"><div class="inventory-field supplier-picker-field"><span>Supplier</span><div class="supplier-picker-row"><select name="supplierId"><option value="">No supplier selected</option>${suppliers().filter(supplier=>supplier.status!=="Inactive" || supplier.id===item?.supplierId).sort((a,b)=>a.name.localeCompare(b.name)).map(supplier=>`<option value="${supplier.id}" ${item?.supplierId===supplier.id?"selected":""}>${escapeHTML(supplier.name)}</option>`).join("")}</select><button type="button" class="button secondary small supplier-inline-add" data-action="add-supplier-from-inventory" data-item-id="${itemId||""}">+ Add New Supplier</button></div><small>Create a supplier without losing this inventory form.</small></div><label class="inventory-field"><span>Purchase URL</span><input name="purchaseUrl" value="${escapeHTML(item?.purchaseUrl||item?.resourceUrl||"")}" placeholder="Exact item listing"></label></div></section>
       <section class="inventory-form-section inventory-print-section"><div class="inventory-form-heading"><span>Print settings</span><h4>Printable Inventory</h4><p>These fields appear for care sheets, product tags, stickers, and other printed supplies.</p></div><div class="inventory-form-grid"><label class="inventory-field"><span>Default Print Quantity</span><input name="defaultPrintQuantity" type="number" min="1" value="${Number(item?.defaultPrintQuantity||10)}"></label><label class="inventory-field"><span>Printable File</span><input name="printableFile" value="${escapeHTML(item?.printableFile||"")}" placeholder="printables/example.pdf"></label></div></section>
       <section class="inventory-form-section inventory-photo-section"><div class="inventory-form-heading"><span>Photo</span><h4>Item Image</h4><p>Add a workshop reference photo when it helps distinguish similar supplies.</p></div><div class="inventory-photo-layout"><label class="inventory-photo-control"><span>Choose Photo</span><input id="inventoryImageInput" type="file" accept="image/*"></label><div class="inventory-image-preview" id="inventoryImagePreview">${item?.imageData?`<img src="${item.imageData}" alt="">`:`<span>No photo added</span>`}</div></div></section>
+      <section class="inventory-form-section inventory-product-links-section"><div class="inventory-form-heading"><span>Products</span><h4>Linked Products</h4><p>Select every product that uses this inventory item. Product pills in the Inventory table update from these links.</p></div><div class="inventory-product-link-grid">${productMasters().slice().sort((a,b)=>a.name.localeCompare(b.name)).map(master=>{const checked=(item?.linkedProductIds||productsUsingInventoryItem(existingItem?.id||"").map(product=>product.id)).includes(master.id);const automatic=existingItem?productUsesInventoryItemAutomatically(master,existingItem.id):false;return `<label class="inventory-product-link-option ${automatic?"is-automatic":""}"><input type="checkbox" name="linkedProductIds" value="${master.id}" ${checked?"checked":""} ${automatic?"disabled":""}><span><strong>${escapeHTML(master.name)}</strong><small>${escapeHTML(master.code||master.craft||"")}${automatic?" · Automatically linked by packaging or prepared-component settings":""}</small></span>${automatic?`<input type="hidden" name="linkedProductIds" value="${master.id}">`:""}</label>`;}).join("")}</div></section>
       <section class="inventory-form-section inventory-notes-section"><div class="inventory-form-heading"><span>Notes</span><h4>Workshop Notes</h4><p>Record dimensions, supplier details, or anything useful when restocking.</p></div><label class="inventory-field"><span>Description / Notes</span><textarea name="notes" rows="4">${escapeHTML(item?.notes||"")}</textarea></label></section>
       <aside class="inventory-where-used"><div class="inventory-form-heading"><span>Connections</span><h4>Where Used</h4><p>These relationships are checked before an item can be deleted.</p></div><div class="reference-summary">${whereUsed}</div></aside>
     </form>`,footer);
@@ -1291,10 +1319,12 @@
       supplier: supplierById(formData.get("supplierId"))?.name || "",
       purchaseUrl: normalizeExternalUrl(formData.get("purchaseUrl")),
       notes: formData.get("notes").trim(),
-      imageData: document.getElementById("inventoryImageInput")?.dataset.imageData || existing?.imageData || ""
+      imageData: document.getElementById("inventoryImageInput")?.dataset.imageData || existing?.imageData || "",
+      linkedProductIds: [...new Set(formData.getAll("linkedProductIds"))]
     };
     if (existing) Object.assign(existing,updated);
     else data.inventoryCatalog.items.push(updated);
+    syncProductLinksFromInventoryItem(updated, updated.linkedProductIds);
     syncInventoryProductLinks();
     data.activity.unshift({text:`${existing ? "Updated" : "Added"} inventory item: ${updated.name}`,time:"Just now"});
     saveData();
@@ -1326,6 +1356,7 @@
       purchaseUrl:String(fd.get("purchaseUrl")||""),
       defaultPrintQuantity:Number(fd.get("defaultPrintQuantity")||10),
       printableFile:String(fd.get("printableFile")||""),
+      linkedProductIds:fd.getAll("linkedProductIds"),
       notes:String(fd.get("notes")||""),
       imageData:imageInput?.dataset.imageData || existingImage
     };

@@ -240,6 +240,11 @@ Inventory includes a Suppliers directory with reusable vendor records. Add/Edit 
 The Inventory editor requires a managed Material Type. Users can create a new raw-material type from the same form, and it immediately becomes an Inventory tab. Prepared, finished, packaging, and print types continue to route to their operational sections.
 
 
-## Version 0.6.8.3.3 — Inventory Editor and Lifecycle
+## Version 0.6.8.3 — Inventory Editor and Lifecycle
 
 Inventory includes Active, Archived, and All filters; Archive, Restore, and Delete actions; a sectioned Add/Edit modal; conditional stock and print fields; and a Where Used panel.
+
+
+## Version 0.6.8.3.4 — Linked Products in Inventory
+
+The Inventory editor includes a Linked Products multi-select. The table displays the resulting product relationships as clickable pills without adding another column.

@@ -1,3 +1,12 @@
+## 0.6.8.3.4 — Editable Product-to-Inventory Links
+
+- Added a Linked Products multi-select to Add/Edit Inventory.
+- Migrated existing Product Master relationships into editable stable product IDs.
+- Product pills in Inventory rows now reflect saved relationships.
+- Adding or removing an ordinary material link updates the matching Product Master material list.
+- Packaging and prepared-component relationships remain automatic and are identified as such.
+- Preserved inline supplier creation and unsaved inventory drafts.
+
 ## 0.6.8.3.3 — Live Inventory Product and Purchase Links
 
 - Product pills beneath inventory items are generated from current Product Master relationships.
@@ -6,7 +15,7 @@
 - A Buy Online link appears only when an exact item purchase URL is available.
 - Workshop notes remain wrapped safely beneath the relationship details.
 
-## 0.6.8.3.3 — Inline Supplier Creation
+## 0.6.8.3.2 — Inline Supplier Creation
 
 - Added **+ Add New Supplier** beside the Inventory supplier dropdown.
 - Preserved unsaved inventory values, notes, material type, quantities, URLs, and image data while creating a supplier.
@@ -14,7 +23,7 @@
 - Added a safe Back to Inventory Item action from the inline supplier form.
 - Kept supplier homepage records separate from item-specific purchase URLs.
 
-## 0.6.8.3.3 — Safe Inventory Management
+## 0.6.8.3 — Safe Inventory Management
 
 - Added Archive, Restore, and safe Delete actions.
 - Added reference checks across products, colors, prepared components, orders, and transaction history.
@@ -38,7 +47,7 @@
 - Legacy product-page URLs used as supplier websites are reduced to the supplier domain homepage.
 - Invalid supplier URLs no longer open as local files.
 
-## 0.6.8.1.1 — Supplier Management
+## 0.6.8.1 — Supplier Management
 
 - Added a reusable Suppliers directory under Inventory.
 - Migrated existing free-text supplier names into stable supplier records.
