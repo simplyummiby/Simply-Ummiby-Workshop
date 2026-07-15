@@ -1,5 +1,15 @@
 # Changelog
 
+
+## 0.6.4 — Ship By Date tracking
+
+- Added a required Ship By Date field to order creation and editing.
+- Added safe migration support for existing orders without a date.
+- Displayed the deadline prominently on the Dashboard, Workshop order cards, Processing Area hero, and item workspaces.
+- Added normal, due-soon, due-today, overdue, missing-date, and mailed deadline states.
+- Sorted active orders with dated orders soonest-first while preserving completed-order history.
+- Kept Ship By Date separate from packed and mailed timestamps.
+
 ## 0.6.3.4 — 2026-07-15
 
 ### Fixed

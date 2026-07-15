@@ -1289,3 +1289,24 @@ textarea { resize: vertical; }
   .ready-mail-panel { align-items: flex-start; flex-direction: column; }
   .ready-mail-check { width: 100%; justify-content: center; }
 }
+
+/* v0.6.4 ship-by deadline visibility */
+.ship-by-badge {
+  display: inline-flex; align-items: center; width: fit-content; margin-top: 9px;
+  border-radius: 999px; padding: 7px 11px; font-size: .82rem; font-weight: 900;
+  border: 1px solid #d8c6c9; background: #fff; color: #3d3032; letter-spacing: .01em;
+}
+.ship-by-badge.normal { border-color: #cfb8bd; background: #fff; color: #4a373b; }
+.ship-by-badge.soon { border-color: #e6b85d; background: #fff7dc; color: #76520b; }
+.ship-by-badge.today { border-color: #df8a35; background: #fff0d9; color: #8a4300; }
+.ship-by-badge.overdue { border-color: #d56b72; background: #fff0f1; color: #a1222c; }
+.ship-by-badge.missing { border-style: dashed; background: #f7f4f5; color: #725e62; }
+.ship-by-badge.mailed { border-color: #8fbf9a; background: #eef8f0; color: #276238; }
+.order-hero-meta { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; }
+.order-hero-meta .ship-by-badge { margin-top: 0; font-size: .9rem; padding: 8px 13px; }
+.order-deadline-stack { display: grid; justify-items: end; gap: 7px; }
+.order-deadline-stack .ship-by-badge { margin-top: 0; }
+.item-ship-by .ship-by-badge { margin-top: 7px; }
+@media (max-width: 700px) {
+  .order-deadline-stack { justify-items: start; }
+}

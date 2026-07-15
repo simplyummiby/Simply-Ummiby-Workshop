@@ -1,6 +1,6 @@
 (() => {
   const STORAGE_KEY = "simplyUmmibyWorkshopData";
-  const VERSION = "0.6.3.4";
+  const VERSION = "0.6.4";
   const ITEM_STATUSES = ["New","Preparing","Manufacturing","Waiting on Material","Ready for Packing","Packed","Ready to Mail","Completed"];
   const STATUS_PROGRESS = {
     "New": 5, "Preparing": 20, "Manufacturing": 50, "Waiting on Material": 35,
@@ -61,6 +61,7 @@
       id: order.id || uid("order"),
       customerName: order.customerName || "Unnamed Customer",
       etsyOrderNumber: order.etsyOrderNumber || "",
+      shipByDate: order.shipByDate || "",
       notes: order.notes || "",
       status: order.status || calculateOrderStatus(order.items || []),
       createdAt: order.createdAt || new Date().toISOString(),
@@ -640,6 +641,36 @@
 
   function escapeHTML(value = "") {
     return String(value).replace(/[&<>"']/g, char => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[char]));
+  }
+
+  function parseLocalDate(dateString) {
+    if (!dateString) return null;
+    const [year,month,day] = String(dateString).split("-").map(Number);
+    if (!year || !month || !day) return null;
+    return new Date(year,month-1,day);
+  }
+
+  function formatShipByDate(dateString) {
+    const date=parseLocalDate(dateString);
+    return date ? date.toLocaleDateString(undefined,{month:"short",day:"numeric",year:"numeric"}) : "Not set";
+  }
+
+  function shipByState(order) {
+    if (!order?.shipByDate) return {className:"missing",label:"Ship by date not set",shortLabel:"No ship date"};
+    const due=parseLocalDate(order.shipByDate);
+    const today=new Date(); today.setHours(0,0,0,0);
+    const days=Math.round((due-today)/86400000);
+    if (order.status === "Completed") return {className:"mailed",label:`Ship by ${formatShipByDate(order.shipByDate)}`,shortLabel:`Ship by ${formatShipByDate(order.shipByDate)}`};
+    if (days < 0) { const n=Math.abs(days); return {className:"overdue",label:`Overdue by ${n} day${n===1?"":"s"}`,shortLabel:`Overdue ${n}d`}; }
+    if (days === 0) return {className:"today",label:"Ship today",shortLabel:"Ship today"};
+    if (days === 1) return {className:"soon",label:"Ships tomorrow",shortLabel:"Tomorrow"};
+    if (days <= 3) return {className:"soon",label:`Ship in ${days} days`,shortLabel:`${days} days`};
+    return {className:"normal",label:`Ship by ${formatShipByDate(order.shipByDate)}`,shortLabel:`Ship by ${formatShipByDate(order.shipByDate)}`};
+  }
+
+  function renderShipByBadge(order,{compact=false}={}) {
+    const state=shipByState(order);
+    return `<span class="ship-by-badge ${state.className}" title="${escapeHTML(order.shipByDate ? `Ship by ${formatShipByDate(order.shipByDate)}` : "Ship by date not set")}">${escapeHTML(compact ? state.shortLabel : state.label)}</span>`;
   }
 
   function calculateOrderStatus(items = []) {
@@ -1303,11 +1334,17 @@
     `).join("");
     document.getElementById("inventoryAlerts").innerHTML = `<div class="alert-list">${urgentRestock}${stockAlerts}${!urgentRestock && !stockAlerts ? "<p>No inventory alerts.</p>" : ""}</div>`;
 
-    document.getElementById("activeOrders").innerHTML = `<div class="order-list">${activeOrders().slice(0,5).map(order => `
+    const dashboardOrders=activeOrders().sort((a,b) => {
+      if (a.shipByDate && b.shipByDate) return a.shipByDate.localeCompare(b.shipByDate);
+      if (a.shipByDate) return -1;
+      if (b.shipByDate) return 1;
+      return new Date(b.updatedAt)-new Date(a.updatedAt);
+    });
+    document.getElementById("activeOrders").innerHTML = `<div class="order-list">${dashboardOrders.slice(0,5).map(order => `
       <div class="order-item"><button data-action="open-order" data-order-id="${order.id}">
       <strong>${escapeHTML(order.customerName)} · Etsy #${escapeHTML(order.etsyOrderNumber)}</strong>
       <span>${order.items.length} item${order.items.length === 1 ? "" : "s"} · ${order.items.map(item => escapeHTML(item.productName)).join(", ")}</span>
-      </button><span class="badge status">${escapeHTML(order.status)}</span></div>`).join("") || "<p>No active orders yet.</p>"}</div>`;
+      </button><div class="order-deadline-stack">${renderShipByBadge(order,{compact:true})}<span class="badge status">${escapeHTML(order.status)}</span></div></div>`).join("") || "<p>No active orders yet.</p>"}</div>`;
 
     document.getElementById("activityFeed").innerHTML = `<div class="activity-list">${data.activity.slice(0,6).map(entry => `<div class="activity-item"><strong>${escapeHTML(entry.text)}</strong><span>${escapeHTML(entry.time)}</span></div>`).join("")}</div>`;
   }
@@ -1336,14 +1373,14 @@
 
   function renderWorkshopOrders() {
     const container = document.getElementById("workshopOrders");
-    let orders = [...data.orders].sort((a,b) => new Date(b.updatedAt) - new Date(a.updatedAt));
+    let orders = [...data.orders].sort((a,b) => { if (a.status!=="Completed" && b.status!=="Completed") { if (a.shipByDate && b.shipByDate) return a.shipByDate.localeCompare(b.shipByDate); if (a.shipByDate) return -1; if (b.shipByDate) return 1; } return new Date(b.updatedAt) - new Date(a.updatedAt); });
     if (currentWorkshopFilter === "Active") orders = orders.filter(o => o.status !== "Completed");
     else if (currentWorkshopFilter !== "All") orders = orders.filter(o => o.status === currentWorkshopFilter || o.items.some(i => i.status === currentWorkshopFilter));
 
     container.innerHTML = orders.map(order => `
       <article class="workspace-order-card">
         <div class="workspace-order-header">
-          <div><p class="eyebrow">Etsy #${escapeHTML(order.etsyOrderNumber)}</p><h4>${escapeHTML(order.customerName)}</h4><p>${order.items.length} independently tracked item${order.items.length === 1 ? "" : "s"}</p></div>
+          <div><p class="eyebrow">Etsy #${escapeHTML(order.etsyOrderNumber)}</p><h4>${escapeHTML(order.customerName)}</h4><p>${order.items.length} independently tracked item${order.items.length === 1 ? "" : "s"}</p>${renderShipByBadge(order)}</div>
           <div class="item-action-group"><span class="badge status">${escapeHTML(order.status)}</span><button class="button primary small" data-action="open-order" data-order-id="${order.id}">Open Processing Area</button></div>
         </div>
         <div class="workspace-items">${order.items.map((item,index) => `
@@ -1364,6 +1401,7 @@
       const form = document.getElementById("newOrderForm");
       form.customerName.value = order.customerName;
       form.etsyOrderNumber.value = order.etsyOrderNumber;
+      form.shipByDate.value = order.shipByDate || "";
       form.notes.value = order.notes;
     }
     const initialLines = order ? groupOrderItems(order.items) : [{productId:data.products[0].id,color:data.products[0].colors[0],quantity:1}];
@@ -1433,6 +1471,7 @@
       rebuilt.forEach((item,index) => item.unitNumber=index+1);
       order.customerName=form.customerName.value.trim();
       order.etsyOrderNumber=form.etsyOrderNumber.value.trim();
+      order.shipByDate=form.shipByDate.value;
       order.notes=form.notes.value.trim();
       order.items=rebuilt;
       touchOrder(order);
@@ -1447,7 +1486,7 @@
       const product=data.products.find(p => p.id===spec.productId);
       for (let n=0;n<spec.quantity;n++) items.push(migrateItem({id:uid("item"),productId:product.id,productName:product.name,color:spec.color,status:"New",updatedAt:now},items.length));
     });
-    const order={id:uid("order"),customerName:form.customerName.value.trim(),etsyOrderNumber:form.etsyOrderNumber.value.trim(),notes:form.notes.value.trim(),status:"New",items,createdAt:now,updatedAt:now,shipping:{careSheetPrinted:false,packingSlipPrinted:false,shippoOpened:false,labelAttached:false,companyStickerAttached:false,mailerSealed:false,packedAt:null,mailedAt:null,productTagChecks:{},inventoryTaskTransactions:{}}};
+    const order={id:uid("order"),customerName:form.customerName.value.trim(),etsyOrderNumber:form.etsyOrderNumber.value.trim(),shipByDate:form.shipByDate.value,notes:form.notes.value.trim(),status:"New",items,createdAt:now,updatedAt:now,shipping:{careSheetPrinted:false,packingSlipPrinted:false,shippoOpened:false,labelAttached:false,companyStickerAttached:false,mailerSealed:false,packedAt:null,mailedAt:null,productTagChecks:{},inventoryTaskTransactions:{}}};
     data.orders.unshift(order);
     data.activity.unshift({text:`Created order for ${order.customerName}`,time:"Just now"});
     touchOrder(order,items[0]);
@@ -1469,7 +1508,7 @@
     const counts={total:order.items.length,active:order.items.filter(i => i.status!=="Completed").length,complete:order.items.filter(i => i.status==="Completed").length};
     const container=document.getElementById("orderWorkspace");
     container.innerHTML=`
-      <section class="order-hero"><div><p class="eyebrow">Etsy #${escapeHTML(order.etsyOrderNumber)}</p><h3>${escapeHTML(order.customerName)}</h3><p>${escapeHTML(order.status)} · Updated ${formatDate(order.updatedAt)}</p></div>
+      <section class="order-hero"><div><p class="eyebrow">Etsy #${escapeHTML(order.etsyOrderNumber)}</p><h3>${escapeHTML(order.customerName)}</h3><div class="order-hero-meta"><p>${escapeHTML(order.status)} · Updated ${formatDate(order.updatedAt)}</p>${renderShipByBadge(order)}</div></div>
       <div class="order-hero-actions"><button class="button secondary small" data-action="edit-order" data-order-id="${order.id}">Edit Order</button><button class="button secondary small" data-action="reset-order" data-order-id="${order.id}">Reset Progress</button><button class="button danger small" data-action="cancel-order" data-order-id="${order.id}">Cancel Order</button></div></section>
 
       <section class="order-summary-grid"><div class="summary-card"><strong>${counts.total}</strong><span>Total items</span></div><div class="summary-card"><strong>${counts.active}</strong><span>Still active</span></div><div class="summary-card"><strong>${counts.complete}</strong><span>Completed</span></div></section>
@@ -1490,7 +1529,7 @@
     const tab=item.workflow.activeTab || tabForStatus(item.status);
     return `
       <article class="item-card ${expanded ? "expanded" : ""}" data-item-card="${item.id}">
-        <div class="item-card-heading"><div><h4>${escapeHTML(item.productName)} #${index+1}</h4><p>${escapeHTML(item.color)} · ${escapeHTML(item.status)}</p></div>
+        <div class="item-card-heading"><div><h4>${escapeHTML(item.productName)} #${index+1}</h4><p>${escapeHTML(item.color)} · ${escapeHTML(item.status)}</p><div class="item-ship-by">${renderShipByBadge(order,{compact:true})}</div></div>
         <div class="item-action-group"><span class="badge ${item.status==="Completed" ? "complete" : item.status==="Waiting on Material" ? "waiting" : "status"}">${workflowPercent(item)}%</span>
         <button class="button secondary small" data-action="open-item-recipe" data-order-id="${order.id}" data-item-id="${item.id}" data-recipe-id="${item.productId}">Open Recipe</button><button class="button secondary small" data-action="toggle-item" data-order-id="${order.id}" data-item-id="${item.id}">${expanded ? "Close" : "Open Processing"}</button></div></div>
         <div class="item-card-body">
