@@ -253,3 +253,8 @@ The Inventory editor includes a Linked Products multi-select. The table displays
 ## Version 0.6.8.3.6 — Sidebar Navigation
 
 All primary modules now have distinct SVG navigation icons: Dashboard, Workshop, Batch Production, Inventory, Products, Resources, and Settings.
+
+
+## Version 0.7.0 — Orders Experience
+
+The former Workshop destination is presented as **Orders**. Its internal `workshop` view key remains stable for backward compatibility, while the user-facing module now provides an Orders hero, live metrics, richer filtering, deadline visibility, and a table-based index. Existing order and workflow data structures are unchanged.

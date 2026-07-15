@@ -20,7 +20,7 @@
 
       <nav class="main-nav" aria-label="Main navigation">
         <button class="nav-link active" data-view="dashboard"><span class="nav-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 11.5 12 4l9 7.5"/><path d="M5 10.5V20h14v-9.5"/><path d="M9 20v-6h6v6"/></svg></span> Dashboard</button>
-        <button class="nav-link" data-view="workshop"><span class="nav-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="6" cy="7" r="3"/><circle cx="6" cy="17" r="3"/><path d="m8.6 8.5 10.9 6.3"/><path d="m8.6 15.5 10.9-6.3"/></svg></span> Workshop</button>
+        <button class="nav-link" data-view="workshop"><span class="nav-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7.5 12 3l8 4.5-8 4.5-8-4.5Z"/><path d="M4 7.5V17l8 4 8-4V7.5"/><path d="M12 12v9"/></svg></span> Orders</button>
         <button class="nav-link" data-view="batch"><span class="nav-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="7" height="7" rx="1.5"/><rect x="14" y="4" width="7" height="7" rx="1.5"/><rect x="3" y="15" width="7" height="5" rx="1.5"/><rect x="14" y="15" width="7" height="5" rx="1.5"/></svg></span> Batch Production</button>
         <button class="nav-link" data-view="inventory"><span class="nav-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7.5 12 3l8 4.5-8 4.5-8-4.5Z"/><path d="M4 7.5V17l8 4 8-4V7.5"/><path d="M12 12v9"/></svg></span> Inventory</button>
         <button class="nav-link" data-view="products"><span class="nav-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6.5 12 3l8 3.5v11L12 21l-8-3.5v-11Z"/><path d="m4 6.5 8 4 8-4"/><path d="M12 10.5V21"/></svg></span> Products</button>
@@ -30,7 +30,7 @@
 
       <div class="sidebar-footer">
         <p>Local workspace</p>
-        <span>Version 0.6.8.3.6</span>
+        <span>Version 0.7.0</span>
       </div>
     </aside>
 
@@ -100,8 +100,8 @@
     <section class="dashboard-grid lower">
       <article class="panel">
         <div class="panel-heading">
-          <div><p class="eyebrow">Order flow</p><h3>Active workshop</h3></div>
-          <button class="text-button" data-view="workshop">Open workshop</button>
+          <div><p class="eyebrow">Order flow</p><h3>Active orders</h3></div>
+          <button class="text-button" data-view="workshop">Open orders</button>
         </div>
         <div id="activeOrders"></div>
       </article>
@@ -120,7 +120,7 @@
       <div class="section-heading">
         <div>
           <p class="eyebrow">Manual Etsy order</p>
-          <h3 id="orderFormTitle">Create a workshop order</h3>
+          <h3 id="orderFormTitle">Create an order</h3>
           <p>Add every product in this Etsy order. Each physical item will be tracked independently.</p>
         </div>
       </div>
@@ -149,24 +149,31 @@
   </template>
 
   <template id="workshopTemplate">
-    <section class="page-section wide">
-      <div class="section-heading workshop-heading">
-        <div>
-          <p class="eyebrow">Active production</p>
-          <h3>Workshop Orders</h3>
-          <p>Each Etsy order stays grouped while its individual items move independently.</p>
+    <section class="page-section wide orders-page">
+      <section class="orders-banner" aria-labelledby="ordersBannerTitle">
+        <div class="orders-banner-copy">
+          <p class="eyebrow">Simply Ummiby Workshop</p>
+          <h3 id="ordersBannerTitle">Orders</h3>
+          <p>From planning to shipping, every order in one place.</p>
         </div>
-        <button class="button primary" data-action="new-order">+ New Order</button>
-      </div>
+      </section>
 
-      <div class="filter-row" id="workshopFilters"></div>
-      <div id="workshopOrders" class="workspace-order-list"></div>
+      <section class="orders-metric-grid" id="ordersMetricGrid"></section>
+
+      <section class="orders-panel panel">
+        <div class="orders-section-heading">
+          <div><p class="eyebrow">Order management</p><h3>Active Orders <span class="orders-count" id="ordersCount"></span></h3></div>
+          <button class="button primary" data-action="new-order">+ New Order</button>
+        </div>
+        <div class="orders-toolbar" id="workshopFilters"></div>
+        <div id="workshopOrders"></div>
+      </section>
     </section>
   </template>
 
   <template id="orderWorkspaceTemplate">
     <section class="page-section wide">
-      <button class="back-button" data-view="workshop">← Back to Workshop</button>
+      <button class="back-button" data-view="workshop">← Back to Orders</button>
       <div id="orderWorkspace"></div>
     </section>
   </template>

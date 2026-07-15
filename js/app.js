@@ -1,6 +1,6 @@
 (() => {
   const STORAGE_KEY = "simplyUmmibyWorkshopData";
-  const VERSION = "0.6.8.3.6";
+  const VERSION = "0.7.0";
   const ITEM_STATUSES = ["New","Preparing","Manufacturing","Waiting on Material","Ready for Packing","Packed","Ready to Mail","Completed"];
   const STATUS_PROGRESS = {
     "New": 5, "Preparing": 20, "Manufacturing": 50, "Waiting on Material": 35,
@@ -19,6 +19,10 @@
   const pageTitle = document.getElementById("pageTitle");
   const sidebar = document.getElementById("sidebar");
   let currentWorkshopFilter = "Active";
+  let orderSearch = "";
+  let orderStageFilter = "All";
+  let orderShipFilter = "All";
+  let orderSort = "ship-date";
   let productsModuleView = "catalog";
   let productCatalogCategoryFilter = "All";
   let productCatalogCraftFilter = "All";
@@ -2119,150 +2123,125 @@
     return candidates[0] || null;
   }
 
+  function orderNextStep(order) {
+    if (order.status === "Completed") return "Completed";
+    if (order.status === "Ready to Mail") return "Mail Order";
+    if (order.items.some(item => item.status === "Waiting on Material")) return "Resolve Materials";
+    if (order.items.some(item => ["New","Preparing"].includes(item.status))) return "Production Planning";
+    if (order.items.some(item => item.status === "Manufacturing")) return "Manufacturing";
+    if (order.items.some(item => ["Ready for Packing","Packed"].includes(item.status))) return "Pack & Ship";
+    return "Open Order";
+  }
+
+  function orderStage(order) {
+    const next = orderNextStep(order);
+    if (["Production Planning","Resolve Materials"].includes(next)) return "Planning";
+    if (next === "Manufacturing") return "Manufacturing";
+    if (next === "Pack & Ship") return "Pack & Ship";
+    if (next === "Mail Order") return "Ready to Mail";
+    return next;
+  }
+
+  function orderStatusClass(status) {
+    if (status === "Completed") return "complete";
+    if (status === "Ready to Mail") return "ready";
+    if (status === "Waiting on Material") return "waiting";
+    if (["Manufacturing","Packing"].includes(status)) return "production";
+    return "planning";
+  }
+
+  function orderProductThumb(item) {
+    const product = productById(item.productId);
+    const label = product?.shortName || item.productName || "Product";
+    const initials = label.split(/\s+/).filter(Boolean).slice(0,2).map(word => word[0]).join("").toUpperCase();
+    return `<span class="order-product-thumb" title="${escapeHTML(label)} — ${escapeHTML(item.color || "")}"><span>${escapeHTML(initials)}</span></span>`;
+  }
+
   function renderWorkshopView() {
-    pageTitle.textContent = "Workshop";
+    pageTitle.textContent = "Orders";
     setActiveNav("workshop");
     viewContainer.replaceChildren(document.getElementById("workshopTemplate").content.cloneNode(true));
     renderWorkshopFilters();
     renderWorkshopOrders();
   }
 
+  function renderOrdersMetrics() {
+    const active = data.orders.filter(order => order.status !== "Completed");
+    const readyPack = active.filter(order => order.items.some(item => ["Ready for Packing","Packed"].includes(item.status))).length;
+    const readyMail = active.filter(order => order.status === "Ready to Mail").length;
+    const weekEnd = new Date(); weekEnd.setHours(23,59,59,999); weekEnd.setDate(weekEnd.getDate()+7);
+    const shipsWeek = active.filter(order => order.shipByDate && parseLocalDate(order.shipByDate) <= weekEnd).length;
+    const metrics = [
+      ["Active Orders",active.length,"Active"],
+      ["Ready to Pack",readyPack,"Packing"],
+      ["Ready to Mail",readyMail,"Ready to Mail"],
+      ["Ships This Week",shipsWeek,"ship-week"]
+    ];
+    const container=document.getElementById("ordersMetricGrid");
+    if (!container) return;
+    container.innerHTML=metrics.map(([label,value,filter])=>`<button class="orders-metric-card" data-action="orders-summary-filter" data-filter="${filter}"><span>${escapeHTML(label)}</span><strong>${value}</strong><small>View orders</small></button>`).join("");
+  }
+
   function renderWorkshopFilters() {
-    const filters = ["Active","New","Preparing","Manufacturing","Waiting on Material","Packing","Ready to Mail","Completed","All"];
-    document.getElementById("workshopFilters").innerHTML = filters.map(filter => `<button class="filter-chip ${currentWorkshopFilter === filter ? "active" : ""}" data-action="filter-workshop" data-filter="${filter}">${filter}</button>`).join("");
+    const container=document.getElementById("workshopFilters");
+    if (!container) return;
+    const statuses=["Active","New","Preparing","Manufacturing","Waiting on Material","Packing","Ready to Mail","Completed","All"];
+    const stages=["All","Planning","Manufacturing","Pack & Ship","Ready to Mail","Completed"];
+    container.innerHTML=`
+      <label class="orders-search"><span class="sr-only">Search orders</span><input type="search" data-action="order-search" value="${escapeHTML(orderSearch)}" placeholder="Search orders…"></label>
+      <label><span class="sr-only">Status</span><select data-action="order-filter" data-filter="status">${statuses.map(value=>`<option value="${value}" ${currentWorkshopFilter===value?"selected":""}>${value === "Active" ? "All Active Statuses" : value}</option>`).join("")}</select></label>
+      <label><span class="sr-only">Production stage</span><select data-action="order-filter" data-filter="stage">${stages.map(value=>`<option value="${value}" ${orderStageFilter===value?"selected":""}>${value === "All" ? "All Production Stages" : value}</option>`).join("")}</select></label>
+      <label><span class="sr-only">Ship by</span><select data-action="order-filter" data-filter="ship"><option value="All" ${orderShipFilter==="All"?"selected":""}>All Ship Dates</option><option value="Overdue" ${orderShipFilter==="Overdue"?"selected":""}>Overdue</option><option value="Today" ${orderShipFilter==="Today"?"selected":""}>Ship Today</option><option value="Soon" ${orderShipFilter==="Soon"?"selected":""}>Due in 3 Days</option><option value="Week" ${orderShipFilter==="Week"?"selected":""}>Ships This Week</option><option value="Missing" ${orderShipFilter==="Missing"?"selected":""}>Date Not Set</option></select></label>
+      <label><span class="sr-only">Sort orders</span><select data-action="order-sort"><option value="ship-date" ${orderSort==="ship-date"?"selected":""}>Ship By — Soonest</option><option value="updated" ${orderSort==="updated"?"selected":""}>Recently Updated</option><option value="customer" ${orderSort==="customer"?"selected":""}>Customer A–Z</option><option value="order-number" ${orderSort==="order-number"?"selected":""}>Order Number</option></select></label>`;
+  }
+
+  function filteredWorkshopOrders() {
+    let orders=[...data.orders];
+    if (currentWorkshopFilter === "Active") orders=orders.filter(order=>order.status!=="Completed");
+    else if (currentWorkshopFilter !== "All") orders=orders.filter(order=>order.status===currentWorkshopFilter || order.items.some(item=>item.status===currentWorkshopFilter));
+    if (orderStageFilter !== "All") orders=orders.filter(order=>orderStage(order)===orderStageFilter);
+    if (orderSearch.trim()) {
+      const query=orderSearch.trim().toLowerCase();
+      orders=orders.filter(order=>[order.customerName,order.etsyOrderNumber,order.notes,...order.items.flatMap(item=>[item.productName,item.color])].some(value=>String(value||"").toLowerCase().includes(query)));
+    }
+    if (orderShipFilter !== "All") orders=orders.filter(order=>{
+      const state=shipByState(order);
+      if (orderShipFilter === "Overdue") return state.className === "overdue";
+      if (orderShipFilter === "Today") return state.className === "today";
+      if (orderShipFilter === "Soon") return ["today","soon"].includes(state.className);
+      if (orderShipFilter === "Missing") return state.className === "missing";
+      if (orderShipFilter === "Week") { if(!order.shipByDate)return false; const due=parseLocalDate(order.shipByDate); const end=new Date(); end.setHours(23,59,59,999);end.setDate(end.getDate()+7);return due<=end; }
+      return true;
+    });
+    orders.sort((a,b)=>{
+      if(orderSort==="updated")return new Date(b.updatedAt)-new Date(a.updatedAt);
+      if(orderSort==="customer")return a.customerName.localeCompare(b.customerName);
+      if(orderSort==="order-number")return String(a.etsyOrderNumber).localeCompare(String(b.etsyOrderNumber),undefined,{numeric:true});
+      if(a.shipByDate&&b.shipByDate)return a.shipByDate.localeCompare(b.shipByDate);
+      if(a.shipByDate)return -1;if(b.shipByDate)return 1;return new Date(b.updatedAt)-new Date(a.updatedAt);
+    });
+    return orders;
   }
 
   function renderWorkshopOrders() {
-    const container = document.getElementById("workshopOrders");
-    let orders = [...data.orders].sort((a,b) => { if (a.status!=="Completed" && b.status!=="Completed") { if (a.shipByDate && b.shipByDate) return a.shipByDate.localeCompare(b.shipByDate); if (a.shipByDate) return -1; if (b.shipByDate) return 1; } return new Date(b.updatedAt) - new Date(a.updatedAt); });
-    if (currentWorkshopFilter === "Active") orders = orders.filter(o => o.status !== "Completed");
-    else if (currentWorkshopFilter !== "All") orders = orders.filter(o => o.status === currentWorkshopFilter || o.items.some(i => i.status === currentWorkshopFilter));
-
-    container.innerHTML = orders.map(order => `
-      <article class="workspace-order-card">
-        <div class="workspace-order-header">
-          <div><p class="eyebrow">Etsy #${escapeHTML(order.etsyOrderNumber)}</p><h4>${escapeHTML(order.customerName)}</h4><p>${order.items.length} independently tracked item${order.items.length === 1 ? "" : "s"}</p>${renderShipByBadge(order)}</div>
-          <div class="item-action-group"><span class="badge status">${escapeHTML(order.status)}</span><button class="button primary small" data-action="open-order" data-order-id="${order.id}">Open Processing Area</button></div>
-        </div>
-        <div class="workspace-items">${order.items.map((item,index) => `
-          <div class="workspace-item"><div><h5>${escapeHTML(item.productName)} #${index+1}</h5><p>${escapeHTML(item.color)} · ${escapeHTML(item.status)}</p></div>
-          <span class="badge ${item.status === "Completed" ? "complete" : item.status === "Waiting on Material" ? "waiting" : "status"}">${workflowPercent(item)}%</span></div>`).join("")}
-        </div>
-      </article>`).join("") || `<div class="panel"><p>No orders match this view.</p></div>`;
-  }
-
-  function showNewOrder(orderId = null) {
-    editingOrderId = orderId;
-    pageTitle.textContent = orderId ? "Edit Order" : "New Order";
-    setActiveNav("");
-    viewContainer.replaceChildren(document.getElementById("newOrderTemplate").content.cloneNode(true));
-    const order = orderId ? data.orders.find(o => o.id === orderId) : null;
-    if (order) {
-      document.getElementById("orderFormTitle").textContent = "Edit workshop order";
-      const form = document.getElementById("newOrderForm");
-      form.customerName.value = order.customerName;
-      form.etsyOrderNumber.value = order.etsyOrderNumber;
-      form.shipByDate.value = order.shipByDate || "";
-      form.notes.value = order.notes;
+    renderOrdersMetrics();
+    const container=document.getElementById("workshopOrders");
+    const orders=filteredWorkshopOrders();
+    const count=document.getElementById("ordersCount"); if(count) count.textContent=`${orders.length}`;
+    if (!orders.length) {
+      container.innerHTML=`<div class="orders-empty"><div class="orders-empty-icon">□</div><h4>No matching orders</h4><p>Adjust the filters or add a new Etsy order when one arrives.</p><button class="button primary" data-action="new-order">+ New Order</button></div>`;
+      return;
     }
-    const initialLines = order ? groupOrderItems(order.items) : [{productId:data.products[0].id,color:data.products[0].colors[0],quantity:1}];
-    initialLines.forEach(line => addLineItemRow(line));
-    document.getElementById("addLineItem").addEventListener("click", () => addLineItemRow());
-    document.getElementById("newOrderForm").addEventListener("submit", saveOrderForm);
-  }
-
-  function groupOrderItems(items) {
-    const groups = new Map();
-    items.forEach(item => {
-      const key = `${item.productId}|${item.color}`;
-      const existing = groups.get(key) || {productId:item.productId,color:item.color,quantity:0};
-      existing.quantity += 1;
-      groups.set(key,existing);
-    });
-    return [...groups.values()];
-  }
-
-  function addLineItemRow(values = {}) {
-    const lineItems = document.getElementById("lineItems");
-    const row = document.createElement("div");
-    row.className = "line-item-row";
-    row.innerHTML = `<label>Product<select class="line-product"></select></label><label>Color<select class="line-color"></select></label><label>Quantity<input class="line-quantity" type="number" min="1" value="${values.quantity || 1}" /></label><button type="button" class="remove-line" title="Remove product">×</button>`;
-    const productSelect = row.querySelector(".line-product");
-    productSelect.innerHTML = data.products.map(p => `<option value="${p.id}">${escapeHTML(p.name)}</option>`).join("");
-    productSelect.value = values.productId || data.products[0].id;
-    const refreshColors = () => {
-      const product = data.products.find(p => p.id === productSelect.value);
-      const colorSelect = row.querySelector(".line-color");
-      colorSelect.innerHTML = product.colors.map(c => `<option value="${escapeHTML(c)}">${escapeHTML(c)}</option>`).join("");
-      if (values.color && product.colors.includes(values.color)) colorSelect.value = values.color;
-    };
-    productSelect.addEventListener("change", () => { values.color = null; refreshColors(); });
-    refreshColors();
-    row.querySelector(".remove-line").addEventListener("click", () => {
-      if (lineItems.children.length === 1) return showToast("An order needs at least one product.");
-      row.remove();
-    });
-    lineItems.appendChild(row);
-  }
-
-  function saveOrderForm(event) {
-    event.preventDefault();
-    const form = event.currentTarget;
-    const specs = [...document.querySelectorAll(".line-item-row")].map(row => ({
-      productId:row.querySelector(".line-product").value,
-      color:row.querySelector(".line-color").value,
-      quantity:Number(row.querySelector(".line-quantity").value)
-    }));
-    if (specs.some(s => !s.quantity || s.quantity < 1)) return showToast("Please enter a valid quantity.");
-
-    const now = new Date().toISOString();
-    if (editingOrderId) {
-      const order = data.orders.find(o => o.id === editingOrderId);
-      restoreProductTagTasksForOrder(order);
-      const oldItems = [...order.items];
-      const rebuilt = [];
-      specs.forEach(spec => {
-        const product = data.products.find(p => p.id === spec.productId);
-        for (let n=0;n<spec.quantity;n++) {
-          const reusableIndex = oldItems.findIndex(i => i.productId === spec.productId && i.color === spec.color);
-          if (reusableIndex >= 0) rebuilt.push(oldItems.splice(reusableIndex,1)[0]);
-          else rebuilt.push(migrateItem({id:uid("item"),productId:product.id,productName:product.name,color:spec.color,status:"New",updatedAt:now},rebuilt.length));
-        }
-      });
-      rebuilt.forEach((item,index) => item.unitNumber=index+1);
-      order.customerName=form.customerName.value.trim();
-      order.etsyOrderNumber=form.etsyOrderNumber.value.trim();
-      order.shipByDate=form.shipByDate.value;
-      order.notes=form.notes.value.trim();
-      order.items=rebuilt;
-      touchOrder(order);
-      data.activity.unshift({text:`Updated order for ${order.customerName}`,time:"Just now"});
-      saveData();
-      showToast("Order updated.");
-      return openOrder(order.id);
-    }
-
-    const items=[];
-    specs.forEach(spec => {
-      const product=data.products.find(p => p.id===spec.productId);
-      for (let n=0;n<spec.quantity;n++) items.push(migrateItem({id:uid("item"),productId:product.id,productName:product.name,color:spec.color,status:"New",updatedAt:now},items.length));
-    });
-    const order={id:uid("order"),customerName:form.customerName.value.trim(),etsyOrderNumber:form.etsyOrderNumber.value.trim(),shipByDate:form.shipByDate.value,notes:form.notes.value.trim(),status:"New",items,createdAt:now,updatedAt:now,shipping:{careSheetPrinted:false,packingSlipPrinted:false,shippoOpened:false,labelAttached:false,companyStickerAttached:false,mailerSealed:false,packedAt:null,mailedAt:null,productTagChecks:{},inventoryTaskTransactions:{}}};
-    data.orders.unshift(order);
-    data.activity.unshift({text:`Created order for ${order.customerName}`,time:"Just now"});
-    touchOrder(order,items[0]);
-    saveData();
-    showToast("Order saved locally.");
-    openOrder(order.id,items[0].id);
-  }
-
-  function openOrder(orderId, focusItemId = null) {
-    const order=data.orders.find(o => o.id===orderId);
-    if (!order) return showToast("Order not found.");
-    pageTitle.textContent="Processing Area";
-    setActiveNav("workshop");
-    viewContainer.replaceChildren(document.getElementById("orderWorkspaceTemplate").content.cloneNode(true));
-    renderOrderWorkspace(order,focusItemId);
+    container.innerHTML=`<div class="orders-table-wrap"><table class="orders-table"><thead><tr><th>Order</th><th>Customer</th><th>Products</th><th>Ship By</th><th>Status</th><th>Next Step</th><th>Actions</th></tr></thead><tbody>${orders.map(order=>`
+      <tr>
+        <td><strong class="order-number">#${escapeHTML(order.etsyOrderNumber)}</strong><small>${order.items.length} item${order.items.length===1?"":"s"}</small></td>
+        <td><strong>${escapeHTML(order.customerName)}</strong><small>Etsy order</small></td>
+        <td><div class="order-product-stack">${order.items.slice(0,3).map(orderProductThumb).join("")}${order.items.length>3?`<span class="order-product-more">+${order.items.length-3}</span>`:""}</div><small>${escapeHTML(order.items.map(item=>item.productName).join(", "))}</small></td>
+        <td>${renderShipByBadge(order)}${order.shipByDate?`<small>${escapeHTML(formatShipByDate(order.shipByDate))}</small>`:""}</td>
+        <td><span class="order-status-pill ${orderStatusClass(order.status)}">${escapeHTML(order.status)}</span></td>
+        <td><strong class="next-step">${escapeHTML(orderNextStep(order))}</strong><small>Updated ${escapeHTML(formatDate(order.updatedAt))}</small></td>
+        <td><button class="button secondary small order-view-button" data-action="open-order" data-order-id="${order.id}">View Order</button></td>
+      </tr>`).join("")}</tbody></table></div>`;
   }
 
   function renderOrderWorkspace(order,focusItemId=null) {
@@ -3129,7 +3108,7 @@
 
   function cancelOrder(orderId) {
     const order=data.orders.find(o => o.id===orderId);
-    showModal("Cancel this order?",`<p>This removes <strong>${escapeHTML(order.customerName)} · Etsy #${escapeHTML(order.etsyOrderNumber)}</strong> from the Workshop.</p>`,[
+    showModal("Cancel this order?",`<p>This removes <strong>${escapeHTML(order.customerName)} · Etsy #${escapeHTML(order.etsyOrderNumber)}</strong> from Orders.</p>`,[
       {label:"Keep Order"},
       {label:"Cancel Order",kind:"danger",onClick:() => { restoreAllInventoryTasksForOrder(order); data.orders=data.orders.filter(o => o.id!==orderId); data.activity.unshift({text:`Cancelled order for ${order.customerName}`,time:"Just now"}); saveData(); showView("workshop"); showToast("Order cancelled."); }}
     ]);
@@ -3196,6 +3175,7 @@
     if (action==="open-order") openOrder(orderId,itemId);
     if (action==="resume-focus") { const focus=findFocus(); focus ? openOrder(focus.order.id,focus.item.id) : showNewOrder(); }
     if (action==="filter-workshop") { currentWorkshopFilter=filter; renderWorkshopFilters(); renderWorkshopOrders(); }
+    if (action==="orders-summary-filter") { if(filter==="ship-week"){orderShipFilter="Week";currentWorkshopFilter="Active";}else{currentWorkshopFilter=filter;orderShipFilter="All";} renderWorkshopFilters(); renderWorkshopOrders(); }
     if (action==="edit-order") showNewOrder(orderId);
     if (action==="toggle-item") {
       const card=document.querySelector(`[data-item-card="${itemId}"]`);
@@ -3221,9 +3201,17 @@
     if (action==="cancel-order") cancelOrder(orderId);
   });
 
+  document.addEventListener("input",event => {
+    const el=event.target;
+    if(el.dataset.action==="order-search"){orderSearch=el.value;renderWorkshopOrders();}
+  });
+
   document.addEventListener("change",event => {
     const el=event.target;
     const {action,orderId,itemId,index,key}=el.dataset;
+    if (action==="order-filter") { if(el.dataset.filter==="status")currentWorkshopFilter=el.value; if(el.dataset.filter==="stage")orderStageFilter=el.value; if(el.dataset.filter==="ship")orderShipFilter=el.value; renderWorkshopOrders(); return; }
+    if (action==="order-sort") { orderSort=el.value; renderWorkshopOrders(); return; }
+    if (action==="order-search") { orderSearch=el.value; renderWorkshopOrders(); return; }
     if (action==="product-catalog-filter") { if(el.dataset.filter==="category")productCatalogCategoryFilter=el.value;else productCatalogCraftFilter=el.value;renderProductsModule("catalog");return; }
     if (action==="product-catalog-sort") { productCatalogSort=el.value;renderProductsModule("catalog");return; }
     if (action==="color-family-filter") { colorFamilyFilter=el.value;renderProductsModule("colors");return; }

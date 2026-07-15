@@ -1,27 +1,19 @@
 # Simply Ummiby Workshop
 
-**Version 0.6.8.3.6**
+**Version 0.7.0**
 
-Version 0.6.8.3.6 adds a consistent SVG icon set to the main sidebar navigation.
+Version 0.7.0 promotes Workshop to **Orders** and refreshes the primary order-management experience while preserving the complete planning, manufacturing, packing, inventory, and mailing workflow.
 
-## Version 0.6.8.3.6 highlights
+## Version 0.7.0 highlights
 
-- Adds a grouped **Linked Products** section to Add/Edit Inventory.
-- Populates product choices from the live Product Catalog.
-- Stores stable product IDs on inventory records.
-- Makes Inventory product pills update from the saved selections.
-- Synchronizes ordinary material links with Product Master.
-- Keeps packaging and prepared-component links automatic and clearly labeled.
-- Preserves the redesigned inventory form, supplier workflow, stock history, and existing relationships.
+- Renames Workshop to Orders throughout visible navigation and workflow copy.
+- Adds a warm Orders hero banner while leaving the Dashboard design unchanged.
+- Adds live summary cards for Active Orders, Ready to Pack, Ready to Mail, and Ships This Week.
+- Replaces stacked order cards with a scan-friendly order table.
+- Adds search, status, production-stage, ship-date, and sorting controls.
+- Highlights Ship By urgency, current status, and the calculated next step.
+- Keeps every existing order workflow and saved-data relationship intact.
 
-## Recipe management
+## Project documentation
 
-Version 0.6.8 introduced a searchable Recipe table, filters and sorting, improved recipe navigation, and a structured Add/Edit Recipe interface.
-
-## Product organization
-
-Products includes **Catalog**, **Categories & Codes**, **Colors**, and **Recipes**.
-
-## Local data
-
-The app stores workshop data in browser local storage and supports downloadable JSON backups. Keep backups before replacing or substantially changing the project.
+See the `/docs` folder for architecture, modules, roadmap, recipes, vision, and the full changelog.

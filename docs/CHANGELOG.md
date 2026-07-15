@@ -1,3 +1,13 @@
+## 0.7.0 — Orders Experience Refresh
+
+- Renamed the visible Workshop module to Orders.
+- Added a new Orders hero banner matching the warm Simply Ummiby visual direction.
+- Added live order summary cards and clickable filtering.
+- Rebuilt the order index as a responsive, scan-friendly table.
+- Added search, status, production-stage, ship-date, and sort controls.
+- Added product previews, Ship By urgency, status pills, and calculated Next Step values.
+- Preserved the existing order-processing, inventory, production, Pack & Ship, and mailing workflows.
+
 ## 0.6.8.3.6 — Sidebar SVG Icons
 
 - Replaced placeholder menu symbols with a consistent inline SVG icon set.

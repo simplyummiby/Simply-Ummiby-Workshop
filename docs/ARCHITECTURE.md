@@ -259,3 +259,8 @@ Inventory records store `linkedProductIds` as stable Product Master IDs. Ordinar
 ## Version 0.6.8.3.6 — Navigation Icon System
 
 The main sidebar now uses inline, currentColor SVG icons so navigation symbols inherit theme and active-state colors without external icon dependencies.
+
+
+## Version 0.7.0 — Orders Experience
+
+The former Workshop destination is presented as **Orders**. Its internal `workshop` view key remains stable for backward compatibility, while the user-facing module now provides an Orders hero, live metrics, richer filtering, deadline visibility, and a table-based index. Existing order and workflow data structures are unchanged.
