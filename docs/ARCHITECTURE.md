@@ -168,3 +168,8 @@ Each task uses a durable key based on product ID and color. Its inventory transa
 When an existing order is edited, completed tag allocations are restored before its item list is rebuilt. Tasks are then regenerated from the revised products, colors, and quantities, preventing stale tag deductions.
 
 The former order-level Final Shipping Checklist was replaced with a unified Pack & Ship workspace containing Pack the Order and Ship the Order groups. Earlier incomplete production is surfaced in an Outstanding Work panel rather than being hidden by the current workflow stage.
+
+
+## Version 0.6.3.1 unified workflow correction
+
+Step 3 now renders one unified Pack & Ship panel. Item-specific finishing, mailer consumption, and packed status appear inside the Pack the Order group before shared tags, care sheets, branding sticker, sealing, and shipping. The former separate item-level packing panel was removed.

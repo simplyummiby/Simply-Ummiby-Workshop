@@ -1,6 +1,6 @@
 (() => {
   const STORAGE_KEY = "simplyUmmibyWorkshopData";
-  const VERSION = "0.6.3";
+  const VERSION = "0.6.3.1";
   const ITEM_STATUSES = ["New","Preparing","Manufacturing","Waiting on Material","Ready for Packing","Packed","Ready to Mail","Completed"];
   const STATUS_PROGRESS = {
     "New": 5, "Preparing": 20, "Manufacturing": 50, "Waiting on Material": 35,
@@ -1777,23 +1777,11 @@
   }
 
   function renderPackPane(order,item) {
-    const product=productById(item.productId);
-    const entries=packingDisplayEntries(product);
-    const done=entries.filter(entry => Boolean(item.workflow.packingChecks[entry.index])).length;
     const outstanding = order.items.filter(orderItem => !["Ready for Packing","Packed","Ready to Mail","Completed"].includes(orderItem.status));
     return `
-      <div class="process-pane-heading"><div><p class="eyebrow">Step 3</p><h4>Pack & Ship</h4><p>Complete item packing, shared order packaging, and shipping in one workspace.</p></div><span class="badge status">${done} of ${entries.length}</span></div>
+      <div class="process-pane-heading"><div><p class="eyebrow">Step 3</p><h4>Pack & Ship</h4><p>Finish item packing, shared order packaging, and shipping in one workspace.</p></div></div>
       ${outstanding.length ? `<section class="panel outstanding-work"><div class="panel-heading"><div><p class="eyebrow">Outstanding Work</p><h3>Earlier work still needs attention</h3></div><span class="badge attention">${outstanding.length}</span></div><div class="compact-list">${outstanding.map(outstandingItem => `<div><strong>${escapeHTML(outstandingItem.productName)} — ${escapeHTML(outstandingItem.color)}</strong><span>${escapeHTML(outstandingItem.status)}</span></div>`).join("")}</div></section>` : ""}
-      <section class="panel pack-order-section">
-        <div class="panel-heading"><div><p class="eyebrow">Pack the Order</p><h3>${escapeHTML(item.productName)} — ${escapeHTML(item.color)}</h3><p>Finish this item, use its correct mailer, and mark it packed.</p></div></div>
-        <div class="shipping-rule">${item.productId==="macrame-paper-towel-holder" ? "<strong>Paper towel holder rule:</strong> Two or more paper towel holders must use separate mailers." : "<strong>Standard mailer:</strong> This product uses the shared smaller poly-mailer size."}</div>
-        <div class="checklist-card">${renderChecklist(product.packingChecklist,item.workflow.packingChecks,"packing-check",order.id,item.id,false,true)}</div>
-        <div class="process-footer">
-          <button class="button secondary" data-action="process-tab" data-tab="manufacture" data-order-id="${order.id}" data-item-id="${item.id}">← Back to Manufacturing</button>
-          <button class="button primary" data-action="complete-pack" data-order-id="${order.id}" data-item-id="${item.id}" ${done===entries.length ? "" : "disabled"}>Mark Item Packed</button>
-        </div>
-      </section>
-      ${renderOrderShipping(order)}`;
+      ${renderOrderShipping(order,item.id)}`;
   }
 
   function renderChecklist(labels,checks,action,orderId,itemId,numbered=false,hideProductTags=false) {
@@ -1810,7 +1798,7 @@
     }).join("")}</div>`;
   }
 
-  function renderOrderShipping(order) {
+  function renderOrderShipping(order,currentItemId=null) {
     const allPacked=order.items.every(i => ["Packed","Ready to Mail","Completed"].includes(i.status));
     const tagGroups = productTagGroupsForOrder(order);
     const tagDone = tagGroups.filter(group => Boolean(order.shipping.productTagChecks?.[group.taskKey])).length;
@@ -1824,8 +1812,13 @@
       ["shippoOpened","Open Shippo and purchase/print shipping label"],
       ["labelAttached","Attach address or shipping label"]
     ];
-    const done=packChecks.concat(shipChecks).filter(([key]) => order.shipping[key]).length + tagDone;
-    const total=packChecks.length+shipChecks.length+tagGroups.length;
+    const itemPackingTotal = order.items.reduce((sum,orderItem) => sum + packingDisplayEntries(productById(orderItem.productId)).length + 1,0);
+    const itemPackingDone = order.items.reduce((sum,orderItem) => {
+      const checksDone = packingDisplayEntries(productById(orderItem.productId)).filter(entry => Boolean(orderItem.workflow.packingChecks[entry.index])).length;
+      return sum + checksDone + (["Packed","Ready to Mail","Completed"].includes(orderItem.status) ? 1 : 0);
+    },0);
+    const done=packChecks.concat(shipChecks).filter(([key]) => order.shipping[key]).length + tagDone + itemPackingDone;
+    const total=packChecks.length+shipChecks.length+tagGroups.length+itemPackingTotal;
     const ready=allPacked && done===total;
     const careSheetId = careSheetInventoryIdForOrder(order);
     const careSheet = inventoryItemById(careSheetId);
@@ -1838,10 +1831,26 @@
         ? `<small class="inventory-task-detail ${Number(sticker?.quantity || 0) <= 0 ? "out" : ""}">${sticker ? `${Number(sticker.quantity || 0)} available · Required 1 · ${escapeHTML(sticker.name)}` : "Company sticker inventory link missing"}</small>` : "";
       return `<label class="process-check ${key === "companyStickerAttached" ? "inventory-aware-check" : ""} ${order.shipping[key] ? "checked" : ""}"><input type="checkbox" ${order.shipping[key] ? "checked" : ""} data-action="shipping-check" data-key="${key}" data-order-id="${order.id}"><span class="check-box">${order.shipping[key] ? "✓" : ""}</span><span class="process-check-copy"><span>${label}</span>${inventoryLine}</span></label>`;
     };
+    const renderItemPackingGroup = (orderItem,index) => {
+      const product=productById(orderItem.productId);
+      const entries=packingDisplayEntries(product);
+      const checksDone=entries.filter(entry => Boolean(orderItem.workflow.packingChecks[entry.index])).length;
+      const packed=["Packed","Ready to Mail","Completed"].includes(orderItem.status);
+      const canMarkPacked=entries.every(entry => Boolean(orderItem.workflow.packingChecks[entry.index]));
+      return `<article class="unified-item-pack ${orderItem.id===currentItemId ? "current" : ""}">
+        <div class="unified-item-pack-heading"><div><span class="item-sequence">Item ${index+1}</span><strong>${escapeHTML(orderItem.productName)} — ${escapeHTML(orderItem.color)}</strong><small>${checksDone} of ${entries.length} packing steps complete</small></div><span class="badge ${packed ? "complete" : "status"}">${packed ? "Packed" : "In progress"}</span></div>
+        <div class="shipping-rule">${orderItem.productId==="macrame-paper-towel-holder" ? "<strong>Paper towel holder rule:</strong> Two or more paper towel holders must use separate mailers." : "<strong>Standard mailer:</strong> This product uses the shared smaller poly-mailer size."}</div>
+        ${renderChecklist(product.packingChecklist,orderItem.workflow.packingChecks,"packing-check",order.id,orderItem.id,false,true)}
+        <div class="item-pack-action"><button class="button ${packed ? "secondary" : "primary"} small" data-action="complete-pack" data-order-id="${order.id}" data-item-id="${orderItem.id}" ${canMarkPacked && !packed ? "" : "disabled"}>${packed ? "Item Packed" : "Mark Item Packed"}</button></div>
+      </article>`;
+    };
     return `<section class="order-shipping panel unified-pack-ship">
-      <div class="panel-heading"><div><p class="eyebrow">Unified workflow</p><h3>Pack & Ship the Whole Order</h3><p>Product-specific tags, shared packaging supplies, and shipping steps are all together here.</p></div><span class="badge ${ready ? "complete" : "status"}">${done} of ${total}</span></div>
+      <div class="panel-heading"><div><p class="eyebrow">Unified workflow</p><h3>Pack & Ship the Whole Order</h3><p>Item finishing, mailers, product tags, shared supplies, and shipping are all together here.</p></div><span class="badge ${ready ? "complete" : "status"}">${done} of ${total}</span></div>
       ${!allPacked ? `<div class="shipping-notice">Finish and mark every order item packed before the order can be marked Ready to Mail.</div>` : ""}
-      <div class="unified-workflow-group"><h4>Pack the Order</h4><div class="process-checklist">
+      <div class="unified-workflow-group"><h4>Pack the Order</h4>
+        <div class="unified-item-pack-list">${order.items.map(renderItemPackingGroup).join("")}</div>
+        <div class="shared-packaging-heading"><span>Shared order packaging</span><small>Complete once for the whole Etsy order.</small></div>
+        <div class="process-checklist">
         ${tagGroups.map(group => {
           const tag = group.inventoryItemId ? inventoryItemById(group.inventoryItemId) : null;
           const checked = Boolean(order.shipping.productTagChecks?.[group.taskKey]);

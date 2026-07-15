@@ -1,10 +1,10 @@
 # Simply Ummiby Workshop
 
-**Version 0.6.3**
+**Version 0.6.3.1**
 
-Version 0.6.3 adds product-specific tag inventory and unifies the Pack & Ship experience. Product Master stores a stable Product Tag Inventory Item ID for each product. The Pack & Ship workspace generates tag tasks from the actual Etsy order, groups identical product/color quantities, and safely consumes or restores the exact number of tags.
+Version 0.6.3.1 adds product-specific tag inventory and unifies the Pack & Ship experience. Product Master stores a stable Product Tag Inventory Item ID for each product. The Pack & Ship workspace generates tag tasks from the actual Etsy order, groups identical product/color quantities, and safely consumes or restores the exact number of tags.
 
-## Version 0.6.3 highlights
+## Version 0.6.3.1 highlights
 
 - Product tags are selected through stable Product Master inventory-item relationships.
 - Order-aware tag tasks show product, color, quantity required, and current stock.

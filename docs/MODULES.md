@@ -160,3 +160,8 @@ Working in Version 0.6.0:
 - Ship the Order contains packing slip, Shippo/label purchase, and label attachment.
 - Inventory-aware rows show required and available quantities plus shortage states.
 - Outstanding earlier work remains visible from Pack & Ship.
+
+
+## Version 0.6.3.1 unified workflow correction
+
+Step 3 now renders one unified Pack & Ship panel. Item-specific finishing, mailer consumption, and packed status appear inside the Pack the Order group before shared tags, care sheets, branding sticker, sealing, and shipping. The former separate item-level packing panel was removed.

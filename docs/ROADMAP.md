@@ -138,3 +138,8 @@ A stable local-first workshop management system ready for everyday use.
 - [x] Merge Pack the Order and Ship the Order into one workspace
 - [x] Remove the duplicate Final Shipping Checklist presentation
 - [x] Show required and available quantities for consumables
+
+
+## Version 0.6.3.1 unified workflow correction
+
+Step 3 now renders one unified Pack & Ship panel. Item-specific finishing, mailer consumption, and packed status appear inside the Pack the Order group before shared tags, care sheets, branding sticker, sealing, and shipping. The former separate item-level packing panel was removed.

@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.6.3.1 — 2026-07-15
+
+### Fixed
+
+- Removed the separate item-level Pack the Order panel from Step 3.
+- Incorporated each item’s finish, mailer, and Mark Item Packed controls directly into the unified Pack & Ship workflow.
+- Added one Pack the Order section containing item-specific packing followed by shared order packaging.
+- Updated unified progress to include item packing and packed status.
+
+
 ## 0.6.3 — 2026-07-15
 
 ### Added
