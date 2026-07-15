@@ -1,5 +1,27 @@
 # Changelog
 
+## 0.6.3.2 — 2026-07-15
+
+### Changed
+
+- Reordered Pack & Ship to match the real packing-table workflow.
+- Moved product-tag tasks to the start of the sequence.
+- Combined care-sheet use and Etsy packing-slip preparation into one inventory-aware row.
+- Added the Etsy Orders shortcut directly to the care-sheet/packing-slip row.
+- Replaced separate item packing controls with one Pack Mailer task per order item.
+- Pack Mailer now lists the tagged product, care sheet/packing slip, and prepared dowel when required as contents inserted together.
+- Combined printing and attaching the shipping label into one task with a Shippo shortcut on the row.
+- Moved branding sticker application before closing and sealing the package.
+- Replaced item-level packed actions with one final Mark Order Packed action.
+- Completing the final action moves all active order items to Ready to Mail.
+
+### Preserved
+
+- Stable product-tag inventory links and grouped tag quantities.
+- Inventory-aware mailer, care-sheet, and branding-sticker deductions and reversals.
+- Out-of-stock protection, low-stock messaging, and order-linked inventory history.
+
+
 ## 0.6.3.1 — 2026-07-15
 
 ### Fixed

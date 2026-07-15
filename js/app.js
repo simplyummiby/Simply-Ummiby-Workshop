@@ -1,6 +1,6 @@
 (() => {
   const STORAGE_KEY = "simplyUmmibyWorkshopData";
-  const VERSION = "0.6.3.1";
+  const VERSION = "0.6.3.2";
   const ITEM_STATUSES = ["New","Preparing","Manufacturing","Waiting on Material","Ready for Packing","Packed","Ready to Mail","Completed"];
   const STATUS_PROGRESS = {
     "New": 5, "Preparing": 20, "Manufacturing": 50, "Waiting on Material": 35,
@@ -1799,71 +1799,72 @@
   }
 
   function renderOrderShipping(order,currentItemId=null) {
-    const allPacked=order.items.every(i => ["Packed","Ready to Mail","Completed"].includes(i.status));
+    const productionReady = order.items.every(i => ["Ready for Packing","Packed","Ready to Mail","Completed"].includes(i.status));
     const tagGroups = productTagGroupsForOrder(order);
     const tagDone = tagGroups.filter(group => Boolean(order.shipping.productTagChecks?.[group.taskKey])).length;
-    const packChecks=[
-      ["careSheetPrinted","Insert care instruction sheet"],
-      ["companyStickerAttached","Apply Simply Ummiby branding sticker"],
-      ["mailerSealed","Insert products and seal package"]
-    ];
-    const shipChecks=[
-      ["packingSlipPrinted","Print packing slip; mark what is inside each mailer when split"],
-      ["shippoOpened","Open Shippo and purchase/print shipping label"],
-      ["labelAttached","Attach address or shipping label"]
-    ];
-    const itemPackingTotal = order.items.reduce((sum,orderItem) => sum + packingDisplayEntries(productById(orderItem.productId)).length + 1,0);
-    const itemPackingDone = order.items.reduce((sum,orderItem) => {
-      const checksDone = packingDisplayEntries(productById(orderItem.productId)).filter(entry => Boolean(orderItem.workflow.packingChecks[entry.index])).length;
-      return sum + checksDone + (["Packed","Ready to Mail","Completed"].includes(orderItem.status) ? 1 : 0);
-    },0);
-    const done=packChecks.concat(shipChecks).filter(([key]) => order.shipping[key]).length + tagDone + itemPackingDone;
-    const total=packChecks.length+shipChecks.length+tagGroups.length+itemPackingTotal;
-    const ready=allPacked && done===total;
+    const careSheetDone = Boolean(order.shipping.careSheetPrinted);
+    const labelDone = Boolean(order.shipping.labelAttached);
+    const stickerDone = Boolean(order.shipping.companyStickerAttached);
+    const sealedDone = Boolean(order.shipping.mailerSealed);
+    const mailerTasks = order.items.map(orderItem => {
+      const product = productById(orderItem.productId);
+      const entry = (product?.packingChecklist || []).map((label,index) => ({label,index}))
+        .find(row => packingInventoryConfig(orderItem,row.index,row.label));
+      return { orderItem, product, entry };
+    });
+    const mailersDone = mailerTasks.filter(({orderItem,entry}) => entry && Boolean(orderItem.workflow.packingChecks[entry.index])).length;
+    const done = tagDone + mailersDone + [careSheetDone,labelDone,stickerDone,sealedDone].filter(Boolean).length;
+    const total = tagGroups.length + mailerTasks.length + 4;
+    const ready = productionReady && done === total;
     const careSheetId = careSheetInventoryIdForOrder(order);
     const careSheet = inventoryItemById(careSheetId);
     const careSheetQuantity = Number(careSheet?.quantity || 0);
     const careSheetLow = careSheet && careSheetQuantity <= Number(careSheet.reorderAt || 0);
-    const renderSimpleShippingCheck = ([key,label]) => {
-      const stickerId = key === "companyStickerAttached" ? companyStickerInventoryIdForOrder(order) : "";
-      const sticker = stickerId ? inventoryItemById(stickerId) : null;
-      const inventoryLine = key === "companyStickerAttached"
-        ? `<small class="inventory-task-detail ${Number(sticker?.quantity || 0) <= 0 ? "out" : ""}">${sticker ? `${Number(sticker.quantity || 0)} available · Required 1 · ${escapeHTML(sticker.name)}` : "Company sticker inventory link missing"}</small>` : "";
-      return `<label class="process-check ${key === "companyStickerAttached" ? "inventory-aware-check" : ""} ${order.shipping[key] ? "checked" : ""}"><input type="checkbox" ${order.shipping[key] ? "checked" : ""} data-action="shipping-check" data-key="${key}" data-order-id="${order.id}"><span class="check-box">${order.shipping[key] ? "✓" : ""}</span><span class="process-check-copy"><span>${label}</span>${inventoryLine}</span></label>`;
+    const stickerId = companyStickerInventoryIdForOrder(order);
+    const sticker = stickerId ? inventoryItemById(stickerId) : null;
+
+    const renderTagTask = group => {
+      const tag = group.inventoryItemId ? inventoryItemById(group.inventoryItemId) : null;
+      const checked = Boolean(order.shipping.productTagChecks?.[group.taskKey]);
+      const title = group.quantity > 1
+        ? `Attach ${escapeHTML(group.shortName)} Product Tags — ${escapeHTML(group.color)}`
+        : `Attach ${escapeHTML(group.productName)} Tag — ${escapeHTML(group.color)}`;
+      const low = tag && Number(tag.quantity || 0) <= Number(tag.reorderAt || 0);
+      return `<label class="process-check inventory-aware-check ${checked ? "checked" : ""}"><input type="checkbox" ${checked ? "checked" : ""} data-action="product-tag-check" data-task-key="${escapeHTML(group.taskKey)}" data-order-id="${order.id}"><span class="check-box">${checked ? "✓" : ""}</span><span class="process-check-copy"><span>${title}</span><small class="inventory-task-detail ${!tag || Number(tag.quantity || 0) < group.quantity ? "out" : ""}">${tag ? `${Number(tag.quantity || 0)} available · Required ${group.quantity} · ${escapeHTML(tag.name)}` : "Product tag inventory link missing"}</small>${low ? `<small class="inventory-low-message">${Number(tag.quantity || 0) <= 0 ? "Product tags are out of stock." : `Only ${Number(tag.quantity || 0)} product tags remain.`}</small>` : ""}</span></label>`;
     };
-    const renderItemPackingGroup = (orderItem,index) => {
-      const product=productById(orderItem.productId);
-      const entries=packingDisplayEntries(product);
-      const checksDone=entries.filter(entry => Boolean(orderItem.workflow.packingChecks[entry.index])).length;
-      const packed=["Packed","Ready to Mail","Completed"].includes(orderItem.status);
-      const canMarkPacked=entries.every(entry => Boolean(orderItem.workflow.packingChecks[entry.index]));
-      return `<article class="unified-item-pack ${orderItem.id===currentItemId ? "current" : ""}">
-        <div class="unified-item-pack-heading"><div><span class="item-sequence">Item ${index+1}</span><strong>${escapeHTML(orderItem.productName)} — ${escapeHTML(orderItem.color)}</strong><small>${checksDone} of ${entries.length} packing steps complete</small></div><span class="badge ${packed ? "complete" : "status"}">${packed ? "Packed" : "In progress"}</span></div>
-        <div class="shipping-rule">${orderItem.productId==="macrame-paper-towel-holder" ? "<strong>Paper towel holder rule:</strong> Two or more paper towel holders must use separate mailers." : "<strong>Standard mailer:</strong> This product uses the shared smaller poly-mailer size."}</div>
-        ${renderChecklist(product.packingChecklist,orderItem.workflow.packingChecks,"packing-check",order.id,orderItem.id,false,true)}
-        <div class="item-pack-action"><button class="button ${packed ? "secondary" : "primary"} small" data-action="complete-pack" data-order-id="${order.id}" data-item-id="${orderItem.id}" ${canMarkPacked && !packed ? "" : "disabled"}>${packed ? "Item Packed" : "Mark Item Packed"}</button></div>
-      </article>`;
+
+    const renderMailerTask = ({orderItem,product,entry},index) => {
+      if (!entry) return `<div class="process-check inventory-aware-check"><span class="check-box"></span><span class="process-check-copy"><span>Pack Mailer — ${escapeHTML(orderItem.productName)} — ${escapeHTML(orderItem.color)}</span><small class="inventory-task-detail out">Mailer configuration missing</small></span></div>`;
+      const config = packingInventoryConfig(orderItem,entry.index,entry.label);
+      const mailer = inventoryItemById(config?.inventoryItemId);
+      const checked = Boolean(orderItem.workflow.packingChecks[entry.index]);
+      const needsDowel = orderItem.productId === "macrame-paper-towel-holder";
+      return `<label class="process-check inventory-aware-check pack-mailer-task ${checked ? "checked" : ""}">
+        <input type="checkbox" ${checked ? "checked" : ""} data-action="packing-check" data-index="${entry.index}" data-order-id="${order.id}" data-item-id="${orderItem.id}">
+        <span class="check-box">${checked ? "✓" : ""}</span>
+        <span class="process-check-copy">
+          <span>Pack Mailer — ${escapeHTML(orderItem.productName)} — ${escapeHTML(orderItem.color)}</span>
+          <small class="pack-mailer-contents">Insert the tagged product · care sheet with Etsy packing slip on reverse${needsDowel ? " · prepared dowel" : ""}</small>
+          <small class="inventory-task-detail ${Number(mailer?.quantity || 0) < 1 ? "out" : ""}">${mailer ? `${Number(mailer.quantity || 0)} available · Required 1 · ${escapeHTML(mailer.name)}` : "Mailer inventory link missing"}</small>
+        </span>
+      </label>`;
     };
+
     return `<section class="order-shipping panel unified-pack-ship">
-      <div class="panel-heading"><div><p class="eyebrow">Unified workflow</p><h3>Pack & Ship the Whole Order</h3><p>Item finishing, mailers, product tags, shared supplies, and shipping are all together here.</p></div><span class="badge ${ready ? "complete" : "status"}">${done} of ${total}</span></div>
-      ${!allPacked ? `<div class="shipping-notice">Finish and mark every order item packed before the order can be marked Ready to Mail.</div>` : ""}
-      <div class="unified-workflow-group"><h4>Pack the Order</h4>
-        <div class="unified-item-pack-list">${order.items.map(renderItemPackingGroup).join("")}</div>
-        <div class="shared-packaging-heading"><span>Shared order packaging</span><small>Complete once for the whole Etsy order.</small></div>
-        <div class="process-checklist">
-        ${tagGroups.map(group => {
-          const tag = group.inventoryItemId ? inventoryItemById(group.inventoryItemId) : null;
-          const checked = Boolean(order.shipping.productTagChecks?.[group.taskKey]);
-          const title = group.quantity > 1 ? `Attach ${escapeHTML(group.shortName)} Product Tags — ${escapeHTML(group.color)}` : `Attach ${escapeHTML(group.productName)} Tag — ${escapeHTML(group.color)}`;
-          const low = tag && Number(tag.quantity || 0) <= Number(tag.reorderAt || 0);
-          return `<label class="process-check inventory-aware-check ${checked ? "checked" : ""}"><input type="checkbox" ${checked ? "checked" : ""} data-action="product-tag-check" data-task-key="${escapeHTML(group.taskKey)}" data-order-id="${order.id}"><span class="check-box">${checked ? "✓" : ""}</span><span class="process-check-copy"><span>${title}</span><small class="inventory-task-detail ${!tag || Number(tag.quantity || 0) < group.quantity ? "out" : ""}">${tag ? `${Number(tag.quantity || 0)} available · Required ${group.quantity} · ${escapeHTML(tag.name)}` : "Product tag inventory link missing"}</small>${low ? `<small class="inventory-low-message">${Number(tag.quantity || 0) <= 0 ? "Product tags are out of stock." : `Only ${Number(tag.quantity || 0)} product tags remain.`}</small>` : ""}</span></label>`;
-        }).join("")}
-        <div class="process-check inventory-aware-check care-sheet-task ${order.shipping.careSheetPrinted ? "checked" : ""}"><label class="process-check-main"><input type="checkbox" ${order.shipping.careSheetPrinted ? "checked" : ""} data-action="shipping-check" data-key="careSheetPrinted" data-order-id="${order.id}"><span class="check-box">${order.shipping.careSheetPrinted ? "✓" : ""}</span><span class="process-check-copy"><span>Insert care instruction sheet</span><small class="inventory-task-detail ${careSheetQuantity <= 0 ? "out" : ""}">${careSheet ? `${careSheetQuantity} available · Required 1 · ${escapeHTML(careSheet.name)}` : "Care sheet inventory link missing"}</small>${careSheetLow ? `<small class="inventory-low-message">${careSheetQuantity <= 0 ? "Care sheets are out of stock." : `Only ${careSheetQuantity} care sheets remain.`}</small>` : ""}</span></label><button class="button secondary small" type="button" data-action="print-care-sheet">Print More Care Sheets</button></div>
-        ${packChecks.filter(([key]) => key !== "careSheetPrinted").map(renderSimpleShippingCheck).join("")}
-      </div></div>
-      <div class="unified-workflow-group"><h4>Ship the Order</h4><div class="process-checklist">${shipChecks.map(renderSimpleShippingCheck).join("")}</div></div>
-      <div class="resource-shortcuts"><button class="button secondary small" data-action="external-link" data-link="etsyOrders">Open Etsy Orders</button><button class="button secondary small" data-action="external-link" data-link="etsyCompleted">Open Etsy Completed</button><button class="button secondary small" data-action="external-link" data-link="shippo">Open Shippo</button></div>
-      <div class="process-footer"><span>${ready ? "Everything is packed, labeled, stickered, and sealed." : "Complete all item, packaging, and shipping steps."}</span><button class="button primary" data-action="ready-mail" data-order-id="${order.id}" ${ready ? "" : "disabled"}>Mark Order Ready to Mail</button></div>
+      <div class="panel-heading"><div><p class="eyebrow">Unified workflow</p><h3>Pack the Order</h3><p>Follow the same sequence you use at the packing table. When every step is complete, the order is Ready to Mail.</p></div><span class="badge ${ready ? "complete" : "status"}">${done} of ${total}</span></div>
+      ${!productionReady ? `<div class="shipping-notice">Manufacturing is not complete for every item. Resolve the Outstanding Work above before marking this order packed.</div>` : ""}
+      <div class="process-checklist pack-order-sequence">
+        ${tagGroups.map(renderTagTask).join("")}
+        <div class="process-check inventory-aware-check care-sheet-task ${careSheetDone ? "checked" : ""}">
+          <label class="process-check-main"><input type="checkbox" ${careSheetDone ? "checked" : ""} data-action="shipping-check" data-key="careSheetPrinted" data-order-id="${order.id}"><span class="check-box">${careSheetDone ? "✓" : ""}</span><span class="process-check-copy"><span>Prepare Care Sheet & Etsy Packing Slip</span><small>Print the Etsy packing slip on the reverse side of the care sheet.</small><small class="inventory-task-detail ${careSheetQuantity <= 0 ? "out" : ""}">${careSheet ? `${careSheetQuantity} available · Required 1 · ${escapeHTML(careSheet.name)}` : "Care sheet inventory link missing"}</small>${careSheetLow ? `<small class="inventory-low-message">${careSheetQuantity <= 0 ? "Care sheets are out of stock." : `Only ${careSheetQuantity} care sheets remain.`}</small>` : ""}</span></label>
+          <div class="task-row-actions"><button class="button secondary small" type="button" data-action="external-link" data-link="etsyOrders">Open Etsy Orders</button><button class="button secondary small" type="button" data-action="print-care-sheet">Print More Care Sheets</button></div>
+        </div>
+        ${mailerTasks.map(renderMailerTask).join("")}
+        <div class="process-check task-with-link ${labelDone ? "checked" : ""}"><label class="process-check-main"><input type="checkbox" ${labelDone ? "checked" : ""} data-action="shipping-check" data-key="labelAttached" data-order-id="${order.id}"><span class="check-box">${labelDone ? "✓" : ""}</span><span class="process-check-copy"><span>Print & Attach Shipping Label</span><small>Purchase and print the label in Shippo, then attach it to the mailer.</small></span></label><button class="button secondary small" type="button" data-action="external-link" data-link="shippo">Open Shippo</button></div>
+        <label class="process-check inventory-aware-check ${stickerDone ? "checked" : ""}"><input type="checkbox" ${stickerDone ? "checked" : ""} data-action="shipping-check" data-key="companyStickerAttached" data-order-id="${order.id}"><span class="check-box">${stickerDone ? "✓" : ""}</span><span class="process-check-copy"><span>Apply Simply Ummiby Branding Sticker</span><small class="inventory-task-detail ${Number(sticker?.quantity || 0) <= 0 ? "out" : ""}">${sticker ? `${Number(sticker.quantity || 0)} available · Required 1 · ${escapeHTML(sticker.name)}` : "Company sticker inventory link missing"}</small></span></label>
+        <label class="process-check ${sealedDone ? "checked" : ""}"><input type="checkbox" ${sealedDone ? "checked" : ""} data-action="shipping-check" data-key="mailerSealed" data-order-id="${order.id}"><span class="check-box">${sealedDone ? "✓" : ""}</span><span class="process-check-copy"><span>Close & Seal Package</span></span></label>
+      </div>
+      <div class="process-footer"><span>${ready ? "Everything is packed. This order is ready to mail." : "Complete the packing sequence, then mark the order packed."}</span><button class="button primary" data-action="ready-mail" data-order-id="${order.id}" ${ready ? "" : "disabled"}>Mark Order Packed</button></div>
     </section>`;
   }
 
@@ -2088,17 +2089,24 @@
       }
     }
     order.shipping[key]=checked;
+    if (key === "careSheetPrinted") order.shipping.packingSlipPrinted = checked;
+    if (key === "labelAttached") order.shipping.shippoOpened = checked;
     touchOrder(order); saveData(); renderOrderWorkspace(order);
   }
 
   function markReadyMail(orderId) {
     const order=data.orders.find(o => o.id===orderId);
-    const allPacked=order.items.every(i => ["Packed","Ready to Mail","Completed"].includes(i.status));
-    const shippingDone=["careSheetPrinted","packingSlipPrinted","shippoOpened","labelAttached","companyStickerAttached","mailerSealed"].every(key => Boolean(order.shipping[key]));
+    const productionReady=order.items.every(i => ["Ready for Packing","Packed","Ready to Mail","Completed"].includes(i.status));
+    const mailersDone=order.items.every(item => {
+      const product=productById(item.productId);
+      const entry=(product?.packingChecklist || []).map((label,index) => ({label,index})).find(row => packingInventoryConfig(item,row.index,row.label));
+      return entry && Boolean(item.workflow.packingChecks[entry.index]);
+    });
+    const shippingDone=["careSheetPrinted","labelAttached","companyStickerAttached","mailerSealed"].every(key => Boolean(order.shipping[key]));
     const tagsDone=productTagGroupsForOrder(order).every(group => Boolean(order.shipping.productTagChecks?.[group.taskKey]));
-    if (!allPacked || !shippingDone || !tagsDone) return showToast("Complete all packing and shipping steps first.");
+    if (!productionReady || !mailersDone || !shippingDone || !tagsDone) return showToast("Complete the full packing sequence first.");
     order.items.forEach(i => { if (i.status!=="Completed") i.status="Ready to Mail"; });
-    touchOrder(order); data.activity.unshift({text:`Order for ${order.customerName} is ready to mail`,time:"Just now"}); saveData(); renderOrderWorkspace(order);
+    touchOrder(order); data.activity.unshift({text:`Packed order for ${order.customerName}; ready to mail`,time:"Just now"}); saveData(); renderOrderWorkspace(order);
   }
 
   function printCareSheet() {
