@@ -1,3 +1,12 @@
+## 0.6.3.3 — 2026-07-15
+
+### Fixed
+
+- Standardized Pack & Ship row typography and font inheritance.
+- All task titles now use the same weight as Prepare Care Sheet and Print & Attach Shipping Label.
+- Completed tasks now use one consistent green text and green background treatment.
+- Mailer instructions and inventory details no longer override the completed-state styling.
+
 # Changelog
 
 ## 0.6.3.2 — 2026-07-15

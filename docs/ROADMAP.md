@@ -147,3 +147,8 @@ Step 3 now renders one unified Pack & Ship panel. Item-specific finishing, maile
 ## Version 0.6.3.2 packing-sequence correction
 
 Step 3 now follows one physical packing sequence: attach the product-specific tag; prepare one care sheet with the Etsy packing slip printed on its reverse; pack the tagged product, care sheet/packing slip, and prepared dowel when required into the correct mailer; print and attach the shipping label through Shippo; apply the company sticker; close and seal the package; then mark the order packed. The Etsy Orders and Shippo shortcuts live on the exact rows where they are used. Item-level packed buttons are no longer part of this workflow; the final order action moves all active items to Ready to Mail.
+
+
+## Version 0.6.3.3 Pack & Ship visual consistency
+
+Pack & Ship checklist rows share one explicit font family, title size, and title weight. All rows render black text before completion and apply the same green background, border, title, supporting-copy, and inventory-detail treatment after completion.

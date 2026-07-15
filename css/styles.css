@@ -1223,3 +1223,36 @@ textarea { resize: vertical; }
 
 /* v0.6.3.2 packing-table sequence */
 .pack-order-sequence{display:grid;gap:12px}.pack-mailer-task{padding-top:16px;padding-bottom:16px}.pack-mailer-contents{color:var(--text);font-weight:650;line-height:1.45}.task-row-actions{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end}.task-with-link{display:flex;align-items:center;justify-content:space-between;gap:16px}.task-with-link .process-check-main{display:flex;align-items:center;gap:.75rem;flex:1;cursor:pointer}@media(max-width:700px){.task-row-actions,.task-with-link{align-items:stretch;flex-direction:column}.task-row-actions .button,.task-with-link>.button{width:100%}}
+
+
+/* v0.6.3.3 consistent Pack & Ship typography and completion states */
+.pack-order-sequence .process-check,
+.pack-order-sequence .process-check-main {
+  font-family: inherit;
+}
+.pack-order-sequence .process-check-copy > span:first-child {
+  color: var(--ink);
+  font-size: 1rem;
+  font-weight: 700;
+  line-height: 1.35;
+}
+.pack-order-sequence .process-check-copy small {
+  font-family: inherit;
+}
+.pack-order-sequence .process-check.checked,
+.pack-order-sequence .process-check.checked .process-check-main {
+  color: #385f42;
+}
+.pack-order-sequence .process-check.checked .process-check-copy > span:first-child,
+.pack-order-sequence .process-check.checked .pack-mailer-contents {
+  color: #385f42;
+}
+.pack-order-sequence .process-check.checked .inventory-task-detail:not(.out),
+.pack-order-sequence .process-check.checked .inventory-low-message {
+  color: #52745a;
+}
+.pack-order-sequence .pack-mailer-contents {
+  font-family: inherit;
+  font-size: .86rem;
+  font-weight: 600;
+}

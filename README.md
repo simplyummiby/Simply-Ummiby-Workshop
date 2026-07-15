@@ -1,10 +1,15 @@
 # Simply Ummiby Workshop
 
-**Version 0.6.3.2**
+**Version 0.6.3.3**
 
-Version 0.6.3.2 aligns the unified Pack & Ship workspace with the actual Simply Ummiby packing-table routine. Product tags, the care sheet with Etsy packing slip, mailer loading, Shippo label printing, the branding sticker, sealing, and the final packed status now appear as one continuous sequence.
+Version 0.6.3.3 standardizes the unified Pack & Ship typography and completed-state styling while preserving the packing-table workflow. Product tags, the care sheet with Etsy packing slip, mailer loading, Shippo label printing, the branding sticker, sealing, and the final packed status now appear as one continuous sequence.
 
-## Version 0.6.3.2 highlights
+## Version 0.6.3.3 highlights
+
+- Consistent black task titles before completion
+- Matching title font family, size, and weight across every Pack & Ship row
+- Consistent green text and background after a task is checked
+- Supporting mailer and inventory text follows the same completed-state treatment
 
 - Product-specific tag tasks remain linked to stable inventory-item IDs.
 - **Prepare Care Sheet & Etsy Packing Slip** includes an **Open Etsy Orders** button on the same row.
