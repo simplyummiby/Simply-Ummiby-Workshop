@@ -217,3 +217,8 @@ The inventory migration maps legacy `raw-materials`, `fabrication-kits`, and `pr
 ## Version 0.6.6 — Inventory Table Presentation
 
 The inventory catalog continues to use the same data and transaction architecture. This release changes presentation only: descriptive metadata is contained in the Item cell, quantity allocation context appears under On Hand, and placeholder initials are no longer rendered. Long text uses wrapping and overflow protection so it cannot cross grid columns.
+
+
+## Version 0.6.7 — Product Editor Architecture
+
+The Product editor now uses stable Product Master relationships, shared Color IDs, filtered inventory-type selectors, template-based defaults, and a read-only recipe/material summary. Existing product materials remain stored on the Product Master and are copied from the selected template for new product records.

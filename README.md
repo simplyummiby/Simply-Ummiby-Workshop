@@ -1,17 +1,18 @@
 # Simply Ummiby Workshop
 
-**Version 0.6.6**
+**Version 0.6.7**
 
-Version 0.6.6 introduces a dedicated Products module with a table-based Catalog, reusable Colors, and direct access to Recipes.
+Version 0.6.7 redesigns the Add/Edit Product experience with guided templates, filtered inventory selectors, automatic defaults, and a clearer recipe/material summary.
 
-## Version 0.6.6 highlights
 
-- Products is now a main navigation module.
-- Catalog replaces product cards with a structured table.
-- Each catalog row can open the product or its linked recipe.
-- Colors are reusable records with stable IDs and product usage.
-- Existing product colors migrate automatically without changing order color names.
-- Recipes remain available inside the Products module.
+## Version 0.6.7 highlights
+
+- Add/Edit Product is organized into clear Basics, Colors, Recipe & Materials, and Packaging & Branding sections.
+- New products can start from an existing product-family template.
+- Templates automatically apply the correct recipe, colors, mailer, product tag, care sheet, sticker, and inventory-material connections.
+- Mailer, tag, care-sheet, and sticker selectors now show only the matching inventory type.
+- The linked recipe displays a read-only materials and inventory-connections summary.
+- Form labels are lighter and quieter while entered values remain easy to read.
 
 ## Version 0.6.5.1 highlights
 

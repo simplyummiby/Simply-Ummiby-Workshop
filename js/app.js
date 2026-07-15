@@ -1,6 +1,6 @@
 (() => {
   const STORAGE_KEY = "simplyUmmibyWorkshopData";
-  const VERSION = "0.6.6";
+  const VERSION = "0.6.7";
   const ITEM_STATUSES = ["New","Preparing","Manufacturing","Waiting on Material","Ready for Packing","Packed","Ready to Mail","Completed"];
   const STATUS_PROGRESS = {
     "New": 5, "Preparing": 20, "Manufacturing": 50, "Waiting on Material": 35,
@@ -1284,31 +1284,53 @@
       }).join("")}</div>` : ""}`;
   }
 
+  function inventoryOptionsForType(materialTypes, selectedId = "") {
+    const types = Array.isArray(materialTypes) ? materialTypes : [materialTypes];
+    return inventoryItems()
+      .filter(item => types.includes(item.materialType))
+      .map(item => `<option value="${item.id}" ${item.id === selectedId ? "selected" : ""}>${escapeHTML(item.name)}</option>`)
+      .join("");
+  }
+
+  function renderProductRecipeSummary(recipeId, materials = []) {
+    const recipe = recipeById(recipeId);
+    if (!recipe) return `<div class="product-recipe-empty"><strong>No recipe linked</strong><p>Select a recipe to preview its materials and production connection.</p></div>`;
+    const linkedRows = (materials || []).map(row => {
+      const item = inventoryItemById(row.inventoryItemId);
+      return item ? `<li><strong>${escapeHTML(item.name)}</strong><span>${Number(row.quantity || 0)} · ${escapeHTML(row.role || "material")}</span></li>` : "";
+    }).filter(Boolean).join("");
+    const recipeRows = (recipe.materials || []).map(row => `<li><strong>${escapeHTML(row.name)}</strong><span>${escapeHTML(row.quantity || "")}</span></li>`).join("");
+    return `<div class="product-recipe-summary-card"><div class="product-recipe-summary-heading"><div><span>Linked recipe</span><strong>${escapeHTML(recipe.title)}</strong><small>Recipe v${escapeHTML(recipe.version || "0.1")}</small></div><button type="button" class="text-button" data-action="open-recipe" data-recipe-id="${recipe.id}">Open Recipe</button></div><div class="product-recipe-summary-columns"><div><h5>Recipe materials</h5><ul>${recipeRows || "<li>No recipe materials listed.</li>"}</ul></div><div><h5>Inventory connections</h5><ul>${linkedRows || "<li>No inventory materials linked yet.</li>"}</ul></div></div></div>`;
+  }
+
   function showProductMasterEditor(productId = null) {
     const master = productId ? productMasterById(productId) : null;
     const recipes = window.SUW_RECIPES || [];
-    const inventoryOptions = inventoryItems().map(item => `<option value="${item.id}">${escapeHTML(item.name)}</option>`).join("");
-    const productTagOptions = inventoryItems().filter(item => item.materialType === "Product Tag").map(item => `<option value="${item.id}">${escapeHTML(item.name)}</option>`).join("");
+    const templateOptions = productMasters().filter(item => item.id !== productId).map(item => `<option value="${item.id}">${escapeHTML(item.shortName || item.name)}</option>`).join("");
+    const selectedMaterials = structuredClone(master?.materials || []);
     showModal(
-      master ? "Edit Product Master" : "Add Product",
-      `<form id="productMasterForm" class="product-master-form">
-        <label>Product Name<input name="name" value="${escapeHTML(master?.name || "")}" required></label>
-        <label>Short Name<input name="shortName" value="${escapeHTML(master?.shortName || "")}"></label>
-        <label>Craft<select name="craft">${["Macramé","Crochet","Other"].map(value => `<option value="${value}" ${master?.craft === value ? "selected" : ""}>${value}</option>`).join("")}</select></label>
-        <label>Status<select name="status">${["Active","Coming Soon","Archived"].map(value => `<option value="${value}" ${master?.status === value ? "selected" : ""}>${value}</option>`).join("")}</select></label>
-        <fieldset class="full-width color-picker-fieldset"><legend>Available Colors</legend><div class="product-color-picker">${colorsCatalog().map(color => `<label class="color-choice"><input type="checkbox" name="colorIds" value="${color.id}" ${(master?.colorIds || []).includes(color.id)?"checked":""}><span>${escapeHTML(color.name)}</span></label>`).join("") || `<p>No colors are defined yet. Add them in Products → Colors.</p>`}</div><button type="button" class="text-button" data-action="manage-colors">Manage Colors</button></fieldset>
-        <label>Workshop Recipe<select name="recipeId"><option value="">No recipe</option>${recipes.map(recipe => `<option value="${recipe.id}" ${master?.recipeId === recipe.id ? "selected" : ""}>${escapeHTML(recipe.title)}</option>`).join("")}</select></label>
-        <label>Mailer Type<input name="mailerType" value="${escapeHTML(master?.packaging?.mailerType || "")}"></label>
-        <label>Product Tag Inventory Item<select name="productTagInventoryId"><option value="">Not set</option>${productTagOptions}</select></label>
-        <label>Care Sheet<select name="careSheetInventoryId"><option value="">Not set</option>${inventoryOptions}</select></label>
-        <label>Company Sticker<select name="companyStickerInventoryId"><option value="">Not set</option>${inventoryOptions}</select></label>
-        <label class="full-width">Packaging Notes<textarea name="packagingNotes" rows="3">${escapeHTML(master?.packaging?.notes || "")}</textarea></label>
+      master ? "Edit Product" : "Add Product",
+      `<form id="productMasterForm" class="product-editor-form" data-materials='${escapeHTML(JSON.stringify(selectedMaterials))}'>
+        ${master ? "" : `<section class="product-form-section product-template-section"><div class="product-section-heading"><span>Start here</span><h4>Choose a Product Template</h4><p>Selecting a family fills the standard recipe, colors, packaging, printed materials, and inventory connections. Everything can still be reviewed before saving.</p></div><label class="product-field"><span class="field-label">Product Template</span><select name="productTemplate"><option value="">Blank product</option>${templateOptions}</select></label></section>`}
 
-        <fieldset class="full-width product-material-editor">
-          <legend>Materials</legend>
-          <div id="productMaterialRows"></div>
-          <button type="button" class="button secondary small" id="addProductMaterial">+ Add Material</button>
-        </fieldset>
+        <section class="product-form-section"><div class="product-section-heading"><span>Product identity</span><h4>Basics</h4></div><div class="product-form-grid">
+          <label class="product-field"><span class="field-label">Product Name</span><input name="name" value="${escapeHTML(master?.name || "")}" required></label>
+          <label class="product-field"><span class="field-label">Short Name</span><input name="shortName" value="${escapeHTML(master?.shortName || "")}" placeholder="Used in compact lists"></label>
+          <label class="product-field"><span class="field-label">Product Code</span><input name="code" value="${escapeHTML(master?.code || (master ? productCode(master) : ""))}" placeholder="M-PTH"></label>
+          <label class="product-field"><span class="field-label">Craft</span><select name="craft">${["Macramé","Crochet","Other"].map(value => `<option value="${value}" ${master?.craft === value ? "selected" : ""}>${value}</option>`).join("")}</select></label>
+          <label class="product-field"><span class="field-label">Status</span><select name="status">${["Active","Coming Soon","Archived"].map(value => `<option value="${value}" ${master?.status === value ? "selected" : ""}>${value}</option>`).join("")}</select></label>
+        </div></section>
+
+        <section class="product-form-section"><div class="product-section-heading product-section-heading-inline"><div><span>Sellable options</span><h4>Colors</h4><p>Select from the shared Colors module.</p></div><button type="button" class="text-button" data-action="manage-colors">Manage Colors</button></div><fieldset class="color-picker-fieldset"><legend class="sr-only">Available Colors</legend><div class="product-color-picker">${colorsCatalog().filter(color => color.active !== false || (master?.colorIds || []).includes(color.id)).map(color => `<label class="color-choice"><input type="checkbox" name="colorIds" value="${color.id}" ${(master?.colorIds || []).includes(color.id)?"checked":""}><span>${escapeHTML(color.name)}</span></label>`).join("") || `<p>No colors are defined yet. Add them in Products → Colors.</p>`}</div></fieldset></section>
+
+        <section class="product-form-section"><div class="product-section-heading"><span>How it is made</span><h4>Recipe & Materials</h4><p>The linked recipe supplies the production instructions. Inventory connections are populated from the selected product template.</p></div><label class="product-field"><span class="field-label">Workshop Recipe</span><select name="recipeId"><option value="">No recipe</option>${recipes.map(recipe => `<option value="${recipe.id}" ${master?.recipeId === recipe.id ? "selected" : ""}>${escapeHTML(recipe.title)}</option>`).join("")}</select></label><div id="productRecipeSummary">${renderProductRecipeSummary(master?.recipeId || "", selectedMaterials)}</div></section>
+
+        <section class="product-form-section"><div class="product-section-heading"><span>What goes with the order</span><h4>Packaging & Branding</h4><p>Each selector shows only the matching inventory type.</p></div><div class="product-form-grid">
+          <label class="product-field"><span class="field-label">Mailer</span><select name="mailerInventoryId"><option value="">Not set</option>${inventoryOptionsForType("Mailer")}</select></label>
+          <label class="product-field"><span class="field-label">Product Tag</span><select name="productTagInventoryId"><option value="">Not set</option>${inventoryOptionsForType("Product Tag", master?.packaging?.productTagInventoryId || "")}</select></label>
+          <label class="product-field"><span class="field-label">Care Instruction Sheet</span><select name="careSheetInventoryId"><option value="">Not set</option>${inventoryOptionsForType("Care Sheet", master?.packaging?.careSheetInventoryId || "")}</select></label>
+          <label class="product-field"><span class="field-label">Branding Sticker</span><select name="companyStickerInventoryId"><option value="">Not set</option>${inventoryOptionsForType("Sticker", master?.packaging?.companyStickerInventoryId || "")}</select></label>
+        </div><label class="product-field product-field-full"><span class="field-label">Packaging Notes</span><textarea name="packagingNotes" rows="3" placeholder="Special packaging rules or reminders">${escapeHTML(master?.packaging?.notes || "")}</textarea></label></section>
       </form>`,
       [
         {label:"Cancel"},
@@ -1317,51 +1339,61 @@
     );
 
     const form = document.getElementById("productMasterForm");
-    if (master) {
-      form.productTagInventoryId.value = master.packaging?.productTagInventoryId || "";
-      form.careSheetInventoryId.value = master.packaging?.careSheetInventoryId || "";
-      form.companyStickerInventoryId.value = master.packaging?.companyStickerInventoryId || "";
-    }
+    const currentMailerId = mailerInventoryIdForProduct(master?.id || "");
+    form.mailerInventoryId.value = currentMailerId || "";
 
-    const rows = document.getElementById("productMaterialRows");
-    const initial = master?.materials?.length ? master.materials : [];
-    initial.forEach(row => addProductMaterialRow(row));
-    document.getElementById("addProductMaterial").addEventListener("click",() => addProductMaterialRow());
+    const updateRecipeSummary = () => {
+      let materials=[];
+      try { materials=JSON.parse(form.dataset.materials || "[]"); } catch {}
+      document.getElementById("productRecipeSummary").innerHTML = renderProductRecipeSummary(form.recipeId.value, materials);
+    };
+    form.recipeId.addEventListener("change",() => {
+      const recipeTemplate = productMasters().find(item => item.recipeId === form.recipeId.value || item.id === form.recipeId.value);
+      if (recipeTemplate) form.dataset.materials = JSON.stringify(structuredClone(recipeTemplate.materials || []));
+      updateRecipeSummary();
+    });
+
+    if (form.productTemplate) form.productTemplate.addEventListener("change",() => {
+      const template = productMasterById(form.productTemplate.value);
+      if (!template) return;
+      form.name.value = `New ${template.shortName || template.name}`;
+      form.shortName.value = `New ${template.shortName || template.name}`;
+      form.code.value = "";
+      form.craft.value = template.craft || "Other";
+      form.status.value = "Active";
+      form.recipeId.value = template.recipeId || template.id;
+      form.productTagInventoryId.value = template.packaging?.productTagInventoryId || "";
+      form.careSheetInventoryId.value = template.packaging?.careSheetInventoryId || "";
+      form.companyStickerInventoryId.value = template.packaging?.companyStickerInventoryId || "";
+      form.mailerInventoryId.value = mailerInventoryIdForProduct(template.id) || "";
+      form.packagingNotes.value = template.packaging?.notes || "";
+      form.dataset.materials = JSON.stringify(structuredClone(template.materials || []));
+      form.querySelectorAll('input[name="colorIds"]').forEach(input => input.checked = (template.colorIds || []).includes(input.value) || (template.colors || []).includes(colorById(input.value)?.name));
+      updateRecipeSummary();
+      showToast(`${template.shortName || template.name} defaults applied.`);
+    });
   }
 
-  function addProductMaterialRow(value = {}) {
-    const container = document.getElementById("productMaterialRows");
-    const row = document.createElement("div");
-    row.className = "product-material-edit-row";
-    row.innerHTML = `
-      <select class="pm-item">${inventoryItems().map(item => `<option value="${item.id}">${escapeHTML(item.name)}</option>`).join("")}</select>
-      <input class="pm-qty" type="number" min="0.01" step="0.01" value="${Number(value.quantity || 1)}">
-      <select class="pm-role">
-        ${["raw","kit","separate","packaging"].map(role => `<option value="${role}" ${value.role === role ? "selected" : ""}>${role}</option>`).join("")}
-      </select>
-      <button type="button" class="remove-line">×</button>`;
-    row.querySelector(".pm-item").value = value.inventoryItemId || inventoryItems()[0]?.id || "";
-    row.querySelector(".remove-line").addEventListener("click",() => row.remove());
-    container.appendChild(row);
-  }
 
   function saveProductMaster(productId) {
     const form = document.getElementById("productMasterForm");
     if (!form) return;
     const fd = new FormData(form);
-    const rows = [...document.querySelectorAll(".product-material-edit-row")].map(row => ({
-      inventoryItemId: row.querySelector(".pm-item").value,
-      quantity: Number(row.querySelector(".pm-qty").value || 1),
-      role: row.querySelector(".pm-role").value,
-      colorSpecific: false
-    }));
+    let rows = [];
+    try { rows = JSON.parse(form.dataset.materials || "[]"); } catch { rows = []; }
     const existing = productId ? productMasterById(productId) : null;
-    const id = existing?.id || fd.get("name").trim().toLowerCase().replace(/[^a-z0-9]+/g,"-").replace(/^-|-$/g,"") || uid("product");
+    const name = fd.get("name").trim();
+    if (!name) return showToast("Enter a product name.");
+    const duplicateName = productMasters().find(item => item.id !== productId && item.name.toLowerCase() === name.toLowerCase());
+    if (duplicateName) return showToast("A product with that name already exists.");
+    let id = existing?.id || name.toLowerCase().replace(/[^a-z0-9]+/g,"-").replace(/^-|-$/g,"") || uid("product");
+    if (!existing && productMasterById(id)) id = `${id}-${Date.now().toString(36)}`;
     const updated = {
       ...(existing || {}),
       id,
-      name: fd.get("name").trim(),
-      shortName: fd.get("shortName").trim() || fd.get("name").trim(),
+      name,
+      shortName: fd.get("shortName").trim() || name,
+      code: fd.get("code").trim(),
       craft: fd.get("craft"),
       status: fd.get("status"),
       colorIds: fd.getAll("colorIds"),
@@ -1370,7 +1402,7 @@
       materials: rows,
       packaging: {
         ...(existing?.packaging || {}),
-        mailerType: fd.get("mailerType").trim(),
+        mailerType: inventoryItemById(fd.get("mailerInventoryId"))?.name || "",
         productTagInventoryId: fd.get("productTagInventoryId"),
         careSheetInventoryId: fd.get("careSheetInventoryId"),
         companyStickerInventoryId: fd.get("companyStickerInventoryId"),

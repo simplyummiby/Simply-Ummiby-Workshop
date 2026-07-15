@@ -211,3 +211,8 @@ Prepared Components replaces the former Fabrication Kits label and also houses p
 ## Version 0.6.6 — Inventory Table Polish
 
 Standard inventory categories use a simplified table with Item, On Hand, Reorder At, Status, and Actions. Item details may include material type, craft, linked products, supplier, and notes. Uploaded photos remain available; generated initials are removed.
+
+
+## Version 0.6.7 — Product Editor
+
+Add/Edit Product is organized into Basics, Colors, Recipe & Materials, and Packaging & Branding. New products may start from an existing product family template. Inventory selectors are restricted to Mailers, Product Tags, Care Sheets, and Stickers.

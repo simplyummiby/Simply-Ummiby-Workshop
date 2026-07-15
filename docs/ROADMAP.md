@@ -182,3 +182,12 @@ Paper Towel Holder and Toilet Paper Holder dowels are separate raw and prepared 
 ## Version 0.6.6 — Completed
 
 Inventory table readability pass completed: removed initials, simplified columns, standardized controls, and fixed long-description overlap.
+
+
+## Version 0.6.7 — Completed
+
+- Redesigned the Product editor.
+- Added automatic product-family defaults.
+- Added filtered packaging and branding selectors.
+- Added linked recipe and inventory-material summaries.
+- Improved form typography and layout.

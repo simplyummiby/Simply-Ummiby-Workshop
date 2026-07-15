@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.6.7 — Product Editor & Automatic Defaults
+
+- Redesigned Add/Edit Product into clear Basics, Colors, Recipe & Materials, and Packaging & Branding sections.
+- Added product templates that populate recipes, colors, packaging, printed materials, and inventory connections.
+- Filtered mailer, product tag, care sheet, and branding sticker selectors by inventory type.
+- Added a read-only recipe and inventory-material summary.
+- Improved form typography so labels and entered values have distinct visual weight.
+- Preserved existing product, order, recipe, and inventory relationships.
+
 ## 0.6.6 — Products Module
 - Promoted Products to the main navigation with Catalog, Colors, and Recipes sections.
 - Replaced product cards with a table that opens products and recipes directly.
