@@ -60,6 +60,28 @@ window.SUW_INVENTORY_CATALOG = {
       notes: "Stored separately; not included in a paper towel holder fabrication kit."
     },
     {
+      id: "prepared-paper-towel-dowels",
+      components: [
+        { itemId: "paper-towel-dowels", quantity: 1 },
+        { itemId: "end-caps", quantity: 2 }
+      ],
+      linkedProductIds: ["macrame-paper-towel-holder"],
+      category: "raw-materials",
+      name: "Prepared Paper Towel Dowels",
+      materialType: "Prepared Component",
+      craft: "Macramé",
+      productId: "macrame-paper-towel-holder",
+      tracking: "quantity",
+      quantity: 0,
+      reorderAt: 2,
+      preferredStock: 6,
+      restockType: "make",
+      supplier: "",
+      purchaseUrl: "",
+      contents: ["1 paper towel dowel", "2 end caps"],
+      notes: "Cut to length, fitted with two end caps, inspected, and ready to place in a paper towel holder mailer."
+    },
+    {
       id: "end-caps",
       linkedProductIds: ["macrame-paper-towel-holder"],
       category: "raw-materials",
@@ -173,8 +195,7 @@ window.SUW_INVENTORY_CATALOG = {
       id: "kit-paper-towel-natural",
       components: [
         { itemId: "prepared-cord-paper-towel-natural", quantity: 1 },
-        { itemId: "wood-rings", quantity: 1 },
-        { itemId: "end-caps", quantity: 2 }
+        { itemId: "wood-rings", quantity: 1 }
       ],
       category: "fabrication-kits",
       name: "Paper Towel Holder Kit — Natural/Beige",
@@ -187,8 +208,8 @@ window.SUW_INVENTORY_CATALOG = {
       reorderAt: 2,
       preferredStock: 5,
       restockType: "make",
-      contents: ["4 precut cords", "1 wooden ring", "2 end caps"],
-      notes: "Paper towel dowel is stored separately."
+      contents: ["4 precut cords", "1 wooden ring"],
+      notes: "Prepared dowel is stored separately and already includes its two end caps."
     },
     {
       id: "kit-toilet-paper-natural",

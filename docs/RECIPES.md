@@ -82,3 +82,8 @@ When multiple same-product items are grouped together in one package, they may s
 One packing slip is normally used per Etsy order.
 
 When an order is split into multiple mailers, a separate copy may be printed for each mailer and marked to show what is inside that package.
+
+
+## Version 0.6.5 — Prepared Dowel Workflow
+
+Paper towel dowels now have two inventory states: raw Paper Towel Dowels and Prepared Paper Towel Dowels. A prepared dowel is cut to length, fitted with two end caps, inspected, and ready for packing. Preparing one consumes one raw dowel and two end caps. Prepared dowels may be made in batches from Inventory or created directly for an order. A paper towel holder cannot complete Pack Mailer until its prepared-dowel requirement is resolved.

@@ -1,6 +1,6 @@
 (() => {
   const STORAGE_KEY = "simplyUmmibyWorkshopData";
-  const VERSION = "0.6.4";
+  const VERSION = "0.6.5";
   const ITEM_STATUSES = ["New","Preparing","Manufacturing","Waiting on Material","Ready for Packing","Packed","Ready to Mail","Completed"];
   const STATUS_PROGRESS = {
     "New": 5, "Preparing": 20, "Manufacturing": 50, "Waiting on Material": 35,
@@ -114,7 +114,7 @@
       merged.craft = saved?.craft || defaultItem.craft || "Shared";
       merged.imageData = saved?.imageData || defaultItem.imageData || "";
       merged.linkedProductIds = saved?.linkedProductIds || defaultItem.linkedProductIds || [];
-      merged.components = saved?.components || defaultItem.components || [];
+      merged.components = defaultItem.components || saved?.components || [];
       return merged;
     });
 
@@ -347,6 +347,7 @@
     return inventoryItemId ? { taskKey:`packing-mailer-${index}`, inventoryItemId, quantity:1 } : null;
   }
   function restoreAllInventoryTasksForItem(order,item) {
+    if (item?.workflow?.preparedDowelReady) returnPreparedDowel(order,item);
     const keys = Object.keys(item?.workflow?.inventoryTaskTransactions || {});
     keys.forEach(taskKey => restoreInventoryForTask({order,item,taskKey,label:"Packing supply"}));
   }
@@ -542,8 +543,8 @@
         ...(master.packaging || {}),
         ...(saved.find(item => item.id === master.id)?.packaging || {})
       },
-      materials: saved.find(item => item.id === master.id)?.materials || master.materials || [],
-      kitDefinition: saved.find(item => item.id === master.id)?.kitDefinition || master.kitDefinition || {contents:[],separateMaterials:[]}
+      materials: master.id === "macrame-paper-towel-holder" ? (master.materials || []) : (saved.find(item => item.id === master.id)?.materials || master.materials || []),
+      kitDefinition: master.id === "macrame-paper-towel-holder" ? (master.kitDefinition || {contents:[],separateMaterials:[]}) : (saved.find(item => item.id === master.id)?.kitDefinition || master.kitDefinition || {contents:[],separateMaterials:[]})
     }));
     saved.forEach(master => {
       if (!merged.some(item => item.id === master.id)) merged.push(master);
@@ -595,6 +596,8 @@
         materialStatuses: normalizeMaterialStatuses(workflow.materialStatuses, product.materials),
         manufacturingChecks: normalizeManufacturingChecks(workflow.manufacturingChecks, workflow.manufacturingChecks, product.manufacturingSections),
         packingChecks: normalizeChecks(workflow.packingChecks, product.packingChecklist),
+        preparedDowelReady: Boolean(workflow.preparedDowelReady),
+        preparedDowelMode: workflow.preparedDowelMode || "",
         inventoryTaskTransactions: { ...(workflow.inventoryTaskTransactions || {}) }
       }
     };
@@ -825,7 +828,25 @@
   function renderGroupedInventoryCards(items){if(!items.length)return `<div class="inventory-empty-filter">No inventory items match these filters.</div>`;if(inventoryViewState.group==="none")return `<div class="inventory-catalog-grid">${items.map(renderInventoryCard).join("")}</div>`;const groups=new Map();items.forEach(item=>{const key=inventoryViewState.group==="product"?productDisplayName(item.productId):inventoryViewState.group==="color"?(item.color||"No color"):inventoryStatus(item);if(!groups.has(key))groups.set(key,[]);groups.get(key).push(item);});return [...groups.entries()].map(([label,groupItems])=>`<section class="inventory-card-group"><div class="inventory-card-group-heading"><h4>${escapeHTML(label)}</h4><span>${groupItems.length} item${groupItems.length===1?"":"s"}</span></div><div class="inventory-catalog-grid">${groupItems.map(renderInventoryCard).join("")}</div></section>`).join("");}
   function productDisplayName(productId){return data.products.find(p=>p.id===productId)?.name||"Other";}
   function renderInventoryThumb(item){if(item.imageData)return `<img class="inventory-thumb" src="${item.imageData}" alt="">`;const initials=(item.name||"I").split(/\s+/).slice(0,2).map(w=>w[0]).join("").toUpperCase();return `<span class="inventory-thumb inventory-thumb-placeholder">${escapeHTML(initials)}</span>`;}
-  function renderInventoryCard(item){const status=inventoryStatus(item);return `<article class="inventory-item-card"><div class="inventory-card-image">${renderInventoryThumb(item)}</div><div class="inventory-item-top"><div><p class="eyebrow">${escapeHTML(item.restockType==="purchase"?"Purchase to restock":item.restockType==="make"?"Make to restock":"Print to restock")}</p><h4>${escapeHTML(item.name)}</h4><small>${escapeHTML(item.craft||"Shared")} · ${escapeHTML(item.materialType||"Other")}</small></div><span class="inventory-stock-badge ${status.toLowerCase()}">${escapeHTML(status)}</span></div>${item.tracking==="quantity"?`<div class="inventory-quantity"><button data-action="adjust-inventory" data-item-id="${item.id}" data-delta="-1">−</button><strong>${Number(item.quantity||0)}</strong><button data-action="adjust-inventory" data-item-id="${item.id}" data-delta="1">+</button></div><div class="inventory-thresholds"><span>Reorder at <strong>${Number(item.reorderAt||0)}</strong></span><span>Preferred <strong>${Number(item.preferredStock||0)}</strong></span></div>`:`<label class="inventory-condition-label">Stock condition<select data-action="inventory-condition" data-item-id="${item.id}">${["Available","Getting Low","Replace Soon","Out"].map(v=>`<option value="${v}" ${item.condition===v?"selected":""}>${v}</option>`).join("")}</select></label>`}${item.contents?.length?`<div class="kit-contents"><strong>Contains</strong><ul>${item.contents.map(c=>`<li>${escapeHTML(c)}</li>`).join("")}</ul></div>`:""}${item.category==="fabrication-kits"&&item.components?.length?`<div class="kit-allocation-note"><strong>Component allocation</strong><span>${(item.components||[]).map(component=>{const raw=inventoryItemById(component.itemId);return `${component.quantity} ${raw?.name||component.itemId}`;}).join(" · ")}</span></div>`:""}<div class="inventory-card-actions">${item.category==="fabrication-kits"?`<button class="button primary small" data-action="kit-transaction" data-mode="build" data-item-id="${item.id}">Build Kits</button><button class="button secondary small" data-action="kit-transaction" data-mode="break" data-item-id="${item.id}">Break Apart</button>`:""}<button class="button secondary small" data-action="edit-inventory-item" data-item-id="${item.id}">Edit Details</button>${item.purchaseUrl?`<button class="button secondary small" data-action="open-inventory-link" data-item-id="${item.id}">Open Supplier</button>`:""}</div></article>`;}
+  function renderInventoryCard(item){const status=inventoryStatus(item);return `<article class="inventory-item-card"><div class="inventory-card-image">${renderInventoryThumb(item)}</div><div class="inventory-item-top"><div><p class="eyebrow">${escapeHTML(item.restockType==="purchase"?"Purchase to restock":item.restockType==="make"?"Make to restock":"Print to restock")}</p><h4>${escapeHTML(item.name)}</h4><small>${escapeHTML(item.craft||"Shared")} · ${escapeHTML(item.materialType||"Other")}</small></div><span class="inventory-stock-badge ${status.toLowerCase()}">${escapeHTML(status)}</span></div>${item.tracking==="quantity"?`<div class="inventory-quantity"><button data-action="adjust-inventory" data-item-id="${item.id}" data-delta="-1">−</button><strong>${Number(item.quantity||0)}</strong><button data-action="adjust-inventory" data-item-id="${item.id}" data-delta="1">+</button></div><div class="inventory-thresholds"><span>Reorder at <strong>${Number(item.reorderAt||0)}</strong></span><span>Preferred <strong>${Number(item.preferredStock||0)}</strong></span></div>`:`<label class="inventory-condition-label">Stock condition<select data-action="inventory-condition" data-item-id="${item.id}">${["Available","Getting Low","Replace Soon","Out"].map(v=>`<option value="${v}" ${item.condition===v?"selected":""}>${v}</option>`).join("")}</select></label>`}${item.contents?.length?`<div class="kit-contents"><strong>Contains</strong><ul>${item.contents.map(c=>`<li>${escapeHTML(c)}</li>`).join("")}</ul></div>`:""}${item.category==="fabrication-kits"&&item.components?.length?`<div class="kit-allocation-note"><strong>Component allocation</strong><span>${(item.components||[]).map(component=>{const raw=inventoryItemById(component.itemId);return `${component.quantity} ${raw?.name||component.itemId}`;}).join(" · ")}</span></div>`:""}<div class="inventory-card-actions">${item.category==="fabrication-kits"?`<button class="button primary small" data-action="kit-transaction" data-mode="build" data-item-id="${item.id}">Build Kits</button><button class="button secondary small" data-action="kit-transaction" data-mode="break" data-item-id="${item.id}">Break Apart</button>`:item.restockType==="make"&&item.components?.length?`<button class="button primary small" data-action="prepare-component" data-item-id="${item.id}">Prepare Batch</button>`:""}<button class="button secondary small" data-action="edit-inventory-item" data-item-id="${item.id}">Edit Details</button>${item.purchaseUrl?`<button class="button secondary small" data-action="open-inventory-link" data-item-id="${item.id}">Open Supplier</button>`:""}</div></article>`;}
+  function preparedComponentAvailability(component,count=1){
+    return (component.components||[]).map(entry=>{const source=inventoryItemById(entry.itemId);const needed=Number(entry.quantity||0)*Number(count||1);return {source,needed,available:Number(source?.quantity||0)};}).filter(row=>!row.source||row.source.tracking!=="quantity"||row.available<row.needed);
+  }
+  function prepareComponentBatch(componentId,count=1){
+    const component=inventoryItemById(componentId); count=Math.max(1,Number(count||1));
+    if(!component||component.tracking!=="quantity"||!(component.components||[]).length)return false;
+    const shortages=preparedComponentAvailability(component,count);
+    if(shortages.length){showToast(`Not enough materials to prepare ${count} ${component.name}.`);return false;}
+    (component.components||[]).forEach(entry=>{const source=inventoryItemById(entry.itemId);const qty=Number(entry.quantity||0)*count;source.quantity=Number(source.quantity||0)-qty;recordInventoryTransaction({type:"consume",itemId:source.id,quantity:-qty,reason:"Prepared component",details:`Used to prepare ${count} ${component.name}.`,relatedItemId:component.id,source:"batch-production"});});
+    component.quantity=Number(component.quantity||0)+count;
+    recordInventoryTransaction({type:"build",itemId:component.id,quantity:count,reason:"Prepared component",details:`Prepared ${count} ${component.name}.`,relatedItemId:component.id,source:"batch-production"});
+    saveData(); return true;
+  }
+  function showPrepareComponent(componentId){
+    const component=inventoryItemById(componentId); if(!component)return;
+    showModal(`Prepare ${component.name}`,`<form id="prepareComponentForm"><label>Quantity<input name="quantity" type="number" min="1" value="1"></label><div class="shipping-rule"><strong>Each one uses:</strong> ${(component.components||[]).map(entry=>`${entry.quantity} ${escapeHTML(inventoryItemById(entry.itemId)?.name||entry.itemId)}`).join(" · ")}</div></form>`,[{label:"Cancel"},{label:"Prepare",kind:"primary",onClick:()=>{const count=Number(new FormData(document.getElementById("prepareComponentForm")).get("quantity")||1);if(prepareComponentBatch(componentId,count)){renderInventoryCatalog(inventoryViewState.category||"raw-materials");showToast(`${count} ${component.name} prepared.`);}}}]);
+  }
+
   function renderInventoryAlert(item){return `<div class="inventory-alert-row"><div><strong>${escapeHTML(item.name)}</strong><span>${item.tracking==="quantity"?`${Number(item.quantity||0)} on hand · reorder at ${Number(item.reorderAt||0)}`:escapeHTML(item.condition||"Not set")}</span></div><button class="text-button" data-action="edit-inventory-item" data-item-id="${item.id}">Update</button></div>`;}
   function renderCombinedRestockCenter(attentionItems,orderNeeds){const purchase=attentionItems.filter(i=>i.restockType==="purchase"),make=attentionItems.filter(i=>i.restockType==="make"),print=attentionItems.filter(i=>i.restockType==="print");return `<section class="restock-section-group">${renderRestockBucket("Purchase to Restock","Supplies to order from a vendor.",purchase,"purchase")}${renderRestockBucket("Make to Restock","Fabrication kits or finished products to make ahead.",make,"make")}${renderRestockBucket("Print to Restock","Tags, care sheets, and company stickers to print or cut.",print,"print")}<section class="panel"><div class="panel-heading"><div><p class="eyebrow">Active-order needs</p><h3>Materials Needed for Current Orders</h3></div></div>${orderNeeds.length?orderNeeds.map(renderRestockGroup).join(""):"<p>No active order materials are currently flagged.</p>"}</section></section>`;}
   function renderRestockBucket(title,description,items,type){return `<section class="panel restock-bucket"><div class="panel-heading"><div><p class="eyebrow">${escapeHTML(type)}</p><h3>${escapeHTML(title)}</h3><p>${escapeHTML(description)}</p></div></div><div class="inventory-alert-stack">${items.length?items.map(item=>`<div class="inventory-alert-row"><div><strong>${escapeHTML(item.name)}</strong><span>${item.tracking==="quantity"?`${Number(item.quantity||0)} on hand · target ${Number(item.preferredStock||0)}`:escapeHTML(item.condition||"Not set")}</span></div><button class="button secondary small" data-action="edit-inventory-item" data-item-id="${item.id}">${type==="purchase"?"Update / Supplier":type==="make"?"Adjust Stock":"Adjust / Print Link"}</button></div>`).join(""):`<p>Nothing currently needs to be ${type==="purchase"?"purchased":type==="make"?"made":"printed"}.</p>`}</div></section>`;}
@@ -1566,7 +1587,7 @@
     if (item.productId === "macrame-paper-towel-holder") {
       rows.push({name:"Macramé cord",needed:"4 × 340 cm + wrap cord",available:"Condition tracked",state:item.workflow.materialStatuses["cord"] || "Available"});
       rows.push({name:"Wooden ring",needed:"1",available:recordedInventoryQuantity("wood-rings"),state:item.workflow.materialStatuses["wood-ring"] || "Available"});
-      rows.push({name:"Wooden dowel",needed:"1",available:recordedInventoryQuantity("paper-towel-dowels"),state:item.workflow.materialStatuses["wood-dowel"] || "Available"});
+      rows.push({name:"Prepared paper towel dowel",needed:"1",available:recordedInventoryQuantity("prepared-paper-towel-dowels"),state:item.workflow.preparedDowelReady ? "Assigned" : "Needed for packing"});
       rows.push({name:"End caps",needed:"2",available:recordedInventoryQuantity("end-caps"),state:item.workflow.materialStatuses["end-caps"] || "Available"});
     } else if (item.productId === "macrame-toilet-paper-holder") {
       rows.push({name:"Macramé cord",needed:"Recipe amount",available:"Condition tracked",state:item.workflow.materialStatuses["cord"] || "Available"});
@@ -1819,9 +1840,10 @@
 
   function renderPackPane(order,item) {
     const outstanding = order.items.filter(orderItem => !["Ready for Packing","Packed","Ready to Mail","Completed"].includes(orderItem.status));
+    const unresolvedDowels = order.items.filter(orderItem => orderItem.productId === "macrame-paper-towel-holder" && !preparedDowelReady(orderItem));
     return `
       <div class="process-pane-heading"><div><p class="eyebrow">Step 3</p><h4>Pack & Ship</h4><p>Finish item packing, shared order packaging, and shipping in one workspace.</p></div></div>
-      ${outstanding.length ? `<section class="panel outstanding-work"><div class="panel-heading"><div><p class="eyebrow">Outstanding Work</p><h3>Earlier work still needs attention</h3></div><span class="badge attention">${outstanding.length}</span></div><div class="compact-list">${outstanding.map(outstandingItem => `<div><strong>${escapeHTML(outstandingItem.productName)} — ${escapeHTML(outstandingItem.color)}</strong><span>${escapeHTML(outstandingItem.status)}</span></div>`).join("")}</div></section>` : ""}
+      ${outstanding.length || unresolvedDowels.length ? `<section class="panel outstanding-work"><div class="panel-heading"><div><p class="eyebrow">Outstanding Work</p><h3>Earlier work still needs attention</h3></div><span class="badge attention">${outstanding.length + unresolvedDowels.length}</span></div><div class="compact-list">${outstanding.map(outstandingItem => `<div><strong>${escapeHTML(outstandingItem.productName)} — ${escapeHTML(outstandingItem.color)}</strong><span>${escapeHTML(outstandingItem.status)}</span></div>`).join("")}${unresolvedDowels.map(dowelItem => `<div><strong>${escapeHTML(dowelItem.productName)} — ${escapeHTML(dowelItem.color)}</strong><span>Prepared dowel still required</span></div>`).join("")}</div></section>` : ""}
       ${renderOrderShipping(order,item.id)}`;
   }
 
@@ -1839,6 +1861,48 @@
     }).join("")}</div>`;
   }
 
+  function preparedDowelTaskKey(item){ return `prepared-dowel-${item.id}`; }
+  function preparedDowelReady(item){ return item.productId !== "macrame-paper-towel-holder" || Boolean(item.workflow.preparedDowelReady); }
+  function assignPreparedDowelFromStock(order,item){
+    const taskKey=preparedDowelTaskKey(item);
+    if(item.workflow.preparedDowelReady)return true;
+    const ok=consumeInventoryForTask({order,item,taskKey,inventoryItemId:"prepared-paper-towel-dowels",quantity:1,label:"Prepared paper towel dowel"});
+    if(!ok)return false;
+    item.workflow.preparedDowelReady=true; item.workflow.preparedDowelMode="stock"; touchOrder(order,item); saveData(); showToast("Prepared dowel assigned to this order."); return true;
+  }
+  function prepareDowelForOrder(order,item){
+    if(item.workflow.preparedDowelReady)return true;
+    const raw=inventoryItemById("paper-towel-dowels"), caps=inventoryItemById("end-caps");
+    if(Number(raw?.quantity||0)<1||Number(caps?.quantity||0)<2){showToast("You need 1 raw dowel and 2 end caps to prepare this dowel.");return false;}
+    const rawKey=`${preparedDowelTaskKey(item)}-raw`, capKey=`${preparedDowelTaskKey(item)}-caps`;
+    if(!consumeInventoryForTask({order,item,taskKey:rawKey,inventoryItemId:"paper-towel-dowels",quantity:1,label:"Raw paper towel dowel"}))return false;
+    if(!consumeInventoryForTask({order,item,taskKey:capKey,inventoryItemId:"end-caps",quantity:2,label:"End caps"})){
+      restoreInventoryForTask({order,item,taskKey:rawKey,label:"Raw paper towel dowel"}); return false;
+    }
+    item.workflow.preparedDowelReady=true; item.workflow.preparedDowelMode="order"; touchOrder(order,item); saveData(); showToast("Dowel prepared and assigned to this order."); return true;
+  }
+  function returnPreparedDowel(order,item){
+    if(!item.workflow.preparedDowelReady)return;
+    if(item.workflow.preparedDowelMode==="stock") restoreInventoryForTask({order,item,taskKey:preparedDowelTaskKey(item),label:"Prepared paper towel dowel"});
+    if(item.workflow.preparedDowelMode==="order"){
+      const prepared=inventoryItemById("prepared-paper-towel-dowels");
+      if(prepared){
+        prepared.quantity=Number(prepared.quantity||0)+1;
+        recordInventoryTransaction({type:"return",itemId:prepared.id,quantity:1,reason:"Order dowel returned",details:`Returned a prepared dowel from Etsy order ${order.etsyOrderNumber||order.id}.`,relatedItemId:item.id,orderId:order.id,etsyOrderNumber:order.etsyOrderNumber||"",orderItemId:item.id,source:"order-production"});
+      }
+      delete item.workflow.inventoryTaskTransactions[`${preparedDowelTaskKey(item)}-raw`];
+      delete item.workflow.inventoryTaskTransactions[`${preparedDowelTaskKey(item)}-caps`];
+    }
+    item.workflow.preparedDowelReady=false; item.workflow.preparedDowelMode="";
+  }
+  function renderPreparedDowelTask(order,item){
+    if(item.productId!=="macrame-paper-towel-holder")return "";
+    const prepared=inventoryItemById("prepared-paper-towel-dowels"), raw=inventoryItemById("paper-towel-dowels"), caps=inventoryItemById("end-caps");
+    const ready=Boolean(item.workflow.preparedDowelReady);
+    if(ready)return `<div class="process-check inventory-aware-check checked prepared-dowel-task"><span class="check-box">✓</span><span class="process-check-copy"><span>Prepared Dowel Ready — ${escapeHTML(item.color)}</span><small>${item.workflow.preparedDowelMode==="stock"?"Assigned from prepared-dowel inventory.":"Prepared specifically for this order."}</small></span><button class="button secondary small" type="button" data-action="return-prepared-dowel" data-order-id="${order.id}" data-item-id="${item.id}">Undo</button></div>`;
+    return `<div class="process-check inventory-aware-check prepared-dowel-task"><span class="check-box"></span><span class="process-check-copy"><span>Resolve Prepared Dowel — ${escapeHTML(item.color)}</span><small class="inventory-task-detail ${Number(prepared?.quantity||0)<=0?"out":""}">${Number(prepared?.quantity||0)} prepared available · or make one from ${Number(raw?.quantity||0)} raw dowels and ${Number(caps?.quantity||0)} end caps</small><small>Prepared means cut to length, fitted with two end caps, inspected, and ready for the mailer.</small></span><div class="task-row-actions"><button class="button secondary small" type="button" data-action="use-prepared-dowel" data-order-id="${order.id}" data-item-id="${item.id}" ${Number(prepared?.quantity||0)>0?"":"disabled"}>Use Prepared Dowel</button><button class="button primary small" type="button" data-action="prepare-order-dowel" data-order-id="${order.id}" data-item-id="${item.id}" ${Number(raw?.quantity||0)>=1&&Number(caps?.quantity||0)>=2?"":"disabled"}>Prepare One Now</button></div></div>`;
+  }
+
   function renderOrderShipping(order,currentItemId=null) {
     const productionReady = order.items.every(i => ["Ready for Packing","Packed","Ready to Mail","Completed"].includes(i.status));
     const tagGroups = productTagGroupsForOrder(order);
@@ -1854,8 +1918,10 @@
       return { orderItem, product, entry };
     });
     const mailersDone = mailerTasks.filter(({orderItem,entry}) => entry && Boolean(orderItem.workflow.packingChecks[entry.index])).length;
-    const done = tagDone + mailersDone + [careSheetDone,labelDone,stickerDone,sealedDone].filter(Boolean).length;
-    const total = tagGroups.length + mailerTasks.length + 4;
+    const dowelItems = order.items.filter(orderItem => orderItem.productId === "macrame-paper-towel-holder");
+    const dowelsDone = dowelItems.filter(preparedDowelReady).length;
+    const done = tagDone + mailersDone + dowelsDone + [careSheetDone,labelDone,stickerDone,sealedDone].filter(Boolean).length;
+    const total = tagGroups.length + mailerTasks.length + dowelItems.length + 4;
     const ready = productionReady && done === total;
     const careSheetId = careSheetInventoryIdForOrder(order);
     const careSheet = inventoryItemById(careSheetId);
@@ -1880,12 +1946,13 @@
       const mailer = inventoryItemById(config?.inventoryItemId);
       const checked = Boolean(orderItem.workflow.packingChecks[entry.index]);
       const needsDowel = orderItem.productId === "macrame-paper-towel-holder";
-      return `<label class="process-check inventory-aware-check pack-mailer-task ${checked ? "checked" : ""}">
-        <input type="checkbox" ${checked ? "checked" : ""} data-action="packing-check" data-index="${entry.index}" data-order-id="${order.id}" data-item-id="${orderItem.id}">
+      const dowelReady = preparedDowelReady(orderItem);
+      return `<label class="process-check inventory-aware-check pack-mailer-task ${checked ? "checked" : ""} ${!dowelReady ? "blocked" : ""}">
+        <input type="checkbox" ${checked ? "checked" : ""} ${dowelReady ? "" : "disabled"} data-action="packing-check" data-index="${entry.index}" data-order-id="${order.id}" data-item-id="${orderItem.id}">
         <span class="check-box">${checked ? "✓" : ""}</span>
         <span class="process-check-copy">
           <span>Pack Mailer — ${escapeHTML(orderItem.productName)} — ${escapeHTML(orderItem.color)}</span>
-          <small class="pack-mailer-contents">Insert the tagged product · care sheet with Etsy packing slip on reverse${needsDowel ? " · prepared dowel" : ""}</small>
+          <small class="pack-mailer-contents">Insert the tagged product · care sheet with Etsy packing slip on reverse${needsDowel ? " · prepared dowel" : ""}</small>${!dowelReady ? `<small class="inventory-low-message">Resolve the prepared dowel before packing this mailer.</small>` : ""}
           <small class="inventory-task-detail ${Number(mailer?.quantity || 0) < 1 ? "out" : ""}">${mailer ? `${Number(mailer.quantity || 0)} available · Required 1 · ${escapeHTML(mailer.name)}` : "Mailer inventory link missing"}</small>
         </span>
       </label>`;
@@ -1900,6 +1967,7 @@
           <label class="process-check-main"><input type="checkbox" ${careSheetDone ? "checked" : ""} data-action="shipping-check" data-key="careSheetPrinted" data-order-id="${order.id}"><span class="check-box">${careSheetDone ? "✓" : ""}</span><span class="process-check-copy"><span>Prepare Care Sheet & Etsy Packing Slip</span><small>Print the Etsy packing slip on the reverse side of the care sheet.</small><small class="inventory-task-detail ${careSheetQuantity <= 0 ? "out" : ""}">${careSheet ? `${careSheetQuantity} available · Required 1 · ${escapeHTML(careSheet.name)}` : "Care sheet inventory link missing"}</small>${careSheetLow ? `<small class="inventory-low-message">${careSheetQuantity <= 0 ? "Care sheets are out of stock." : `Only ${careSheetQuantity} care sheets remain.`}</small>` : ""}</span></label>
           <div class="task-row-actions"><button class="button secondary small" type="button" data-action="external-link" data-link="etsyOrders">Open Etsy Orders</button><button class="button secondary small" type="button" data-action="print-care-sheet">Print More Care Sheets</button></div>
         </div>
+        ${order.items.map(orderItem => renderPreparedDowelTask(order,orderItem)).join("")}
         ${mailerTasks.map(renderMailerTask).join("")}
         <div class="process-check task-with-link ${labelDone ? "checked" : ""}"><label class="process-check-main"><input type="checkbox" ${labelDone ? "checked" : ""} data-action="shipping-check" data-key="labelAttached" data-order-id="${order.id}"><span class="check-box">${labelDone ? "✓" : ""}</span><span class="process-check-copy"><span>Print & Attach Shipping Label</span><small>Purchase and print the label in Shippo, then attach it to the mailer.</small></span></label><button class="button secondary small" type="button" data-action="external-link" data-link="shippo">Open Shippo</button></div>
         <label class="process-check inventory-aware-check ${stickerDone ? "checked" : ""}"><input type="checkbox" ${stickerDone ? "checked" : ""} data-action="shipping-check" data-key="companyStickerAttached" data-order-id="${order.id}"><span class="check-box">${stickerDone ? "✓" : ""}</span><span class="process-check-copy"><span>Apply Simply Ummiby Branding Sticker</span><small class="inventory-task-detail ${Number(sticker?.quantity || 0) <= 0 ? "out" : ""}">${sticker ? `${Number(sticker.quantity || 0)} available · Required 1 · ${escapeHTML(sticker.name)}` : "Company sticker inventory link missing"}</small></span></label>
@@ -2329,6 +2397,7 @@
     if (action==="add-inventory-item") showInventoryItemEditor();
     if (action==="open-inventory-link") openInventoryLink(button.dataset.itemId);
     if (action==="kit-transaction") showKitTransaction(button.dataset.itemId,button.dataset.mode);
+    if (action==="prepare-component") showPrepareComponent(button.dataset.itemId);
     if (action==="stock-adjustment") showStockAdjustment(button.dataset.itemId);
     if (action==="clear-inventory-filters") { inventoryViewState.search="";inventoryViewState.craft="All";inventoryViewState.materialType="All";inventoryViewState.stock="All";inventoryViewState.sort="name-asc";inventoryViewState.group="none";renderInventoryCatalog(inventoryViewState.category); }
     if (action==="open-recipe") openRecipe(button.dataset.recipeId);
@@ -2354,6 +2423,9 @@
     if (action==="wait-material") waitOnMaterial(orderId,itemId);
     if (action==="ready-mail") markReadyMail(orderId);
     if (action==="mark-mailed") markOrderMailed(orderId);
+    if (action==="use-prepared-dowel") { const order=data.orders.find(o=>o.id===orderId),item=order?.items.find(i=>i.id===itemId); if(order&&item&&assignPreparedDowelFromStock(order,item)) renderOrderWorkspace(order,item.id); }
+    if (action==="prepare-order-dowel") { const order=data.orders.find(o=>o.id===orderId),item=order?.items.find(i=>i.id===itemId); if(order&&item&&prepareDowelForOrder(order,item)) renderOrderWorkspace(order,item.id); }
+    if (action==="return-prepared-dowel") { const order=data.orders.find(o=>o.id===orderId),item=order?.items.find(i=>i.id===itemId); if(order&&item){returnPreparedDowel(order,item);touchOrder(order,item);saveData();renderOrderWorkspace(order,item.id);showToast("Dowel assignment returned to inventory.");} }
     if (action==="print-care-sheet") printCareSheet();
     if (action==="external-link") openExternal(link);
     if (action==="restock-status-all") updateMaterialStatusAcrossOrders(button.dataset.materialId,button.dataset.status);

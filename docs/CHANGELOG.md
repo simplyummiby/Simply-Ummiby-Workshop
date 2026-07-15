@@ -1,5 +1,17 @@
 # Changelog
 
+## 0.6.5
+
+- Added Prepared Paper Towel Dowels as a counted prepared component.
+- A prepared dowel consumes one raw paper towel dowel and two end caps.
+- Added batch preparation from Inventory.
+- Added Use Prepared Dowel and Prepare One Now actions inside Pack & Ship.
+- Added persistent outstanding-dowel warnings and blocked mailer packing until the dowel is resolved.
+- Updated the paper towel holder kit so end caps belong to dowel preparation rather than the cord/ring kit.
+- Added safe return behavior for reset, cancellation, and undo.
+- Updated all release references to 0.6.5.
+
+
 
 ## 0.6.4 — Ship By Date tracking
 

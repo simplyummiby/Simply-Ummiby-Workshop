@@ -182,3 +182,8 @@ Pack & Ship checklist rows share one explicit font family, title size, and title
 - Mark Order Packed records `shipping.packedAt` and moves active items to `Ready to Mail`.
 - Mark as Mailed records `shipping.mailedAt`, moves all order items to `Completed`, and completes the order at 100%.
 - Existing saved orders migrate with nullable packed and mailed timestamps.
+
+
+## Version 0.6.5 — Prepared Dowel Workflow
+
+Paper towel dowels now have two inventory states: raw Paper Towel Dowels and Prepared Paper Towel Dowels. A prepared dowel is cut to length, fitted with two end caps, inspected, and ready for packing. Preparing one consumes one raw dowel and two end caps. Prepared dowels may be made in batches from Inventory or created directly for an order. A paper towel holder cannot complete Pack Mailer until its prepared-dowel requirement is resolved.

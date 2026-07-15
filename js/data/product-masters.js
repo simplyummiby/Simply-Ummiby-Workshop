@@ -18,18 +18,16 @@ window.SUW_PRODUCT_MASTERS = [
     materials: [
       { inventoryItemId: "prepared-cord-paper-towel-natural", quantity: 1, role: "kit", colorSpecific: true },
       { inventoryItemId: "wood-rings", quantity: 1, role: "kit", colorSpecific: false },
-      { inventoryItemId: "end-caps", quantity: 2, role: "kit", colorSpecific: false },
-      { inventoryItemId: "paper-towel-dowels", quantity: 1, role: "separate", colorSpecific: false }
+      { inventoryItemId: "prepared-paper-towel-dowels", quantity: 1, role: "separate", colorSpecific: false }
     ],
     kitDefinition: {
       inventoryItemId: "kit-paper-towel-natural",
       contents: [
         { inventoryItemId: "prepared-cord-paper-towel-natural", quantity: 1 },
-        { inventoryItemId: "wood-rings", quantity: 1 },
-        { inventoryItemId: "end-caps", quantity: 2 }
+        { inventoryItemId: "wood-rings", quantity: 1 }
       ],
       separateMaterials: [
-        { inventoryItemId: "paper-towel-dowels", quantity: 1 }
+        { inventoryItemId: "prepared-paper-towel-dowels", quantity: 1 }
       ]
     }
   },
