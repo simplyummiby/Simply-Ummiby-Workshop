@@ -1,29 +1,22 @@
 # Simply Ummiby Workshop
 
-**Version 0.6.7.2**
+**Version 0.6.7.2.1**
 
-Version 0.6.7.2 expands the Colors module with color families, family filtering, direct Yarn & Cord inventory links, and a redesigned color editor.
+Version 0.6.7.2.1 is a corrective release for the Products category and catalog update. It fixes a startup initialization error that prevented the main app views from rendering in v0.6.7.2.
 
+## Version 0.6.7.2.1 highlights
 
-## Version 0.6.7.2 highlights
+- Restores normal Dashboard and app-content rendering.
+- Initializes default product categories before saved-data migration runs.
+- Preserves the v0.6.7.2 Categories & Codes module.
+- Preserves Catalog filtering by category and craft.
+- Preserves Catalog sorting by craft, category, product name, code, and status.
+- Keeps existing products, orders, inventory, recipes, colors, and saved data intact.
 
+## Product organization
 
-- Adds a Color Family field with migration-based defaults for existing colors.
-- Adds family filtering on Products → Colors.
-- Links each color to one Yarn & Cord inventory item through a stable inventory ID.
-- Restricts the color material selector to Yarn & Cord inventory only.
-- Shows linked material stock and product usage in the color editor.
-- Redesigns Add/Edit Color to match the organized Product editor.
+Products includes **Catalog**, **Categories & Codes**, **Colors**, and **Recipes**. The Catalog can be filtered by product category and craft and defaults to sorting by Craft → Category → Product.
 
-## Version 0.6.5.1 highlights
+## Local data
 
-- Adds separate **Toilet Paper Dowels** and **Prepared Toilet Paper Dowels** inventory items.
-- Preparing a Paper Towel Holder dowel uses 1 raw PTH dowel and 2 end caps.
-- Preparing a Toilet Paper Holder dowel uses 1 raw TPH dowel and no end caps.
-- Supports batch preparation and order-time preparation for both dowel types.
-- Blocks Pack Mailer until the correct product-specific prepared dowel is assigned.
-- Returns an undone or cancelled dowel to the correct prepared-component inventory.
-
-
-### Version 0.6.7.2
-Products now includes Catalog, Categories & Codes, Colors, and Recipes. The Catalog can be filtered by category and craft and sorted by craft/category/product by default.
+The app stores workshop data in browser local storage and supports downloadable JSON backups. Keep backups before replacing or substantially changing the project.

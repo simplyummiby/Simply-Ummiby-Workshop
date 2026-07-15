@@ -1,4 +1,18 @@
-## 0.6.7.2 — Color Families & Yarn/Cord Links
+## 0.6.7.2.1 — Products Startup Fix
+
+- Fixed the startup initialization order introduced in v0.6.7.2.
+- Default product categories now initialize before saved-data migration.
+- Restored Dashboard and main-view rendering while preserving Categories & Codes, Catalog filters, and sorting.
+- Kept existing local-storage data and product relationships intact.
+
+## 0.6.7.2 — Product Categories & Catalog Organization
+
+- Added stable product-category records and Categories & Codes management.
+- Added Catalog filtering by category and craft.
+- Added sorting by craft/category/product, category/product, name, code, and active status.
+- Added category selection and code-prefix suggestions to the Product editor.
+
+## 0.6.7.1 — Color Families & Yarn/Cord Links
 
 - Added color families and family filtering to Products → Colors.
 - Linked colors to stable Yarn & Cord inventory item IDs.

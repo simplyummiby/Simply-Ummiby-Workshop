@@ -1,11 +1,17 @@
 (() => {
   const STORAGE_KEY = "simplyUmmibyWorkshopData";
-  const VERSION = "0.6.7.2";
+  const VERSION = "0.6.7.2.1";
   const ITEM_STATUSES = ["New","Preparing","Manufacturing","Waiting on Material","Ready for Packing","Packed","Ready to Mail","Completed"];
   const STATUS_PROGRESS = {
     "New": 5, "Preparing": 20, "Manufacturing": 50, "Waiting on Material": 35,
     "Ready for Packing": 70, "Packed": 85, "Ready to Mail": 95, "Completed": 100
   };
+  const DEFAULT_PRODUCT_CATEGORIES = [
+    {id:"paper-towel-holders",name:"Paper Towel Holders",codePrefix:"M-PTH",defaultCraft:"Macramé",status:"Active",notes:"Macramé paper towel holder products."},
+    {id:"toilet-paper-holders",name:"Toilet Paper Holders",codePrefix:"M-TPH",defaultCraft:"Macramé",status:"Active",notes:"Macramé toilet paper holder products."},
+    {id:"oven-door-towel-holders",name:"Oven Door Towel Holders",codePrefix:"C-ODTH",defaultCraft:"Crochet",status:"Active",notes:"Crochet oven-door towel holder products."}
+  ];
+
   const data = loadData();
   syncInventoryProductLinks();
   saveData();
@@ -583,12 +589,6 @@
     });
     return merged;
   }
-
-  const DEFAULT_PRODUCT_CATEGORIES = [
-    {id:"paper-towel-holders",name:"Paper Towel Holders",codePrefix:"M-PTH",defaultCraft:"Macramé",status:"Active",notes:"Macramé paper towel holder products."},
-    {id:"toilet-paper-holders",name:"Toilet Paper Holders",codePrefix:"M-TPH",defaultCraft:"Macramé",status:"Active",notes:"Macramé toilet paper holder products."},
-    {id:"oven-door-towel-holders",name:"Oven Door Towel Holders",codePrefix:"C-ODTH",defaultCraft:"Crochet",status:"Active",notes:"Crochet oven-door towel holder products."}
-  ];
 
   function inferProductCategoryId(master) {
     const value=`${master?.id||""} ${master?.name||""} ${master?.shortName||""}`.toLowerCase();
