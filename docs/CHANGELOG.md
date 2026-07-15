@@ -1,3 +1,12 @@
+## 0.6.8.2 — Managed Material Types
+
+- Made Material Type required for inventory items.
+- Replaced free-text material entry with a managed dropdown.
+- Added inline creation of new material types.
+- Added dynamic Inventory tabs for raw material types such as Yarn & Cord, Wood, Hardware, and future types.
+- Derived inventory category placement from the selected material type.
+- Migrated Cord/Yarn to Yarn & Cord without changing stock quantities.
+
 ## 0.6.8.1.1 — Supplier Website Link Fix
 
 - Supplier names now open the supplier's main website.

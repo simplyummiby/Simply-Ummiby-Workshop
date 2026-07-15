@@ -218,3 +218,10 @@ Inventory table readability pass completed: removed initials, simplified columns
 - Stable supplier links from inventory
 - Migration of legacy supplier text
 - Supplier dropdown in Add/Edit Inventory
+
+## Version 0.6.8.2 — Completed
+
+- Required managed Material Type dropdown.
+- Inline creation of new material types.
+- Dynamic material-type Inventory tabs.
+- Safe migration of existing inventory type names and quantities.

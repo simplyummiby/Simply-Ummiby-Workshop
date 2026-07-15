@@ -1,5 +1,5 @@
 window.SUW_SAMPLE_DATA = {
-  version: "0.6.8.1.1",
+  version: "0.6.8.2",
   products: [
     {
       id: "macrame-paper-towel-holder",
@@ -127,7 +127,7 @@ window.SUW_SAMPLE_DATA = {
   ],
   orders: [],
   activity: [
-    { text: "Simply Ummiby Workshop v0.6.8.1.1 supplier management is ready", time: "Today" }
+    { text: "Simply Ummiby Workshop v0.6.8.2 managed material types are ready", time: "Today" }
   ],
   settings: {
     lastOpenedOrderId: null,

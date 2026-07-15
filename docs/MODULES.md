@@ -234,3 +234,7 @@ The Products > Recipes view now provides a table, search, category/craft/status 
 ## Version 0.6.8.1.1 — Suppliers
 
 Inventory includes a Suppliers directory with reusable vendor records. Add/Edit Inventory selects a supplier from the directory, while supplier records show contact information and linked inventory items.
+
+## Version 0.6.8.2 — Material Type Navigation
+
+The Inventory editor requires a managed Material Type. Users can create a new raw-material type from the same form, and it immediately becomes an Inventory tab. Prepared, finished, packaging, and print types continue to route to their operational sections.

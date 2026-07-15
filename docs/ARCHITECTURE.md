@@ -240,3 +240,7 @@ Bundled recipes are migrated into `data.recipes` during startup. Saved recipe re
 ## Version 0.6.8.1.1 — Supplier Records
 
 Suppliers are stored in `data.suppliers` with stable IDs. Inventory items store `supplierId` and retain a supplier-name snapshot for backward compatibility and searching. Startup migration deduplicates existing free-text supplier names case-insensitively and links inventory records without changing stock or transactions.
+
+## Version 0.6.8.2 — Managed Inventory Material Types
+
+Inventory material types are stored in `inventoryMaterialTypes` as stable records with a name, category destination, status, and `showAsTab` flag. Inventory items require a material type; their category is derived from the selected type. Raw-material types can render as dynamic Inventory tabs.
