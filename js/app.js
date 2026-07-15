@@ -1840,11 +1840,12 @@
   }
 
   function printCareSheet() {
-    const popup=window.open("","_blank","width=800,height=900");
-    if (!popup) return showToast("Please allow pop-ups to print the care sheet.");
-    popup.document.write(`<!doctype html><html><head><title>Simply Ummiby Care Instructions</title><style>body{font-family:Arial,sans-serif;color:#333;padding:60px;line-height:1.6}.sheet{border:3px solid #d96d7b;border-radius:24px;padding:42px;max-width:650px;margin:auto}h1{color:#9f3d4d;margin-top:0}.note{margin-top:32px;font-size:12px;color:#777}@media print{body{padding:0}.sheet{border-width:2px}}</style></head><body><section class="sheet"><h1>Simply Ummiby</h1><h2>Care Instructions</h2><p>Thank you for supporting handmade work.</p><p><strong>Gentle care:</strong> Spot clean as needed and allow the item to air dry. Handle the handmade fibers and finished details gently.</p><p><strong>Macramé:</strong> If the cord shifts during use or shipping, gently straighten and smooth it by hand.</p><p><strong>Crochet:</strong> Reshape gently after cleaning and allow it to dry flat when appropriate.</p><p class="note">Temporary Version 0.3 care sheet. Replace with your final shop PDF when the Resources module is completed.</p></section><script>window.onload=()=>window.print();<\/script></body></html>`);
-    popup.document.close();
-  }
+  window.open(
+    "printables/caresheet-pt-tp.pdf",
+    "_blank",
+    "noopener"
+  );
+}
 
   function openExternal(key) {
     const url=data.settings.externalLinks[key];
