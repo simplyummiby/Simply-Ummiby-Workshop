@@ -1310,3 +1310,58 @@ textarea { resize: vertical; }
 @media (max-width: 700px) {
   .order-deadline-stack { justify-items: start; }
 }
+
+/* Version 0.6.5.3 Inventory table polish */
+.inventory-table-polished { overflow:visible; }
+.inventory-data-table-polished {
+  grid-template-columns:minmax(320px,2.4fr) minmax(120px,.8fr) minmax(105px,.7fr) minmax(90px,.65fr) minmax(230px,1.2fr);
+  gap:18px;
+  align-items:center;
+  padding:16px 18px;
+}
+.inventory-data-table-polished:not(.inventory-data-table-head):hover { background:var(--rose-50); }
+.inventory-name-cell-polished { align-items:flex-start; min-width:0; }
+.inventory-name-cell-polished .inventory-thumb-photo { width:52px; height:52px; flex:0 0 52px; }
+.inventory-item-copy { min-width:0; width:100%; }
+.inventory-item-copy > strong { display:block; color:var(--charcoal); line-height:1.35; }
+.inventory-item-meta { display:flex; flex-wrap:wrap; gap:5px 12px; margin-top:4px; color:var(--muted); font-size:.76rem; font-weight:750; }
+.inventory-item-meta span + span::before { content:"•"; margin-right:12px; color:var(--rose-300); }
+.inventory-product-pills { margin-top:7px; }
+.inventory-item-description {
+  display:block;
+  margin-top:7px;
+  max-width:100%;
+  color:var(--muted);
+  font-size:.8rem;
+  line-height:1.45;
+  white-space:normal;
+  overflow-wrap:anywhere;
+  word-break:break-word;
+}
+.inventory-count-cell strong,.inventory-reorder-cell strong { display:block; font-size:1rem; color:var(--charcoal); }
+.inventory-count-cell small,.inventory-reorder-cell small { display:block; margin-top:3px; color:var(--muted); font-size:.72rem; line-height:1.35; }
+.inventory-row-actions-polished { justify-content:flex-start; flex-wrap:nowrap; }
+.inventory-quick-adjust { display:flex; gap:4px; }
+.inventory-row-actions-polished .inventory-quick-adjust button {
+  width:32px; height:32px; border:1px solid var(--line); border-radius:9px;
+  background:var(--rose-50); color:var(--rose-700); font-weight:900;
+}
+.inventory-row-actions-polished .button.small { white-space:nowrap; }
+.inventory-card-image:has(.inventory-thumb:empty),.inventory-card-image:empty { display:none; }
+.inventory-card-image:not(:has(.inventory-thumb)) { display:none; }
+
+@media(max-width:1100px){
+  .inventory-data-table-polished { grid-template-columns:minmax(280px,2fr) .75fr .7fr .65fr minmax(200px,1fr); gap:12px; }
+}
+@media(max-width:850px){
+  .inventory-data-table-polished.inventory-data-table-head { display:none; }
+  .inventory-data-table-polished { grid-template-columns:1fr 1fr; align-items:start; gap:13px; }
+  .inventory-data-table-polished > * { display:block !important; }
+  .inventory-data-table-polished .inventory-name-cell-polished,
+  .inventory-data-table-polished .inventory-row-actions-polished { grid-column:1/-1; }
+  .inventory-row-actions-polished { flex-wrap:wrap; }
+}
+@media(max-width:560px){
+  .inventory-data-table-polished { grid-template-columns:1fr; }
+  .inventory-data-table-polished > * { grid-column:1/-1; }
+}

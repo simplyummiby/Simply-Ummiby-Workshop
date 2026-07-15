@@ -1,18 +1,17 @@
 # Simply Ummiby Workshop
 
-**Version 0.6.5.2**
+**Version 0.6.5.3**
 
-Version 0.6.5.2 reorganizes Inventory around the way supplies are found and prepared in the workshop. Existing quantities and custom inventory records are preserved through migration.
+Version 0.6.5.3 polishes the Inventory table so stock is easier to scan and long item details stay contained within the Item column.
 
-## Version 0.6.5.2 highlights
+## Version 0.6.5.3 highlights
 
-- Split Raw Materials into **Yarn & Cord** and **Accessories**.
-- Renamed **Print & Cricut Supplies** to **Print & Branding**.
-- Renamed **Fabrication Kits** to **Prepared Components**.
-- Moved prepared dowels and precut cord sets into Prepared Components.
-- Kept raw dowels, wooden rings, end caps, and future hardware under Accessories.
-- Kept poly mailers in the dedicated Packaging Supplies category.
-- Added safe category migration for existing and custom inventory records.
+- Removed decorative initials/placeholder squares from inventory items.
+- Simplified the stock table to Item, On Hand, Reorder At, Status, and Actions.
+- Kept type, craft, linked products, allocation details, and descriptions inside the Item/On Hand areas.
+- Added safe wrapping for long descriptions so they cannot overlap neighboring columns.
+- Standardized quick adjustments, Adjust, and Edit controls.
+- Preserved uploaded item photos when one exists.
 
 ## Version 0.6.5.1 highlights
 

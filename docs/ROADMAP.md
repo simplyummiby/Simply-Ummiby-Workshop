@@ -177,3 +177,8 @@ Paper Towel Holder and Toilet Paper Holder dowels are separate raw and prepared 
 - Rename Print & Cricut Supplies to Print & Branding.
 - Preserve Packaging Supplies as a dedicated category.
 - Migrate legacy and custom inventory records without resetting stock.
+
+
+## Version 0.6.5.3 — Completed
+
+Inventory table readability pass completed: removed initials, simplified columns, standardized controls, and fixed long-description overlap.

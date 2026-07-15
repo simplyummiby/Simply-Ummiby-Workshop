@@ -1,3 +1,13 @@
+## 0.6.5.3
+
+- Removed inventory initials and decorative placeholder squares.
+- Reorganized the standard inventory table into Item, On Hand, Reorder At, Status, and Actions.
+- Moved type, craft, linked products, allocation context, and descriptive details into compact supporting text.
+- Fixed long supplier/notes text so it wraps inside the Item column and never collides with adjacent columns.
+- Standardized inventory quick-adjust, Adjust, and Edit controls.
+- Preserved real uploaded item photos while hiding empty image placeholders.
+- Updated all current release references to 0.6.5.3.
+
 ## 0.6.5.2
 
 - Reorganized Inventory into Yarn & Cord, Accessories, Prepared Components, Finished Inventory, Packaging Supplies, and Print & Branding.

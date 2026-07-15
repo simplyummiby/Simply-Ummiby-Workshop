@@ -206,3 +206,8 @@ The Inventory module now uses these browsable categories:
 - Restock Center
 
 Prepared Components replaces the former Fabrication Kits label and also houses prepared dowels and precut cord sets.
+
+
+## Version 0.6.5.3 — Inventory Table Polish
+
+Standard inventory categories use a simplified table with Item, On Hand, Reorder At, Status, and Actions. Item details may include material type, craft, linked products, supplier, and notes. Uploaded photos remain available; generated initials are removed.
