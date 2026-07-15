@@ -1,17 +1,18 @@
 # Simply Ummiby Workshop
 
-**Version 0.6.8.2**
+**Version 0.6.8.3**
 
-Version 0.6.8.2 makes Material Type a required, managed inventory field. Inventory items can no longer silently fall into the wrong section when a type is omitted. Material types are selected from a dropdown, and new raw-material types added from the form become Inventory tabs automatically.
+Version 0.6.8.3 adds safe inventory lifecycle management and refreshes the Add/Edit Inventory experience. Referenced items can be archived without breaking historical records, unused items can be deleted safely, and the editor now shows clear sections and a live Where Used summary.
 
-## Version 0.6.8.2 highlights
+## Version 0.6.8.3 highlights
 
-- Material Type is required when adding or editing inventory.
-- Material Type uses a managed dropdown instead of free text.
-- New material types can be created directly from the inventory form.
-- New raw-material types appear as their own Inventory tabs.
-- Existing Cord/Yarn entries migrate to the clearer Yarn & Cord label.
-- Category placement is derived from Material Type, preventing accidental Yarn & Cord placement.
+- Archive, restore, and safely delete inventory items.
+- Block permanent deletion when products, colors, prepared components, orders, or transaction history still reference an item.
+- Filter inventory by Active, Archived, or All items.
+- Hide archived items from active restock views and new inventory selectors.
+- Use a redesigned inventory editor with grouped, conditional fields.
+- Review a Where Used panel before archiving or deleting.
+
 ## Recipe management
 
 Version 0.6.8 introduced a searchable Recipe table, filters and sorting, improved recipe navigation, and a structured Add/Edit Recipe interface.

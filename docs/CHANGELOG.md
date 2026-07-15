@@ -1,3 +1,10 @@
+## 0.6.8.3 — Safe Inventory Management
+
+- Added Archive, Restore, and safe Delete actions.
+- Added reference checks across products, colors, prepared components, orders, and transaction history.
+- Added Active, Archived, and All filters.
+- Redesigned the inventory editor with grouped sections, conditional print/stock fields, and a Where Used panel.
+
 ## 0.6.8.2 — Managed Material Types
 
 - Made Material Type required for inventory items.

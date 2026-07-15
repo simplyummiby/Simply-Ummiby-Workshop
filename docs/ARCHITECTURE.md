@@ -244,3 +244,8 @@ Suppliers are stored in `data.suppliers` with stable IDs. Inventory items store 
 ## Version 0.6.8.2 — Managed Inventory Material Types
 
 Inventory material types are stored in `inventoryMaterialTypes` as stable records with a name, category destination, status, and `showAsTab` flag. Inventory items require a material type; their category is derived from the selected type. Raw-material types can render as dynamic Inventory tabs.
+
+
+## Version 0.6.8.3 — Inventory Lifecycle
+
+Inventory items now carry an Active or Archived lifecycle status. Permanent deletion is allowed only when the reference checker finds no product, color, prepared-component, order, or transaction-history relationships. Archived records remain addressable by stable ID for historical compatibility.

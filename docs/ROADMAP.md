@@ -225,3 +225,11 @@ Inventory table readability pass completed: removed initials, simplified columns
 - Inline creation of new material types.
 - Dynamic material-type Inventory tabs.
 - Safe migration of existing inventory type names and quantities.
+
+
+## Version 0.6.8.3 — Completed
+
+- Safe inventory archive, restore, and deletion
+- Reference checking before removal
+- Redesigned inventory editor
+- Where Used relationship summary
