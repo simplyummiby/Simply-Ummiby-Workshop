@@ -1,3 +1,11 @@
+## 0.6.7.1 — Color Families & Yarn/Cord Links
+
+- Added color families and family filtering to Products → Colors.
+- Linked colors to stable Yarn & Cord inventory item IDs.
+- Added linked material stock visibility and product usage summaries.
+- Redesigned the Add/Edit Color modal to match the Product editor.
+- Migrated existing colors safely with inferred family values.
+
 # Changelog
 
 ## 0.6.7 — Product Editor & Automatic Defaults

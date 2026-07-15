@@ -191,3 +191,9 @@ Inventory table readability pass completed: removed initials, simplified columns
 - Added filtered packaging and branding selectors.
 - Added linked recipe and inventory-material summaries.
 - Improved form typography and layout.
+
+## Version 0.6.7.1 — Completed
+
+- Color families and filtering
+- Yarn & Cord inventory relationships
+- Redesigned color editor

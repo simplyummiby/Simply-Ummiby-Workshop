@@ -1,6 +1,6 @@
 (() => {
   const STORAGE_KEY = "simplyUmmibyWorkshopData";
-  const VERSION = "0.6.7";
+  const VERSION = "0.6.7.1";
   const ITEM_STATUSES = ["New","Preparing","Manufacturing","Waiting on Material","Ready for Packing","Packed","Ready to Mail","Completed"];
   const STATUS_PROGRESS = {
     "New": 5, "Preparing": 20, "Manufacturing": 50, "Waiting on Material": 35,
@@ -586,21 +586,43 @@
     return (catalog||[]).find(color => String(color.name||"").trim().toLowerCase() === target);
   }
 
+  const COLOR_FAMILIES = ["Neutrals","Black & White","Grays","Browns","Pinks","Reds","Oranges","Yellows","Greens","Blues","Purples","Multicolor","Other"];
+  let colorFamilyFilter = "All";
+
+  function inferColorFamily(name) {
+    const value=String(name||"").toLowerCase();
+    if (/black|white/.test(value)) return "Black & White";
+    if (/gray|grey|silver/.test(value)) return "Grays";
+    if (/brown|chocolate|chestnut|tan|camel|coffee|mocha/.test(value)) return "Browns";
+    if (/pink|rose|blush|watermelon|berry/.test(value)) return "Pinks";
+    if (/red|wine|burgundy|maroon/.test(value)) return "Reds";
+    if (/orange|coral|peach/.test(value)) return "Oranges";
+    if (/yellow|gold|mustard/.test(value)) return "Yellows";
+    if (/green|sage|olive|forest|mint/.test(value)) return "Greens";
+    if (/blue|navy|teal|aqua|turquoise/.test(value)) return "Blues";
+    if (/purple|lavender|plum|aubergine/.test(value)) return "Purples";
+    if (/multi|rainbow|variegated/.test(value)) return "Multicolor";
+    if (/natural|beige|cream|ivory|oat|ecru/.test(value)) return "Neutrals";
+    return "Other";
+  }
+
   function migrateColorCatalog(savedCatalog, masters) {
     const catalog=(savedCatalog || []).map(color => ({
       id: color.id || colorSlug(color.name),
       name: color.name || "Unnamed Color",
+      family: color.family || inferColorFamily(color.name),
       craft: color.craft || "Shared",
       active: color.active !== false,
       notes: color.notes || "",
-      swatch: color.swatch || ""
+      swatch: color.swatch || "",
+      inventoryItemId: color.inventoryItemId || ""
     }));
     (masters || []).forEach(master => (master.colors || []).forEach(name => {
       let color=colorByNameFrom(catalog,name);
       if (!color) {
         let id=colorSlug(name), base=id, n=2;
         while(catalog.some(item => item.id===id)) id=`${base}-${n++}`;
-        catalog.push({id,name,craft:master.craft || "Shared",active:true,notes:"",swatch:""});
+        catalog.push({id,name,family:inferColorFamily(name),craft:master.craft || "Shared",active:true,notes:"",swatch:"",inventoryItemId:""});
       } else if (color.craft !== master.craft && color.craft !== "Shared") color.craft="Shared";
     }));
     return catalog;
@@ -1166,31 +1188,52 @@
     return known[master.id] || master.id.split("-").map(part=>part[0]).join("").toUpperCase();
   }
 
+  function yarnCordInventoryItems() {
+    return inventoryItems().filter(item => item.category === "yarn-cord").sort((a,b)=>a.name.localeCompare(b.name));
+  }
+
+  function colorMaterialSummary(itemId) {
+    const item=inventoryItemById(itemId);
+    if (!item) return `<p>No yarn or cord linked yet.</p>`;
+    const stock=item.tracking==="quantity"?`${Number(item.quantity||0)} on hand`:item.condition||"Status not set";
+    return `<div><strong>${escapeHTML(item.name)}</strong><span>${escapeHTML(stock)} · ${escapeHTML(item.craft||"Shared")}</span></div>`;
+  }
+
   function renderColorsModule() {
     pageTitle.textContent="Products · Colors"; setActiveNav("products");
+    const visible=colorsCatalog().filter(color=>colorFamilyFilter==="All" || color.family===colorFamilyFilter);
     viewContainer.innerHTML=`<section class="page-section wide">${renderProductsSubnav("colors")}
-      <section class="product-catalog-heading"><div><p class="eyebrow">Reusable product attributes</p><h3>Colors</h3><p>Define each color once, then select it for any product.</p></div><button class="button primary" data-action="add-color">+ Add Color</button></section>
+      <section class="product-catalog-heading"><div><p class="eyebrow">Reusable product attributes</p><h3>Colors</h3><p>Organize colors by family and connect each one to the cord or yarn you keep in inventory.</p></div><button class="button primary" data-action="add-color">+ Add Color</button></section>
+      <section class="panel color-filter-panel"><label><span>Color Family</span><select data-action="color-family-filter"><option value="All">All families</option>${COLOR_FAMILIES.map(family=>`<option value="${family}" ${colorFamilyFilter===family?"selected":""}>${family}</option>`).join("")}</select></label><span>${visible.length} of ${colorsCatalog().length} colors</span></section>
       <section class="panel product-catalog-panel"><div class="color-catalog-table">
-        <div class="color-catalog-row color-catalog-head"><span>Color</span><span>Craft</span><span>Status</span><span>Used By</span><span>Actions</span></div>
-        ${colorsCatalog().map(color => `<div class="color-catalog-row"><div class="color-name-cell">${color.swatch?`<span class="color-swatch" style="background:${escapeHTML(color.swatch)}"></span>`:""}<div><strong>${escapeHTML(color.name)}</strong>${color.notes?`<small>${escapeHTML(color.notes)}</small>`:""}</div></div><span>${escapeHTML(color.craft || "Shared")}</span><span><span class="badge ${color.active!==false?"good":"status"}">${color.active!==false?"Active":"Inactive"}</span></span><span>${productsUsingColor(color.id).map(product=>escapeHTML(product.shortName || product.name)).join(", ") || "Not used"}</span><div class="catalog-actions"><button class="button secondary small" data-action="edit-color" data-color-id="${color.id}">Edit</button></div></div>`).join("")}
+        <div class="color-catalog-row color-catalog-head"><span>Color</span><span>Family</span><span>Craft</span><span>Linked Yarn/Cord</span><span>Status</span><span>Used By</span><span>Actions</span></div>
+        ${visible.map(color => {const material=inventoryItemById(color.inventoryItemId);return `<div class="color-catalog-row"><div class="color-name-cell">${color.swatch?`<span class="color-swatch" style="background:${escapeHTML(color.swatch)}"></span>`:""}<div><strong>${escapeHTML(color.name)}</strong>${color.notes?`<small>${escapeHTML(color.notes)}</small>`:""}</div></div><span>${escapeHTML(color.family||"Other")}</span><span>${escapeHTML(color.craft || "Shared")}</span><span class="color-material-cell">${material?`<strong>${escapeHTML(material.name)}</strong><small>${escapeHTML(material.tracking==="quantity"?`${Number(material.quantity||0)} on hand`:material.condition||"")}</small>`:"Not linked"}</span><span><span class="badge ${color.active!==false?"good":"status"}">${color.active!==false?"Active":"Inactive"}</span></span><span>${productsUsingColor(color.id).map(product=>escapeHTML(product.shortName || product.name)).join(", ") || "Not used"}</span><div class="catalog-actions"><button class="button secondary small" data-action="edit-color" data-color-id="${color.id}">Edit</button></div></div>`}).join("") || `<div class="color-empty-state">No colors match this family.</div>`}
       </div></section></section>`;
   }
 
   function showColorEditor(colorId=null) {
     const color=colorId?colorById(colorId):null;
-    showModal(color?"Edit Color":"Add Color",`<form id="colorEditorForm" class="product-master-form">
-      <label>Color Name<input name="name" value="${escapeHTML(color?.name||"")}" required></label>
-      <label>Craft<select name="craft">${["Shared","Macramé","Crochet","Other"].map(value=>`<option value="${value}" ${color?.craft===value?"selected":""}>${value}</option>`).join("")}</select></label>
-      <label>Status<select name="active"><option value="true" ${color?.active!==false?"selected":""}>Active</option><option value="false" ${color?.active===false?"selected":""}>Inactive</option></select></label>
-      <label>Optional Swatch<input name="swatch" value="${escapeHTML(color?.swatch||"")}" placeholder="#d8c5a5"></label>
-      <label class="full-width">Notes<textarea name="notes" rows="3">${escapeHTML(color?.notes||"")}</textarea></label>
+    const usedBy=color?productsUsingColor(color.id):[];
+    showModal(color?"Edit Color":"Add Color",`<form id="colorEditorForm" class="color-editor-form">
+      <section class="product-form-section"><div class="product-section-heading"><span>Color details</span><h4>Identity & Organization</h4><p>Name the color once and place it in a family for easier filtering.</p></div><div class="product-form-grid">
+        <label class="product-field"><span class="field-label">Color Name</span><input name="name" value="${escapeHTML(color?.name||"")}" required></label>
+        <label class="product-field"><span class="field-label">Color Family</span><select name="family">${COLOR_FAMILIES.map(value=>`<option value="${value}" ${(color?.family||inferColorFamily(color?.name))===value?"selected":""}>${value}</option>`).join("")}</select></label>
+        <label class="product-field"><span class="field-label">Craft</span><select name="craft">${["Shared","Macramé","Crochet","Other"].map(value=>`<option value="${value}" ${color?.craft===value?"selected":""}>${value}</option>`).join("")}</select></label>
+        <label class="product-field"><span class="field-label">Status</span><select name="active"><option value="true" ${color?.active!==false?"selected":""}>Active</option><option value="false" ${color?.active===false?"selected":""}>Inactive</option></select></label>
+        <label class="product-field product-field-full"><span class="field-label">Optional Swatch</span><input name="swatch" value="${escapeHTML(color?.swatch||"")}" placeholder="#d8c5a5"></label>
+      </div></section>
+      <section class="product-form-section"><div class="product-section-heading"><span>Inventory connection</span><h4>Yarn or Cord</h4><p>Link this color to the physical yarn or cord used to make it.</p></div><label class="product-field"><span class="field-label">Linked Yarn/Cord Inventory Item</span><select name="inventoryItemId"><option value="">Not linked</option>${yarnCordInventoryItems().map(item=>`<option value="${item.id}" ${color?.inventoryItemId===item.id?"selected":""}>${escapeHTML(item.name)}</option>`).join("")}</select></label><div id="colorMaterialSummary" class="color-material-summary">${colorMaterialSummary(color?.inventoryItemId)}</div></section>
+      <section class="product-form-section"><div class="product-section-heading"><span>Usage</span><h4>Products Using This Color</h4><p>This is updated automatically from the Product Catalog.</p></div><div class="color-usage-list">${usedBy.length?usedBy.map(product=>`<span>${escapeHTML(product.shortName||product.name)}</span>`).join(""):`<p>Not currently assigned to a product.</p>`}</div></section>
+      <section class="product-form-section"><div class="product-section-heading"><span>Workshop notes</span><h4>Notes</h4></div><label class="product-field"><span class="field-label">Internal Notes</span><textarea name="notes" rows="3">${escapeHTML(color?.notes||"")}</textarea></label></section>
     </form>`,[{label:"Cancel"},{label:color?"Save Color":"Add Color",kind:"primary",onClick:()=>saveColor(colorId)}]);
+    const form=document.getElementById("colorEditorForm");
+    form?.inventoryItemId.addEventListener("change",event=>{document.getElementById("colorMaterialSummary").innerHTML=colorMaterialSummary(event.target.value);});
   }
 
   function saveColor(colorId) {
     const form=document.getElementById("colorEditorForm"); if(!form)return; const fd=new FormData(form); const name=fd.get("name").trim(); if(!name)return showToast("Enter a color name.");
     const duplicate=colorsCatalog().find(color=>color.id!==colorId && color.name.toLowerCase()===name.toLowerCase()); if(duplicate)return showToast("That color already exists.");
-    const existing=colorId?colorById(colorId):null; const record={id:existing?.id||colorSlug(name),name,craft:fd.get("craft"),active:fd.get("active")==="true",swatch:fd.get("swatch").trim(),notes:fd.get("notes").trim()};
+    const existing=colorId?colorById(colorId):null; const record={id:existing?.id||colorSlug(name),name,family:fd.get("family")||inferColorFamily(name),craft:fd.get("craft"),active:fd.get("active")==="true",swatch:fd.get("swatch").trim(),inventoryItemId:fd.get("inventoryItemId")||"",notes:fd.get("notes").trim()};
     if(existing)Object.assign(existing,record); else data.colorCatalog.push(record);
     data.productMasters.forEach(master=>master.colors=(master.colorIds||[]).map(id=>colorById(id)?.name).filter(Boolean));
     data.products=data.productMasters.map(master=>({id:master.id,name:master.name,colors:master.colors||[]}));
@@ -2605,6 +2648,7 @@
   document.addEventListener("change",event => {
     const el=event.target;
     const {action,orderId,itemId,index,key}=el.dataset;
+    if (action==="color-family-filter") { colorFamilyFilter=el.value;renderProductsModule("colors");return; }
     if (action==="inventory-filter") { inventoryViewState[el.dataset.filter]=el.value;renderInventoryCatalog(inventoryViewState.category);return; }
     if (action==="inventory-sort") { inventoryViewState.sort=el.value;renderInventoryCatalog(inventoryViewState.category);return; }
     if (action==="inventory-group") { inventoryViewState.group=el.value;renderInventoryCatalog(inventoryViewState.category);return; }

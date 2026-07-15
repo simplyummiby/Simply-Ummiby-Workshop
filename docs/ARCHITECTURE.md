@@ -222,3 +222,7 @@ The inventory catalog continues to use the same data and transaction architectur
 ## Version 0.6.7 — Product Editor Architecture
 
 The Product editor now uses stable Product Master relationships, shared Color IDs, filtered inventory-type selectors, template-based defaults, and a read-only recipe/material summary. Existing product materials remain stored on the Product Master and are copied from the selected template for new product records.
+
+## Version 0.6.7.1 — Color Data Relationships
+
+Color records now store `family` and `inventoryItemId`. The inventory link is restricted to the `yarn-cord` category and uses a stable inventory item ID. Existing records are migrated by inferring a family from the color name while preserving all prior color/product relationships.
