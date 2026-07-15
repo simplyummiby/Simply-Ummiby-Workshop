@@ -1,4 +1,4 @@
-## 0.6.7.1 — Color Families & Yarn/Cord Links
+## 0.6.7.2 — Color Families & Yarn/Cord Links
 
 - Added color families and family filtering to Products → Colors.
 - Linked colors to stable Yarn & Cord inventory item IDs.

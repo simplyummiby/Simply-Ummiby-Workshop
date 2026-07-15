@@ -1,6 +1,6 @@
 (() => {
   const STORAGE_KEY = "simplyUmmibyWorkshopData";
-  const VERSION = "0.6.7.1";
+  const VERSION = "0.6.7.2";
   const ITEM_STATUSES = ["New","Preparing","Manufacturing","Waiting on Material","Ready for Packing","Packed","Ready to Mail","Completed"];
   const STATUS_PROGRESS = {
     "New": 5, "Preparing": 20, "Manufacturing": 50, "Waiting on Material": 35,
@@ -14,6 +14,9 @@
   const sidebar = document.getElementById("sidebar");
   let currentWorkshopFilter = "Active";
   let productsModuleView = "catalog";
+  let productCatalogCategoryFilter = "All";
+  let productCatalogCraftFilter = "All";
+  let productCatalogSort = "craft-category-name";
   let editingOrderId = null;
   let inventoryViewState = {
     category: "overview", search: "", craft: "All", materialType: "All",
@@ -52,6 +55,10 @@
     initial.inventoryCatalog = migrateInventoryCatalog(initial.inventoryCatalog, initial.inventory);
     initial.inventoryTransactions ||= [];
     initial.productMasters = migrateProductMasters(initial.productMasters);
+    initial.productCategoryCatalog = migrateProductCategoryCatalog(initial.productCategoryCatalog, initial.productMasters);
+    initial.productMasters.forEach(master => {
+      master.categoryId ||= inferProductCategoryId(master);
+    });
     initial.colorCatalog = migrateColorCatalog(initial.colorCatalog, initial.productMasters);
     initial.productMasters.forEach(master => {
       if (!Array.isArray(master.colorIds) || !master.colorIds.length) {
@@ -576,6 +583,38 @@
     });
     return merged;
   }
+
+  const DEFAULT_PRODUCT_CATEGORIES = [
+    {id:"paper-towel-holders",name:"Paper Towel Holders",codePrefix:"M-PTH",defaultCraft:"Macramé",status:"Active",notes:"Macramé paper towel holder products."},
+    {id:"toilet-paper-holders",name:"Toilet Paper Holders",codePrefix:"M-TPH",defaultCraft:"Macramé",status:"Active",notes:"Macramé toilet paper holder products."},
+    {id:"oven-door-towel-holders",name:"Oven Door Towel Holders",codePrefix:"C-ODTH",defaultCraft:"Crochet",status:"Active",notes:"Crochet oven-door towel holder products."}
+  ];
+
+  function inferProductCategoryId(master) {
+    const value=`${master?.id||""} ${master?.name||""} ${master?.shortName||""}`.toLowerCase();
+    if (value.includes("paper-towel") || value.includes("paper towel")) return "paper-towel-holders";
+    if (value.includes("toilet-paper") || value.includes("toilet paper")) return "toilet-paper-holders";
+    if (value.includes("oven-door") || value.includes("oven door")) return "oven-door-towel-holders";
+    return "";
+  }
+
+  function migrateProductCategoryCatalog(savedCatalog, masters) {
+    const saved=Array.isArray(savedCatalog)?savedCatalog:[];
+    const catalog=DEFAULT_PRODUCT_CATEGORIES.map(def=>({...def,...(saved.find(item=>item.id===def.id)||{})}));
+    saved.forEach(item=>{ if(!catalog.some(existing=>existing.id===item.id)) catalog.push({...item}); });
+    (masters||[]).forEach(master=>{
+      const categoryId=master.categoryId || inferProductCategoryId(master);
+      if(categoryId && !catalog.some(item=>item.id===categoryId)){
+        catalog.push({id:categoryId,name:categoryId.split("-").map(x=>x[0].toUpperCase()+x.slice(1)).join(" "),codePrefix:master.code||productCode(master),defaultCraft:master.craft||"Other",status:"Active",notes:"Migrated from an existing product."});
+      }
+    });
+    return catalog;
+  }
+
+  function productCategories(){ return data.productCategoryCatalog || []; }
+  function productCategoryById(id){ return productCategories().find(category=>category.id===id); }
+  function productsUsingCategory(categoryId){ return productMasters().filter(master=>master.categoryId===categoryId); }
+  function categorySlug(name){ return String(name||"category").trim().toLowerCase().replace(/[^a-z0-9]+/g,"-").replace(/^-|-$/g,"") || uid("category"); }
 
   function colorSlug(name) {
     return String(name || "color").trim().toLowerCase().replace(/[^a-z0-9]+/g,"-").replace(/^-|-$/g,"") || uid("color");
@@ -1144,7 +1183,7 @@
 
   function renderProductsSubnav(active=productsModuleView) {
     return `<nav class="products-subnav" aria-label="Products sections">
-      ${[["catalog","Catalog"],["colors","Colors"],["recipes","Recipes"]].map(([id,label]) => `<button class="${active===id?"active":""}" data-action="products-subview" data-subview="${id}">${label}</button>`).join("")}
+      ${[["catalog","Catalog"],["categories","Categories & Codes"],["colors","Colors"],["recipes","Recipes"]].map(([id,label]) => `<button class="${active===id?"active":""}" data-action="products-subview" data-subview="${id}">${label}</button>`).join("")}
     </nav>`;
   }
 
@@ -1152,6 +1191,7 @@
     productsModuleView=subview;
     pageTitle.textContent = "Products";
     setActiveNav("products");
+    if (subview === "categories") return renderProductCategoriesModule();
     if (subview === "colors") return renderColorsModule();
     if (subview === "recipes") return renderRecipeLibrary();
     return renderProductCatalog();
@@ -1160,27 +1200,83 @@
   function renderProductCatalog() {
     pageTitle.textContent = "Products";
     setActiveNav("products");
+    const categories=productCategories().filter(category=>category.status!=="Archived");
+    const crafts=[...new Set(productMasters().map(master=>master.craft||"Other"))].sort();
+    let visible=productMasters().filter(master=>
+      (productCatalogCategoryFilter==="All" || master.categoryId===productCatalogCategoryFilter) &&
+      (productCatalogCraftFilter==="All" || (master.craft||"Other")===productCatalogCraftFilter)
+    );
+    const categoryName=master=>productCategoryById(master.categoryId)?.name || "Uncategorized";
+    visible.sort((a,b)=>{
+      if(productCatalogSort==="category-name") return categoryName(a).localeCompare(categoryName(b)) || a.name.localeCompare(b.name);
+      if(productCatalogSort==="name") return a.name.localeCompare(b.name);
+      if(productCatalogSort==="code") return (a.code||productCode(a)).localeCompare(b.code||productCode(b));
+      if(productCatalogSort==="active-first") return (a.status==="Active"?-1:1)-(b.status==="Active"?-1:1) || a.name.localeCompare(b.name);
+      return (a.craft||"Other").localeCompare(b.craft||"Other") || categoryName(a).localeCompare(categoryName(b)) || a.name.localeCompare(b.name);
+    });
     viewContainer.innerHTML = `<section class="page-section wide">
       ${renderProductsSubnav("catalog")}
       <section class="product-catalog-heading">
-        <div><p class="eyebrow">Your sellable products</p><h3>Catalog</h3><p>Open a product or jump directly to its permanent workshop recipe.</p></div>
+        <div><p class="eyebrow">Your sellable products</p><h3>Catalog</h3><p>Filter by category or craft, then open a product or jump directly to its workshop recipe.</p></div>
         <button class="button primary" data-action="add-product-master">+ Add Product</button>
+      </section>
+      <section class="panel product-catalog-controls">
+        <label><span>Category</span><select data-action="product-catalog-filter" data-filter="category"><option value="All">All categories</option>${categories.map(category=>`<option value="${category.id}" ${productCatalogCategoryFilter===category.id?"selected":""}>${escapeHTML(category.name)}</option>`).join("")}</select></label>
+        <label><span>Craft</span><select data-action="product-catalog-filter" data-filter="craft"><option value="All">All crafts</option>${crafts.map(craft=>`<option value="${escapeHTML(craft)}" ${productCatalogCraftFilter===craft?"selected":""}>${escapeHTML(craft)}</option>`).join("")}</select></label>
+        <label><span>Sort</span><select data-action="product-catalog-sort"><option value="craft-category-name" ${productCatalogSort==="craft-category-name"?"selected":""}>Craft, Category, Product</option><option value="category-name" ${productCatalogSort==="category-name"?"selected":""}>Category, Product</option><option value="name" ${productCatalogSort==="name"?"selected":""}>Product Name A–Z</option><option value="code" ${productCatalogSort==="code"?"selected":""}>Product Code A–Z</option><option value="active-first" ${productCatalogSort==="active-first"?"selected":""}>Active First</option></select></label>
+        <span class="catalog-count">${visible.length} of ${productMasters().length} products</span>
       </section>
       <section class="panel product-catalog-panel">
         <div class="product-catalog-table">
-          <div class="product-catalog-row product-catalog-head"><span>Product</span><span>Code</span><span>Craft</span><span>Colors</span><span>Recipe</span><span>Status</span><span>Actions</span></div>
-          ${productMasters().map(master => { const recipe=recipeById(master.recipeId || master.id); return `<div class="product-catalog-row">
+          <div class="product-catalog-row product-catalog-head"><span>Product</span><span>Category</span><span>Code</span><span>Craft</span><span>Colors</span><span>Recipe</span><span>Status</span><span>Actions</span></div>
+          ${visible.length?visible.map(master => { const recipe=recipeById(master.recipeId || master.id); return `<div class="product-catalog-row">
             <div class="product-catalog-name"><strong>${escapeHTML(master.name)}</strong><small>${escapeHTML(master.shortName || master.name)}</small></div>
+            <span>${escapeHTML(categoryName(master))}</span>
             <span>${escapeHTML(master.code || productCode(master))}</span>
             <span>${escapeHTML(master.craft || "Other")}</span>
             <span>${(master.colorIds || []).length || (master.colors || []).length}</span>
             <span><span class="badge ${recipe?"good":"attention"}">${recipe?"Linked":"Not linked"}</span></span>
             <span><span class="badge status">${escapeHTML(master.status || "Active")}</span></span>
             <div class="catalog-actions"><button class="button secondary small" data-action="open-product-master" data-product-id="${master.id}">Open Product</button><button class="button secondary small" data-action="open-recipe" data-recipe-id="${master.recipeId || master.id}" ${recipe?"":"disabled"}>Open Recipe</button></div>
-          </div>`; }).join("")}
+          </div>`; }).join(""):`<div class="empty-state compact">No products match these filters.</div>`}
         </div>
       </section>
     </section>`;
+  }
+
+  function renderProductCategoriesModule(){
+    pageTitle.textContent="Products · Categories & Codes"; setActiveNav("products");
+    viewContainer.innerHTML=`<section class="page-section wide">${renderProductsSubnav("categories")}
+      <section class="product-catalog-heading"><div><p class="eyebrow">Product organization</p><h3>Categories & Codes</h3><p>Manage product families, code prefixes, default crafts, and the products assigned to each category.</p></div><button class="button primary" data-action="add-product-category">+ Add Category</button></section>
+      <section class="panel product-catalog-panel"><div class="category-catalog-table">
+        <div class="category-catalog-row category-catalog-head"><span>Category</span><span>Code Prefix</span><span>Default Craft</span><span>Products</span><span>Status</span><span>Actions</span></div>
+        ${productCategories().map(category=>`<div class="category-catalog-row"><div><strong>${escapeHTML(category.name)}</strong><small>${escapeHTML(category.notes||"")}</small></div><code>${escapeHTML(category.codePrefix||"—")}</code><span>${escapeHTML(category.defaultCraft||"Other")}</span><span>${productsUsingCategory(category.id).length}</span><span><span class="badge status">${escapeHTML(category.status||"Active")}</span></span><button class="button secondary small" data-action="edit-product-category" data-category-id="${category.id}">Edit</button></div>`).join("")}
+      </div></section></section>`;
+  }
+
+  function showProductCategoryEditor(categoryId=null){
+    const category=categoryId?productCategoryById(categoryId):null;
+    const usedBy=category?productsUsingCategory(category.id):[];
+    showModal(category?"Edit Product Category":"Add Product Category",`<form id="productCategoryForm" class="product-editor-form">
+      <section class="product-form-section"><div class="product-section-heading"><span>Product family</span><h4>Category Details</h4><p>Categories organize the Catalog and supply a suggested code prefix and craft.</p></div><div class="product-form-grid">
+        <label class="product-field"><span class="field-label">Category Name</span><input name="name" value="${escapeHTML(category?.name||"")}" required></label>
+        <label class="product-field"><span class="field-label">Code Prefix</span><input name="codePrefix" value="${escapeHTML(category?.codePrefix||"")}" placeholder="M-PTH"></label>
+        <label class="product-field"><span class="field-label">Default Craft</span><select name="defaultCraft">${["Macramé","Crochet","Other"].map(value=>`<option value="${value}" ${category?.defaultCraft===value?"selected":""}>${value}</option>`).join("")}</select></label>
+        <label class="product-field"><span class="field-label">Status</span><select name="status">${["Active","Inactive","Archived"].map(value=>`<option value="${value}" ${category?.status===value?"selected":""}>${value}</option>`).join("")}</select></label>
+      </div><label class="product-field product-field-full"><span class="field-label">Notes</span><textarea name="notes" rows="3">${escapeHTML(category?.notes||"")}</textarea></label></section>
+      <section class="product-form-section"><div class="product-section-heading"><span>Catalog usage</span><h4>Products in This Category</h4></div><div class="color-usage-list">${usedBy.length?usedBy.map(product=>`<span>${escapeHTML(product.shortName||product.name)}</span>`).join(""):`<p>No products are assigned yet.</p>`}</div></section>
+    </form>`,[{label:"Cancel"},{label:category?"Save Category":"Add Category",kind:"primary",onClick:()=>saveProductCategory(categoryId)}]);
+  }
+
+  function saveProductCategory(categoryId){
+    const form=document.getElementById("productCategoryForm"); if(!form)return;
+    const fd=new FormData(form), name=String(fd.get("name")||"").trim(); if(!name)return showToast("Enter a category name.");
+    const duplicate=productCategories().find(item=>item.id!==categoryId && item.name.toLowerCase()===name.toLowerCase()); if(duplicate)return showToast("That category already exists.");
+    const existing=categoryId?productCategoryById(categoryId):null;
+    let id=existing?.id || categorySlug(name); if(!existing && productCategoryById(id))id=`${id}-${Date.now().toString(36)}`;
+    const record={...(existing||{}),id,name,codePrefix:String(fd.get("codePrefix")||"").trim().toUpperCase(),defaultCraft:fd.get("defaultCraft"),status:fd.get("status"),notes:String(fd.get("notes")||"").trim()};
+    if(existing)Object.assign(existing,record); else data.productCategoryCatalog.push(record);
+    data.activity.unshift({text:`${existing?"Updated":"Added"} product category: ${name}`,time:"Just now"}); saveData(); hideModal(); renderProductsModule("categories");
   }
 
   function productCode(master) {
@@ -1359,7 +1455,8 @@
         <section class="product-form-section"><div class="product-section-heading"><span>Product identity</span><h4>Basics</h4></div><div class="product-form-grid">
           <label class="product-field"><span class="field-label">Product Name</span><input name="name" value="${escapeHTML(master?.name || "")}" required></label>
           <label class="product-field"><span class="field-label">Short Name</span><input name="shortName" value="${escapeHTML(master?.shortName || "")}" placeholder="Used in compact lists"></label>
-          <label class="product-field"><span class="field-label">Product Code</span><input name="code" value="${escapeHTML(master?.code || (master ? productCode(master) : ""))}" placeholder="M-PTH"></label>
+          <label class="product-field"><span class="field-label">Product Category</span><select name="categoryId"><option value="">Uncategorized</option>${productCategories().filter(category=>category.status!=="Archived" || category.id===master?.categoryId).map(category=>`<option value="${category.id}" ${master?.categoryId===category.id?"selected":""}>${escapeHTML(category.name)}</option>`).join("")}</select></label>
+          <label class="product-field"><span class="field-label">Product Code</span><input name="code" value="${escapeHTML(master?.code || (master ? productCode(master) : ""))}" placeholder="M-PTH"><small class="field-help" id="productCodeSuggestion"></small></label>
           <label class="product-field"><span class="field-label">Craft</span><select name="craft">${["Macramé","Crochet","Other"].map(value => `<option value="${value}" ${master?.craft === value ? "selected" : ""}>${value}</option>`).join("")}</select></label>
           <label class="product-field"><span class="field-label">Status</span><select name="status">${["Active","Coming Soon","Archived"].map(value => `<option value="${value}" ${master?.status === value ? "selected" : ""}>${value}</option>`).join("")}</select></label>
         </div></section>
@@ -1384,6 +1481,18 @@
     const form = document.getElementById("productMasterForm");
     const currentMailerId = mailerInventoryIdForProduct(master?.id || "");
     form.mailerInventoryId.value = currentMailerId || "";
+    const updateCategoryDefaults = () => {
+      const category=productCategoryById(form.categoryId.value);
+      const hint=document.getElementById("productCodeSuggestion");
+      if(hint) hint.textContent=category?.codePrefix ? `Suggested prefix: ${category.codePrefix}` : "";
+      if(category && !master && (!form.craft.value || form.craft.value==="Other")) form.craft.value=category.defaultCraft||"Other";
+    };
+    form.categoryId.addEventListener("change",() => {
+      const category=productCategoryById(form.categoryId.value);
+      if(category){ form.craft.value=category.defaultCraft||form.craft.value; if(!form.code.value.trim())form.code.value=category.codePrefix||""; }
+      updateCategoryDefaults();
+    });
+    updateCategoryDefaults();
 
     const updateRecipeSummary = () => {
       let materials=[];
@@ -1401,6 +1510,7 @@
       if (!template) return;
       form.name.value = `New ${template.shortName || template.name}`;
       form.shortName.value = `New ${template.shortName || template.name}`;
+      form.categoryId.value = template.categoryId || inferProductCategoryId(template);
       form.code.value = "";
       form.craft.value = template.craft || "Other";
       form.status.value = "Active";
@@ -1436,6 +1546,7 @@
       id,
       name,
       shortName: fd.get("shortName").trim() || name,
+      categoryId: fd.get("categoryId"),
       code: fd.get("code").trim(),
       craft: fd.get("craft"),
       status: fd.get("status"),
@@ -2599,6 +2710,8 @@
     if (action==="open-product-master") openProductMaster(button.dataset.productId);
     if (action==="edit-product-master") showProductMasterEditor(button.dataset.productId);
     if (action==="add-product-master") showProductMasterEditor();
+    if (action==="add-product-category") showProductCategoryEditor();
+    if (action==="edit-product-category") showProductCategoryEditor(button.dataset.categoryId);
     if (action==="add-color") showColorEditor();
     if (action==="edit-color") showColorEditor(button.dataset.colorId);
     if (action==="manage-colors") { hideModal(); renderProductsModule("colors"); }
@@ -2648,6 +2761,8 @@
   document.addEventListener("change",event => {
     const el=event.target;
     const {action,orderId,itemId,index,key}=el.dataset;
+    if (action==="product-catalog-filter") { if(el.dataset.filter==="category")productCatalogCategoryFilter=el.value;else productCatalogCraftFilter=el.value;renderProductsModule("catalog");return; }
+    if (action==="product-catalog-sort") { productCatalogSort=el.value;renderProductsModule("catalog");return; }
     if (action==="color-family-filter") { colorFamilyFilter=el.value;renderProductsModule("colors");return; }
     if (action==="inventory-filter") { inventoryViewState[el.dataset.filter]=el.value;renderInventoryCatalog(inventoryViewState.category);return; }
     if (action==="inventory-sort") { inventoryViewState.sort=el.value;renderInventoryCatalog(inventoryViewState.category);return; }

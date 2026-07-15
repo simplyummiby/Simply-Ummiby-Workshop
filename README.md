@@ -1,11 +1,11 @@
 # Simply Ummiby Workshop
 
-**Version 0.6.7.1**
+**Version 0.6.7.2**
 
-Version 0.6.7.1 expands the Colors module with color families, family filtering, direct Yarn & Cord inventory links, and a redesigned color editor.
+Version 0.6.7.2 expands the Colors module with color families, family filtering, direct Yarn & Cord inventory links, and a redesigned color editor.
 
 
-## Version 0.6.7.1 highlights
+## Version 0.6.7.2 highlights
 
 
 - Adds a Color Family field with migration-based defaults for existing colors.
@@ -23,3 +23,7 @@ Version 0.6.7.1 expands the Colors module with color families, family filtering,
 - Supports batch preparation and order-time preparation for both dowel types.
 - Blocks Pack Mailer until the correct product-specific prepared dowel is assigned.
 - Returns an undone or cancelled dowel to the correct prepared-component inventory.
+
+
+### Version 0.6.7.2
+Products now includes Catalog, Categories & Codes, Colors, and Recipes. The Catalog can be filtered by category and craft and sorted by craft/category/product by default.

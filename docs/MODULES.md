@@ -217,6 +217,6 @@ Standard inventory categories use a simplified table with Item, On Hand, Reorder
 
 Add/Edit Product is organized into Basics, Colors, Recipe & Materials, and Packaging & Branding. New products may start from an existing product family template. Inventory selectors are restricted to Mailers, Product Tags, Care Sheets, and Stickers.
 
-## Version 0.6.7.1 — Colors Enhancements
+## Version 0.6.7.2 — Colors Enhancements
 
 Products → Colors supports family filters, Yarn & Cord inventory links, stock summaries, product-usage summaries, and a sectioned Add/Edit Color modal.
