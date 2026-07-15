@@ -1416,3 +1416,20 @@ textarea { resize: vertical; }
   .supplier-data-table .inventory-actions { align-items: flex-start; }
 }
 @media (max-width: 600px) { .supplier-data-table { grid-template-columns: 1fr; } }
+
+/* v0.6.8.1.1 Supplier homepage links */
+.supplier-main-link {
+  display: inline-flex;
+  align-items: center;
+  gap: .35rem;
+  color: var(--ink, #241d23);
+  text-decoration: none;
+}
+.supplier-main-link:hover,
+.supplier-main-link:focus-visible {
+  color: var(--accent, #9a4f73);
+  text-decoration: underline;
+}
+.supplier-name-cell > small {
+  overflow-wrap: anywhere;
+}

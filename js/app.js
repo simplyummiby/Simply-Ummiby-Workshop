@@ -1,6 +1,6 @@
 (() => {
   const STORAGE_KEY = "simplyUmmibyWorkshopData";
-  const VERSION = "0.6.8.1";
+  const VERSION = "0.6.8.1.1";
   const ITEM_STATUSES = ["New","Preparing","Manufacturing","Waiting on Material","Ready for Packing","Packed","Ready to Mail","Completed"];
   const STATUS_PROGRESS = {
     "New": 5, "Preparing": 20, "Manufacturing": 50, "Waiting on Material": 35,
@@ -170,8 +170,35 @@
     return defaults;
   }
 
+  function normalizeExternalUrl(value) {
+    const raw = String(value || "").trim();
+    if (!raw) return "";
+    const withProtocol = /^[a-z][a-z0-9+.-]*:\/\//i.test(raw) ? raw : `https://${raw}`;
+    try {
+      const parsed = new URL(withProtocol);
+      if (!/^https?:$/.test(parsed.protocol)) return "";
+      return parsed.href;
+    } catch (error) {
+      return "";
+    }
+  }
+
+  function normalizeSupplierWebsite(value) {
+    const normalized = normalizeExternalUrl(value);
+    if (!normalized) return "";
+    try {
+      const parsed = new URL(normalized);
+      return `${parsed.origin}/`;
+    } catch (error) {
+      return "";
+    }
+  }
+
   function migrateSuppliers(savedSuppliers, items) {
     const suppliers = Array.isArray(savedSuppliers) ? structuredClone(savedSuppliers) : [];
+    suppliers.forEach(supplier => {
+      supplier.website = normalizeSupplierWebsite(supplier.website);
+    });
     const byName = new Map(suppliers.map(supplier => [String(supplier.name || "").trim().toLowerCase(), supplier]));
     (items || []).forEach(item => {
       const legacyName = String(item.supplier || "").trim();
@@ -182,7 +209,7 @@
           supplier = {
             id: uid("supplier"),
             name: legacyName,
-            website: item.purchaseUrl || "",
+            website: normalizeSupplierWebsite(item.purchaseUrl),
             contactName: "",
             email: "",
             phone: "",
@@ -1047,7 +1074,7 @@
     const item=itemId?inventoryItemById(itemId):null;
     const categoryOptions=inventoryCategories().map(category=>`<option value="${category.id}" ${item?.category===category.id?"selected":""}>${escapeHTML(category.name)}</option>`).join("");
     const isCondition=item?.tracking==="condition";
-    showModal(item?"Edit Inventory Item":"Add Inventory Item",`<form id="inventoryItemForm" class="inventory-editor-form"><label>Name<input name="name" value="${escapeHTML(item?.name||"")}" required></label><label>Category<select name="category">${categoryOptions}</select></label><label>Material / Item Type<input name="materialType" value="${escapeHTML(item?.materialType||"")}" placeholder="Wood, Cord/Yarn, Hardware..."></label><label>Craft<select name="craft">${["Macramé","Crochet","Shared","Other"].map(v=>`<option value="${v}" ${item?.craft===v?"selected":""}>${v}</option>`).join("")}</select></label><div class="full-width derived-product-note"><strong>Used by Products</strong><p>Calculated automatically from Product Master material and packaging connections.</p></div><label>Tracking<select name="tracking"><option value="quantity" ${!isCondition?"selected":""}>Quantity</option><option value="condition" ${isCondition?"selected":""}>Condition</option></select></label><label>Restock Type<select name="restockType"><option value="purchase" ${item?.restockType==="purchase"?"selected":""}>Purchase</option><option value="make" ${item?.restockType==="make"?"selected":""}>Make</option><option value="print" ${item?.restockType==="print"?"selected":""}>Print</option></select></label><label>Quantity<input name="quantity" type="number" min="0" value="${Number(item?.quantity||0)}"></label><label>Reorder At<input name="reorderAt" type="number" min="0" value="${Number(item?.reorderAt||0)}"></label><label>Preferred Stock<input name="preferredStock" type="number" min="0" value="${Number(item?.preferredStock||0)}"></label><label>Default Print Quantity<input name="defaultPrintQuantity" type="number" min="1" value="${Number(item?.defaultPrintQuantity||10)}"></label><label>Printable File<input name="printableFile" value="${escapeHTML(item?.printableFile||"")}" placeholder="printables/example.pdf"></label><label>Condition<select name="condition">${["Available","Getting Low","Replace Soon","Out"].map(v=>`<option value="${v}" ${item?.condition===v?"selected":""}>${v}</option>`).join("")}</select></label><label>Supplier<select name="supplierId"><option value="">No supplier selected</option>${suppliers().filter(supplier=>supplier.status!=="Inactive" || supplier.id===item?.supplierId).sort((a,b)=>a.name.localeCompare(b.name)).map(supplier=>`<option value="${supplier.id}" ${item?.supplierId===supplier.id?"selected":""}>${escapeHTML(supplier.name)}</option>`).join("")}</select></label><label>Supplier / Resource URL<input name="purchaseUrl" value="${escapeHTML(item?.purchaseUrl||item?.resourceUrl||"")}" placeholder="https://..."></label><label class="full-width">Item Photo<input id="inventoryImageInput" type="file" accept="image/*"></label><div class="full-width inventory-image-preview" id="inventoryImagePreview">${item?.imageData?`<img src="${item.imageData}" alt="">`:`<span>No photo added</span>`}</div><label class="full-width">Notes<textarea name="notes" rows="3">${escapeHTML(item?.notes||"")}</textarea></label></form>`,[{label:"Cancel"},{label:item?"Save Changes":"Add Item",kind:"primary",onClick:()=>saveInventoryItem(itemId)}]);
+    showModal(item?"Edit Inventory Item":"Add Inventory Item",`<form id="inventoryItemForm" class="inventory-editor-form"><label>Name<input name="name" value="${escapeHTML(item?.name||"")}" required></label><label>Category<select name="category">${categoryOptions}</select></label><label>Material / Item Type<input name="materialType" value="${escapeHTML(item?.materialType||"")}" placeholder="Wood, Cord/Yarn, Hardware..."></label><label>Craft<select name="craft">${["Macramé","Crochet","Shared","Other"].map(v=>`<option value="${v}" ${item?.craft===v?"selected":""}>${v}</option>`).join("")}</select></label><div class="full-width derived-product-note"><strong>Used by Products</strong><p>Calculated automatically from Product Master material and packaging connections.</p></div><label>Tracking<select name="tracking"><option value="quantity" ${!isCondition?"selected":""}>Quantity</option><option value="condition" ${isCondition?"selected":""}>Condition</option></select></label><label>Restock Type<select name="restockType"><option value="purchase" ${item?.restockType==="purchase"?"selected":""}>Purchase</option><option value="make" ${item?.restockType==="make"?"selected":""}>Make</option><option value="print" ${item?.restockType==="print"?"selected":""}>Print</option></select></label><label>Quantity<input name="quantity" type="number" min="0" value="${Number(item?.quantity||0)}"></label><label>Reorder At<input name="reorderAt" type="number" min="0" value="${Number(item?.reorderAt||0)}"></label><label>Preferred Stock<input name="preferredStock" type="number" min="0" value="${Number(item?.preferredStock||0)}"></label><label>Default Print Quantity<input name="defaultPrintQuantity" type="number" min="1" value="${Number(item?.defaultPrintQuantity||10)}"></label><label>Printable File<input name="printableFile" value="${escapeHTML(item?.printableFile||"")}" placeholder="printables/example.pdf"></label><label>Condition<select name="condition">${["Available","Getting Low","Replace Soon","Out"].map(v=>`<option value="${v}" ${item?.condition===v?"selected":""}>${v}</option>`).join("")}</select></label><label>Supplier<select name="supplierId"><option value="">No supplier selected</option>${suppliers().filter(supplier=>supplier.status!=="Inactive" || supplier.id===item?.supplierId).sort((a,b)=>a.name.localeCompare(b.name)).map(supplier=>`<option value="${supplier.id}" ${item?.supplierId===supplier.id?"selected":""}>${escapeHTML(supplier.name)}</option>`).join("")}</select></label><label>Supplier / Resource URL<input name="purchaseUrl" value="${escapeHTML(item?.purchaseUrl||item?.resourceUrl||"")}" placeholder="amazon.com or https://www.amazon.com"></label><label class="full-width">Item Photo<input id="inventoryImageInput" type="file" accept="image/*"></label><div class="full-width inventory-image-preview" id="inventoryImagePreview">${item?.imageData?`<img src="${item.imageData}" alt="">`:`<span>No photo added</span>`}</div><label class="full-width">Notes<textarea name="notes" rows="3">${escapeHTML(item?.notes||"")}</textarea></label></form>`,[{label:"Cancel"},{label:item?"Save Changes":"Add Item",kind:"primary",onClick:()=>saveInventoryItem(itemId)}]);
     const input=document.getElementById("inventoryImageInput"); if(input) input.addEventListener("change",async()=>{const file=input.files?.[0];if(!file)return;const compressed=await compressInventoryImage(file);input.dataset.imageData=compressed;document.getElementById("inventoryImagePreview").innerHTML=`<img src="${compressed}" alt="">`;});
   }
   function compressInventoryImage(file){return new Promise((resolve,reject)=>{const reader=new FileReader();reader.onerror=reject;reader.onload=()=>{const image=new Image();image.onerror=reject;image.onload=()=>{const max=480,scale=Math.min(1,max/Math.max(image.width,image.height)),canvas=document.createElement("canvas");canvas.width=Math.max(1,Math.round(image.width*scale));canvas.height=Math.max(1,Math.round(image.height*scale));canvas.getContext("2d").drawImage(image,0,0,canvas.width,canvas.height);resolve(canvas.toDataURL("image/jpeg",.72));};image.src=reader.result;};reader.readAsDataURL(file);});}
@@ -1116,7 +1143,7 @@
       condition: formData.get("condition"),
       supplierId: formData.get("supplierId") || "",
       supplier: supplierById(formData.get("supplierId"))?.name || "",
-      purchaseUrl: formData.get("purchaseUrl").trim(),
+      purchaseUrl: normalizeExternalUrl(formData.get("purchaseUrl")),
       notes: formData.get("notes").trim(),
       imageData: document.getElementById("inventoryImageInput")?.dataset.imageData || existing?.imageData || ""
     };
@@ -1135,7 +1162,7 @@
         <div class="supplier-data-table supplier-data-table-head"><span>Supplier</span><span>Contact</span><span>Items</span><span>Status</span><span>Actions</span></div>
         ${rows.length ? rows.map(supplier => {
           const linkedItems = itemsForSupplier(supplier.id);
-          return `<article class="supplier-data-table"><div class="supplier-name-cell"><strong>${escapeHTML(supplier.name)}</strong>${supplier.website ? `<a href="${escapeHTML(supplier.website)}" target="_blank" rel="noopener">Visit website</a>` : ""}${supplier.notes ? `<small>${escapeHTML(supplier.notes)}</small>` : ""}</div><div><strong>${escapeHTML(supplier.contactName || "—")}</strong><small>${escapeHTML(supplier.email || supplier.phone || "No contact details")}</small></div><div><strong>${linkedItems.length}</strong><small>${linkedItems.length ? linkedItems.slice(0,3).map(item=>escapeHTML(item.name)).join(", ") : "No linked items"}${linkedItems.length>3?` +${linkedItems.length-3} more`:""}</small></div><div><span class="status-pill ${supplier.status === "Inactive" ? "low" : "good"}">${escapeHTML(supplier.status || "Active")}</span></div><div class="inventory-actions"><button class="button secondary small" data-action="edit-supplier" data-supplier-id="${supplier.id}">Edit</button></div></article>`;
+          return `<article class="supplier-data-table"><div class="supplier-name-cell">${supplier.website ? `<a class="supplier-main-link" href="${escapeHTML(normalizeSupplierWebsite(supplier.website))}" target="_blank" rel="noopener"><strong>${escapeHTML(supplier.name)}</strong><span aria-hidden="true">↗</span></a>` : `<strong>${escapeHTML(supplier.name)}</strong>`}${supplier.website ? `<small>${escapeHTML(normalizeSupplierWebsite(supplier.website))}</small>` : ""}${supplier.notes ? `<small>${escapeHTML(supplier.notes)}</small>` : ""}</div><div><strong>${escapeHTML(supplier.contactName || "—")}</strong><small>${escapeHTML(supplier.email || supplier.phone || "No contact details")}</small></div><div><strong>${linkedItems.length}</strong><small>${linkedItems.length ? linkedItems.slice(0,3).map(item=>escapeHTML(item.name)).join(", ") : "No linked items"}${linkedItems.length>3?` +${linkedItems.length-3} more`:""}</small></div><div><span class="status-pill ${supplier.status === "Inactive" ? "low" : "good"}">${escapeHTML(supplier.status || "Active")}</span></div><div class="inventory-actions"><button class="button secondary small" data-action="edit-supplier" data-supplier-id="${supplier.id}">Edit</button></div></article>`;
         }).join("") : `<div class="empty-state"><h4>No suppliers yet</h4><p>Add the shops and vendors you use for workshop inventory.</p></div>`}
       </section>`;
   }
@@ -1160,7 +1187,10 @@
     const duplicate = suppliers().find(supplier => supplier.id !== supplierId && supplier.name.toLowerCase() === name.toLowerCase());
     if (duplicate) return showToast("A supplier with that name already exists.");
     const existing = supplierId ? supplierById(supplierId) : null;
-    const updated = { ...(existing || {}), id: existing?.id || uid("supplier"), name, website:String(fd.get("website")||"").trim(), contactName:String(fd.get("contactName")||"").trim(), email:String(fd.get("email")||"").trim(), phone:String(fd.get("phone")||"").trim(), leadTimeDays:String(fd.get("leadTimeDays")||"").trim(), minimumOrder:String(fd.get("minimumOrder")||"").trim(), freeShippingThreshold:String(fd.get("freeShippingThreshold")||"").trim(), status:String(fd.get("status")||"Active"), notes:String(fd.get("notes")||"").trim() };
+    const websiteInput = String(fd.get("website") || "").trim();
+    const website = normalizeSupplierWebsite(websiteInput);
+    if (websiteInput && !website) return showToast("Enter a valid supplier website.");
+    const updated = { ...(existing || {}), id: existing?.id || uid("supplier"), name, website, contactName:String(fd.get("contactName")||"").trim(), email:String(fd.get("email")||"").trim(), phone:String(fd.get("phone")||"").trim(), leadTimeDays:String(fd.get("leadTimeDays")||"").trim(), minimumOrder:String(fd.get("minimumOrder")||"").trim(), freeShippingThreshold:String(fd.get("freeShippingThreshold")||"").trim(), status:String(fd.get("status")||"Active"), notes:String(fd.get("notes")||"").trim() };
     if (existing) Object.assign(existing, updated); else data.suppliers.push(updated);
     inventoryItems().forEach(item => { if (item.supplierId === updated.id) item.supplier = updated.name; });
     data.activity.unshift({text:`${existing ? "Updated" : "Added"} supplier: ${updated.name}`,time:"Just now"});
@@ -1169,8 +1199,9 @@
 
   function openInventoryLink(itemId) {
     const item = inventoryItemById(itemId);
-    const url = item?.purchaseUrl || item?.resourceUrl;
+    const url = normalizeExternalUrl(item?.purchaseUrl || item?.resourceUrl);
     if (url) window.open(url,"_blank","noopener");
+    else showToast("Add a valid purchase URL for this inventory item.");
   }
 
   function renderRestockView() {

@@ -1,4 +1,12 @@
-## 0.6.8.1 — Supplier Management
+## 0.6.8.1.1 — Supplier Website Link Fix
+
+- Supplier names now open the supplier's main website.
+- Supplier website entries such as `amazon.com` and `www.amazon.com` are normalized to secure `https://` URLs.
+- Supplier homepages remain separate from inventory-item purchase links.
+- Legacy product-page URLs used as supplier websites are reduced to the supplier domain homepage.
+- Invalid supplier URLs no longer open as local files.
+
+## 0.6.8.1.1 — Supplier Management
 
 - Added a reusable Suppliers directory under Inventory.
 - Migrated existing free-text supplier names into stable supplier records.

@@ -1,10 +1,10 @@
 # Simply Ummiby Workshop
 
-**Version 0.6.8.1**
+**Version 0.6.8.1.1**
 
-Version 0.6.8.1 adds a reusable supplier directory to Inventory. Inventory items now select a supplier from a managed list instead of repeating free-text names.
+Version 0.6.8.1.1 fixes supplier website handling. Supplier names now open normalized company homepages, while inventory purchase links continue to open the exact supply listing.
 
-## Version 0.6.8.1 highlights
+## Version 0.6.8.1.1 highlights
 
 - Added **Suppliers** under Inventory.
 - Added supplier contact, website, lead-time, ordering notes, and status fields.

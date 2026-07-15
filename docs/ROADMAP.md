@@ -212,7 +212,7 @@ Inventory table readability pass completed: removed initials, simplified columns
 - Preserved active-order production-stage compatibility.
 
 
-## Version 0.6.8.1 — Completed
+## Version 0.6.8.1.1 — Completed
 
 - Supplier directory and editor
 - Stable supplier links from inventory

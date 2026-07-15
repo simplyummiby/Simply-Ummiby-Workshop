@@ -237,6 +237,6 @@ Default product-category constants are declared before `loadData()` runs. This p
 Bundled recipes are migrated into `data.recipes` during startup. Saved recipe records override bundled defaults by stable recipe ID. Recipe and production-stage IDs remain stable so order travelers can continue storing stage checkoffs safely.
 
 
-## Version 0.6.8.1 — Supplier Records
+## Version 0.6.8.1.1 — Supplier Records
 
 Suppliers are stored in `data.suppliers` with stable IDs. Inventory items store `supplierId` and retain a supplier-name snapshot for backward compatibility and searching. Startup migration deduplicates existing free-text supplier names case-insensitively and links inventory records without changing stock or transactions.

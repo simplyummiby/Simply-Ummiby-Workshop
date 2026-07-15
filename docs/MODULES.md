@@ -231,6 +231,6 @@ The Products category and Catalog organization from v0.6.7.2 remains available. 
 The Products > Recipes view now provides a table, search, category/craft/status filters, sorting, direct product navigation, and Add/Edit Recipe management. The recipe editor covers master details, methods, quick reference, materials, tools, production stages, workshop notes, packing guidance, and revision history.
 
 
-## Version 0.6.8.1 — Suppliers
+## Version 0.6.8.1.1 — Suppliers
 
 Inventory includes a Suppliers directory with reusable vendor records. Add/Edit Inventory selects a supplier from the directory, while supplier records show contact information and linked inventory items.
