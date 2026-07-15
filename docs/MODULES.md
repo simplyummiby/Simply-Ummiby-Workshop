@@ -245,6 +245,6 @@ The Inventory editor requires a managed Material Type. Users can create a new ra
 Inventory includes Active, Archived, and All filters; Archive, Restore, and Delete actions; a sectioned Add/Edit modal; conditional stock and print fields; and a Where Used panel.
 
 
-## Version 0.6.8.3.4 — Linked Products in Inventory
+## Version 0.6.8.3.5 — Linked Products in Inventory
 
 The Inventory editor includes a Linked Products multi-select. The table displays the resulting product relationships as clickable pills without adding another column.

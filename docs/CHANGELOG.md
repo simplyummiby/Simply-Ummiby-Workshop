@@ -1,4 +1,13 @@
-## 0.6.8.3.4 — Editable Product-to-Inventory Links
+## 0.6.8.3.5 — Editable Product-to-Inventory Links
+
+## 0.6.8.3.5
+
+- Replaced Inventory linked-product checkboxes with a compact multi-select dropdown.
+- Added editable Linked Inventory controls to the Product editor.
+- Synchronized ordinary material relationships from either Product or Inventory.
+- Turned Connects To panels into live relationship summaries.
+- Kept packaging and branding relationships in their dedicated Product selectors.
+
 
 - Added a Linked Products multi-select to Add/Edit Inventory.
 - Migrated existing Product Master relationships into editable stable product IDs.

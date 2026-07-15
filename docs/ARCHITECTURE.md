@@ -251,6 +251,6 @@ Inventory material types are stored in `inventoryMaterialTypes` as stable record
 Inventory items now carry an Active or Archived lifecycle status. Permanent deletion is allowed only when the reference checker finds no product, color, prepared-component, order, or transaction-history relationships. Archived records remain addressable by stable ID for historical compatibility.
 
 
-## Version 0.6.8.3.4 — Editable Inventory Product Links
+## Version 0.6.8.3.5 — Editable Inventory Product Links
 
 Inventory records store `linkedProductIds` as stable Product Master IDs. Ordinary material links synchronize with `productMasters[].materials`; packaging and prepared-component relationships remain automatic. Inventory product pills are rendered from these live relationships.

@@ -1,10 +1,10 @@
 # Simply Ummiby Workshop
 
-**Version 0.6.8.3.4**
+**Version 0.6.8.3.5**
 
-Version 0.6.8.3.4 makes product-to-inventory relationships visible and editable from the Inventory form.
+Version 0.6.8.3.5 makes product-to-inventory relationships visible and editable from the Inventory form.
 
-## Version 0.6.8.3.4 highlights
+## Version 0.6.8.3.5 highlights
 
 - Adds a grouped **Linked Products** section to Add/Edit Inventory.
 - Populates product choices from the live Product Catalog.

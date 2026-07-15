@@ -235,7 +235,7 @@ Inventory table readability pass completed: removed initials, simplified columns
 - Where Used relationship summary
 
 
-## Version 0.6.8.3.4 — Completed
+## Version 0.6.8.3.5 — Completed
 
 - Editable Linked Products field in Inventory.
 - Stable product IDs stored on inventory records.
