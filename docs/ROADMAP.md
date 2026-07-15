@@ -115,3 +115,14 @@ A stable local-first workshop management system ready for everyday use.
 - Duplicate-deduction protection across refresh and reopen
 - Zero-stock protection
 - Product-tag and care-sheet audit for upcoming releases
+
+## Version 0.6.2 — Care Sheet Inventory and Printing — Complete
+
+- Count printed care sheets as Print & Cricut inventory
+- Default editable print batch of 10
+- Open the repository care-sheet PDF without automatically changing inventory
+- Confirm the quantity successfully printed before adding stock
+- Show live care-sheet stock and low-stock messaging in Pack & Ship
+- Consume one sheet per order and restore it safely when reversed
+- Record print additions, order consumption, and returns in Inventory History
+

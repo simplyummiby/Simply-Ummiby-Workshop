@@ -1182,3 +1182,28 @@ textarea { resize: vertical; }
 .inventory-task-detail { color:var(--muted); font-size:.78rem; font-weight:600; line-height:1.35; }
 .inventory-task-detail.out { color:#a53b49; }
 .inventory-aware-check { align-items:flex-start; }
+
+/* Version 0.6.2 care-sheet inventory task */
+.care-sheet-task {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+.care-sheet-task .process-check-main {
+  display: flex;
+  align-items: center;
+  gap: .75rem;
+  flex: 1;
+  cursor: pointer;
+}
+.care-sheet-task .button { flex: 0 0 auto; }
+.inventory-low-message {
+  display: block;
+  margin-top: .2rem;
+  font-weight: 700;
+}
+@media (max-width: 680px) {
+  .care-sheet-task { align-items: stretch; flex-direction: column; }
+  .care-sheet-task .button { width: 100%; }
+}

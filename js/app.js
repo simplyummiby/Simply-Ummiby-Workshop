@@ -1,6 +1,6 @@
 (() => {
   const STORAGE_KEY = "simplyUmmibyWorkshopData";
-  const VERSION = "0.6.1";
+  const VERSION = "0.6.2";
   const ITEM_STATUSES = ["New","Preparing","Manufacturing","Waiting on Material","Ready for Packing","Packed","Ready to Mail","Completed"];
   const STATUS_PROGRESS = {
     "New": 5, "Preparing": 20, "Manufacturing": 50, "Waiting on Material": 35,
@@ -103,7 +103,9 @@
       const merged = {...defaultItem, ...(legacy || {}), ...(saved || {})};
       merged.id = defaultItem.id;
       merged.category = defaultItem.category;
-      merged.name = saved?.name || defaultItem.name;
+      merged.name = defaultItem.id === "care-sheets" && ["Care Instruction Sheets","Care Instruction Sheet"].includes(saved?.name)
+        ? defaultItem.name
+        : (saved?.name || defaultItem.name);
       merged.materialType = saved?.materialType || defaultItem.materialType || "Other";
       merged.craft = saved?.craft || defaultItem.craft || "Shared";
       merged.imageData = saved?.imageData || defaultItem.imageData || "";
@@ -216,6 +218,13 @@
       .map(item => productMasterById(item.productId)?.packaging?.companyStickerInventoryId)
       .filter(Boolean);
     return configured[0] || "company-stickers";
+  }
+
+  function careSheetInventoryIdForOrder(order) {
+    const configured = (order?.items || [])
+      .map(item => productMasterById(item.productId)?.packaging?.careSheetInventoryId)
+      .filter(Boolean);
+    return configured[0] || "care-sheets";
   }
 
   function inventoryTaskStore(order,item) {
@@ -784,7 +793,7 @@
     const item=itemId?inventoryItemById(itemId):null;
     const categoryOptions=inventoryCategories().map(category=>`<option value="${category.id}" ${item?.category===category.id?"selected":""}>${escapeHTML(category.name)}</option>`).join("");
     const isCondition=item?.tracking==="condition";
-    showModal(item?"Edit Inventory Item":"Add Inventory Item",`<form id="inventoryItemForm" class="inventory-editor-form"><label>Name<input name="name" value="${escapeHTML(item?.name||"")}" required></label><label>Category<select name="category">${categoryOptions}</select></label><label>Material / Item Type<input name="materialType" value="${escapeHTML(item?.materialType||"")}" placeholder="Wood, Cord/Yarn, Hardware..."></label><label>Craft<select name="craft">${["Macramé","Crochet","Shared","Other"].map(v=>`<option value="${v}" ${item?.craft===v?"selected":""}>${v}</option>`).join("")}</select></label><div class="full-width derived-product-note"><strong>Used by Products</strong><p>Calculated automatically from Product Master material and packaging connections.</p></div><label>Tracking<select name="tracking"><option value="quantity" ${!isCondition?"selected":""}>Quantity</option><option value="condition" ${isCondition?"selected":""}>Condition</option></select></label><label>Restock Type<select name="restockType"><option value="purchase" ${item?.restockType==="purchase"?"selected":""}>Purchase</option><option value="make" ${item?.restockType==="make"?"selected":""}>Make</option><option value="print" ${item?.restockType==="print"?"selected":""}>Print</option></select></label><label>Quantity<input name="quantity" type="number" min="0" value="${Number(item?.quantity||0)}"></label><label>Reorder At<input name="reorderAt" type="number" min="0" value="${Number(item?.reorderAt||0)}"></label><label>Preferred Stock<input name="preferredStock" type="number" min="0" value="${Number(item?.preferredStock||0)}"></label><label>Condition<select name="condition">${["Available","Getting Low","Replace Soon","Out"].map(v=>`<option value="${v}" ${item?.condition===v?"selected":""}>${v}</option>`).join("")}</select></label><label>Supplier<input name="supplier" value="${escapeHTML(item?.supplier||"")}"></label><label>Supplier / Resource URL<input name="purchaseUrl" value="${escapeHTML(item?.purchaseUrl||item?.resourceUrl||"")}" placeholder="https://..."></label><label class="full-width">Item Photo<input id="inventoryImageInput" type="file" accept="image/*"></label><div class="full-width inventory-image-preview" id="inventoryImagePreview">${item?.imageData?`<img src="${item.imageData}" alt="">`:`<span>No photo added</span>`}</div><label class="full-width">Notes<textarea name="notes" rows="3">${escapeHTML(item?.notes||"")}</textarea></label></form>`,[{label:"Cancel"},{label:item?"Save Changes":"Add Item",kind:"primary",onClick:()=>saveInventoryItem(itemId)}]);
+    showModal(item?"Edit Inventory Item":"Add Inventory Item",`<form id="inventoryItemForm" class="inventory-editor-form"><label>Name<input name="name" value="${escapeHTML(item?.name||"")}" required></label><label>Category<select name="category">${categoryOptions}</select></label><label>Material / Item Type<input name="materialType" value="${escapeHTML(item?.materialType||"")}" placeholder="Wood, Cord/Yarn, Hardware..."></label><label>Craft<select name="craft">${["Macramé","Crochet","Shared","Other"].map(v=>`<option value="${v}" ${item?.craft===v?"selected":""}>${v}</option>`).join("")}</select></label><div class="full-width derived-product-note"><strong>Used by Products</strong><p>Calculated automatically from Product Master material and packaging connections.</p></div><label>Tracking<select name="tracking"><option value="quantity" ${!isCondition?"selected":""}>Quantity</option><option value="condition" ${isCondition?"selected":""}>Condition</option></select></label><label>Restock Type<select name="restockType"><option value="purchase" ${item?.restockType==="purchase"?"selected":""}>Purchase</option><option value="make" ${item?.restockType==="make"?"selected":""}>Make</option><option value="print" ${item?.restockType==="print"?"selected":""}>Print</option></select></label><label>Quantity<input name="quantity" type="number" min="0" value="${Number(item?.quantity||0)}"></label><label>Reorder At<input name="reorderAt" type="number" min="0" value="${Number(item?.reorderAt||0)}"></label><label>Preferred Stock<input name="preferredStock" type="number" min="0" value="${Number(item?.preferredStock||0)}"></label><label>Default Print Quantity<input name="defaultPrintQuantity" type="number" min="1" value="${Number(item?.defaultPrintQuantity||10)}"></label><label>Printable File<input name="printableFile" value="${escapeHTML(item?.printableFile||"")}" placeholder="printables/example.pdf"></label><label>Condition<select name="condition">${["Available","Getting Low","Replace Soon","Out"].map(v=>`<option value="${v}" ${item?.condition===v?"selected":""}>${v}</option>`).join("")}</select></label><label>Supplier<input name="supplier" value="${escapeHTML(item?.supplier||"")}"></label><label>Supplier / Resource URL<input name="purchaseUrl" value="${escapeHTML(item?.purchaseUrl||item?.resourceUrl||"")}" placeholder="https://..."></label><label class="full-width">Item Photo<input id="inventoryImageInput" type="file" accept="image/*"></label><div class="full-width inventory-image-preview" id="inventoryImagePreview">${item?.imageData?`<img src="${item.imageData}" alt="">`:`<span>No photo added</span>`}</div><label class="full-width">Notes<textarea name="notes" rows="3">${escapeHTML(item?.notes||"")}</textarea></label></form>`,[{label:"Cancel"},{label:item?"Save Changes":"Add Item",kind:"primary",onClick:()=>saveInventoryItem(itemId)}]);
     const input=document.getElementById("inventoryImageInput"); if(input) input.addEventListener("change",async()=>{const file=input.files?.[0];if(!file)return;const compressed=await compressInventoryImage(file);input.dataset.imageData=compressed;document.getElementById("inventoryImagePreview").innerHTML=`<img src="${compressed}" alt="">`;});
   }
   function compressInventoryImage(file){return new Promise((resolve,reject)=>{const reader=new FileReader();reader.onerror=reject;reader.onload=()=>{const image=new Image();image.onerror=reject;image.onload=()=>{const max=480,scale=Math.min(1,max/Math.max(image.width,image.height)),canvas=document.createElement("canvas");canvas.width=Math.max(1,Math.round(image.width*scale));canvas.height=Math.max(1,Math.round(image.height*scale));canvas.getContext("2d").drawImage(image,0,0,canvas.width,canvas.height);resolve(canvas.toDataURL("image/jpeg",.72));};image.src=reader.result;};reader.readAsDataURL(file);});}
@@ -848,6 +857,8 @@
       quantity: Math.max(0, Number(formData.get("quantity") || 0)),
       reorderAt: Math.max(0, Number(formData.get("reorderAt") || 0)),
       preferredStock: Math.max(0, Number(formData.get("preferredStock") || 0)),
+      defaultPrintQuantity: Math.max(1, Number(formData.get("defaultPrintQuantity") || existing?.defaultPrintQuantity || 10)),
+      printableFile: formData.get("printableFile").trim(),
       condition: formData.get("condition"),
       supplier: formData.get("supplier").trim(),
       purchaseUrl: formData.get("purchaseUrl").trim(),
@@ -1731,7 +1742,6 @@
       <div class="shipping-rule">${item.productId==="macrame-paper-towel-holder" ? "<strong>Paper towel holder rule:</strong> Two or more paper towel holders must use separate mailers." : "<strong>Standard mailer:</strong> This product uses the shared smaller poly-mailer size."}</div>
       <div class="checklist-card">${renderChecklist(product.packingChecklist,item.workflow.packingChecks,"packing-check",order.id,item.id)}</div>
       <div class="resource-shortcuts">
-        <button class="button secondary small" data-action="print-care-sheet">Print Care Sheet</button>
         <button class="button secondary small" data-action="external-link" data-link="etsyOrders">Open Etsy Orders</button>
         <button class="button secondary small" data-action="external-link" data-link="shippo">Open Shippo</button>
         <button class="button secondary small" data-action="external-link" data-link="cricut">Open Cricut</button>
@@ -1763,7 +1773,7 @@
   function renderOrderShipping(order) {
     const allPacked=order.items.every(i => ["Packed","Ready to Mail","Completed"].includes(i.status));
     const checks=[
-      ["careSheetPrinted","Print and insert care instruction sheet"],
+      ["careSheetPrinted","Insert care instruction sheet"],
       ["packingSlipPrinted","Print packing slip; mark what is inside each mailer when split"],
       ["shippoOpened","Open Shippo and purchase/print shipping label"],
       ["labelAttached","Attach address or shipping label"],
@@ -1772,10 +1782,27 @@
     ];
     const done=checks.filter(([key]) => order.shipping[key]).length;
     const ready=allPacked && done===checks.length;
+    const careSheetId = careSheetInventoryIdForOrder(order);
+    const careSheet = inventoryItemById(careSheetId);
+    const careSheetQuantity = Number(careSheet?.quantity || 0);
+    const careSheetLow = careSheet && careSheetQuantity <= Number(careSheet.reorderAt || 0);
     return `<section class="order-shipping panel">
       <div class="panel-heading"><div><p class="eyebrow">Whole order</p><h3>Final Shipping Checklist</h3><p>Every item must be packed before the whole Etsy order can be marked Ready to Mail.</p></div><span class="badge ${ready ? "complete" : "status"}">${done} of ${checks.length}</span></div>
       ${!allPacked ? `<div class="shipping-notice">Finish packing every item above to unlock Ready to Mail.</div>` : ""}
       <div class="process-checklist">${checks.map(([key,label]) => {
+        if (key === "careSheetPrinted") {
+          const availability = careSheet
+            ? `${careSheetQuantity} available · Uses 1 ${escapeHTML(careSheet.name)}`
+            : "Care sheet inventory link missing";
+          const lowMessage = careSheetLow
+            ? `<small class="inventory-low-message">${careSheetQuantity <= 0 ? "Care sheets are out of stock." : `Only ${careSheetQuantity} care sheets remain.`}</small>`
+            : "";
+          return `<div class="process-check inventory-aware-check care-sheet-task ${order.shipping[key] ? "checked" : ""}">
+            <label class="process-check-main"><input type="checkbox" ${order.shipping[key] ? "checked" : ""} data-action="shipping-check" data-key="${key}" data-order-id="${order.id}">
+            <span class="check-box">${order.shipping[key] ? "✓" : ""}</span><span class="process-check-copy"><span>${label}</span><small class="inventory-task-detail ${careSheetQuantity <= 0 ? "out" : ""}">${availability}</small>${lowMessage}</span></label>
+            <button class="button secondary small" type="button" data-action="print-care-sheet">Print More Care Sheets</button>
+          </div>`;
+        }
         const stickerId = key === "companyStickerAttached" ? companyStickerInventoryIdForOrder(order) : "";
         const sticker = stickerId ? inventoryItemById(stickerId) : null;
         const inventoryLine = key === "companyStickerAttached"
@@ -1785,7 +1812,6 @@
         <span class="check-box">${order.shipping[key] ? "✓" : ""}</span><span class="process-check-copy"><span>${label}</span>${inventoryLine}</span></label>`;
       }).join("")}</div>
       <div class="resource-shortcuts">
-        <button class="button secondary small" data-action="print-care-sheet">Print Care Sheet</button>
         <button class="button secondary small" data-action="external-link" data-link="etsyOrders">Open Etsy Orders</button>
         <button class="button secondary small" data-action="external-link" data-link="etsyCompleted">Open Etsy Completed</button>
         <button class="button secondary small" data-action="external-link" data-link="shippo">Open Shippo</button>
@@ -1976,10 +2002,11 @@
   function updateShippingCheck(orderId,key,checked) {
     const order=data.orders.find(o => o.id===orderId);
     if (!order) return;
-    if (key === "companyStickerAttached") {
-      const inventoryItemId = companyStickerInventoryIdForOrder(order);
-      const taskKey = "shipping-company-sticker";
-      const label = "Simply Ummiby company sticker";
+    if (["companyStickerAttached","careSheetPrinted"].includes(key)) {
+      const isCareSheet = key === "careSheetPrinted";
+      const inventoryItemId = isCareSheet ? careSheetInventoryIdForOrder(order) : companyStickerInventoryIdForOrder(order);
+      const taskKey = isCareSheet ? "shipping-care-sheet" : "shipping-company-sticker";
+      const label = isCareSheet ? "care instruction sheet" : "Simply Ummiby company sticker";
       if (checked) {
         const completed = consumeInventoryForTask({order,taskKey,inventoryItemId,quantity:1,label});
         if (!completed) return renderOrderWorkspace(order);
@@ -1997,17 +2024,50 @@
   function markReadyMail(orderId) {
     const order=data.orders.find(o => o.id===orderId);
     const allPacked=order.items.every(i => ["Packed","Ready to Mail","Completed"].includes(i.status));
-    const shippingDone=Object.values(order.shipping).every(Boolean);
+    const shippingDone=["careSheetPrinted","packingSlipPrinted","shippoOpened","labelAttached","companyStickerAttached","mailerSealed"].every(key => Boolean(order.shipping[key]));
     if (!allPacked || !shippingDone) return showToast("Complete all packing and shipping steps first.");
     order.items.forEach(i => { if (i.status!=="Completed") i.status="Ready to Mail"; });
     touchOrder(order); data.activity.unshift({text:`Order for ${order.customerName} is ready to mail`,time:"Just now"}); saveData(); renderOrderWorkspace(order);
   }
 
   function printCareSheet() {
-    const popup=window.open("","_blank","width=800,height=900");
+    const careSheet = inventoryItemById("care-sheets");
+    const printableFile = careSheet?.printableFile || "printables/caresheet-pt-tp.pdf";
+    const popup = window.open(printableFile,"_blank");
+    if (popup) popup.opener = null;
     if (!popup) return showToast("Please allow pop-ups to print the care sheet.");
-    popup.document.write(`<!doctype html><html><head><title>Simply Ummiby Care Instructions</title><style>body{font-family:Arial,sans-serif;color:#333;padding:60px;line-height:1.6}.sheet{border:3px solid #d96d7b;border-radius:24px;padding:42px;max-width:650px;margin:auto}h1{color:#9f3d4d;margin-top:0}.note{margin-top:32px;font-size:12px;color:#777}@media print{body{padding:0}.sheet{border-width:2px}}</style></head><body><section class="sheet"><h1>Simply Ummiby</h1><h2>Care Instructions</h2><p>Thank you for supporting handmade work.</p><p><strong>Gentle care:</strong> Spot clean as needed and allow the item to air dry. Handle the handmade fibers and finished details gently.</p><p><strong>Macramé:</strong> If the cord shifts during use or shipping, gently straighten and smooth it by hand.</p><p><strong>Crochet:</strong> Reshape gently after cleaning and allow it to dry flat when appropriate.</p><p class="note">Temporary Version 0.3 care sheet. Replace with your final shop PDF when the Resources module is completed.</p></section><script>window.onload=()=>window.print();<\/script></body></html>`);
-    popup.document.close();
+    const defaultQuantity = Math.max(1,Number(careSheet?.defaultPrintQuantity || 10));
+    showModal(
+      "Add printed care sheets to inventory?",
+      `<p>The printable opened in a new tab. Add sheets only after they have printed successfully.</p><label>How many care sheets did you print?<input id="printedCareSheetQuantity" type="number" min="1" step="1" value="${defaultQuantity}"></label>`,
+      [
+        {label:"Not Yet"},
+        {label:"Add Printed Sheets",kind:"primary",onClick:() => addPrintedCareSheets(Number(document.getElementById("printedCareSheetQuantity")?.value || defaultQuantity))}
+      ]
+    );
+  }
+
+  function addPrintedCareSheets(quantity) {
+    const careSheet = inventoryItemById("care-sheets");
+    quantity = Math.floor(Number(quantity || 0));
+    if (!careSheet || careSheet.tracking !== "quantity") return showToast("Care sheet inventory is not configured.");
+    if (quantity <= 0) return showToast("Enter how many care sheets were printed.");
+    careSheet.quantity = Number(careSheet.quantity || 0) + quantity;
+    recordInventoryTransaction({
+      type:"add",
+      itemId:careSheet.id,
+      quantity,
+      reason:"Printed care sheets",
+      details:`Added ${quantity} printed care instruction sheets to inventory.`,
+      relatedItemId:careSheet.id,
+      source:"print-and-cricut"
+    });
+    data.activity.unshift({text:`Added ${quantity} printed care sheets to inventory`,time:"Just now"});
+    saveData();
+    showToast(`${quantity} care sheets added to inventory.`);
+    const openOrderId = data.settings.lastOpenedOrderId;
+    const order = data.orders.find(order => order.id === openOrderId);
+    if (order) renderOrderWorkspace(order,data.settings.lastOpenedItemId);
   }
 
   function openExternal(key) {
@@ -2031,7 +2091,7 @@
       const button=document.createElement("button");
       button.className=`button ${action.kind || "secondary"}`;
       button.textContent=action.label;
-      button.addEventListener("click",() => { hideModal(); action.onClick?.(); });
+      button.addEventListener("click",() => { action.onClick?.(); hideModal(); });
       actionsEl.appendChild(button);
     });
     document.getElementById("modalBackdrop").classList.remove("hidden");

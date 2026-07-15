@@ -31,7 +31,7 @@ The active item, active tab, fulfillment choice, checklists, and notes persist l
 
 ### Final Shipping
 
-The order-level checklist covers the shared care sheet, packing slip, Shippo, label, company sticker, and sealed mailer confirmation.
+The order-level checklist appears inside Pack & Ship and covers the shared care sheet, packing slip, Shippo, label, company sticker, and sealed mailer confirmation. The care-sheet row shows live inventory, low-stock status, and a nearby Print More Care Sheets action.
 
 ## Batch Production
 
@@ -53,7 +53,7 @@ The three current products now supply built-in preparation, manufacturing, and p
 
 ## Resources
 
-The Processing Area currently offers basic Etsy, Shippo, Cricut, and care-sheet actions. A full Resources module remains planned.
+The Processing Area offers Etsy, Shippo, Cricut, and care-sheet actions. Care-sheet printing opens the configured repository PDF, then separately asks how many successfully printed sheets should be added to inventory. A full Resources module remains planned.
 
 ## Settings
 
@@ -140,7 +140,7 @@ Working in Version 0.6.0:
 - Product creation
 - Automatic Inventory “Used by Products”
 
-## Pack & Ship inventory behavior — Version 0.6.1
+## Pack & Ship inventory behavior — Version 0.6.2
 
 - Product mailer checklist steps display the resolved mailer and current quantity.
 - Completing a mailer step consumes one configured mailer for that order item.

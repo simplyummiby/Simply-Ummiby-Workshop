@@ -365,16 +365,19 @@ window.SUW_INVENTORY_CATALOG = {
     {
       id: "care-sheets",
       category: "print-supplies",
-      name: "Care Instruction Sheets",
+      name: "Care Instruction Sheet — Paper Towel and Toilet Paper Holders",
       materialType: "Care Sheet",
       craft: "Shared",
       tracking: "quantity",
       quantity: 11,
-      reorderAt: 10,
-      preferredStock: 30,
+      reorderAt: 5,
+      preferredStock: 10,
+      defaultPrintQuantity: 10,
+      printableFile: "printables/caresheet-pt-tp.pdf",
+      applicableProductIds: ["macrame-paper-towel-holder","macrame-toilet-paper-holder","crochet-oven-door-towel-holder"],
       restockType: "print",
-      resourceUrl: "",
-      notes: "Shared by all three products."
+      resourceUrl: "printables/caresheet-pt-tp.pdf",
+      notes: "One printed sheet per Etsy order. Default print batch is 10 and remains editable."
     },
     {
       id: "company-stickers",

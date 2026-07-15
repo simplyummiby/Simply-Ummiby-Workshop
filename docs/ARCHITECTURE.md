@@ -1,6 +1,6 @@
 # Architecture
 
-## Version 0.6.1
+## Version 0.6.2
 
 Simply Ummiby Workshop remains a static, local-first web application.
 
@@ -149,3 +149,12 @@ Mailer inventory is resolved from the Product Master `packaging.mailerType` rela
 Consumption transactions record the inventory item, quantity, order ID, Etsy order number, optional order-item ID, checklist task ID, source (`pack-and-ship`), and timestamp. Unchecking creates a linked restoration transaction and removes the active task reference. Inventory is never allowed to become negative.
 
 Legacy checked tasks without a stored transaction are preserved without making an automatic historical deduction. Clearing one of those tasks changes only the checklist state and shows a reconciliation notice.
+
+## Version 0.6.2 care-sheet inventory and printing
+
+The `care-sheets` inventory record stores counted quantity, an editable low-stock threshold (`reorderAt`), editable `defaultPrintQuantity`, the repository-relative `printableFile`, and applicable product relationships. Catalog migration merges these new defaults into existing local data without resetting the user's saved quantity or thresholds.
+
+`printCareSheet()` opens the configured PDF in a new tab and then displays a separate confirmation dialog. Inventory changes only through `addPrintedCareSheets(quantity)`, which validates the entered quantity, adds it to counted stock, and creates a `print-and-cricut` inventory transaction. Cancelling the dialog or merely opening the PDF makes no inventory change.
+
+The whole-order `careSheetPrinted` step remains stored for backward compatibility but is presented as **Insert care instruction sheet**. It uses the same idempotent Pack & Ship transaction helpers introduced in v0.6.1, with task key `shipping-care-sheet`. One sheet is consumed per order, a linked transaction ID prevents repeat deduction, and unchecking creates a matching restoration transaction. Low-stock messaging is derived from the inventory item's configured `reorderAt` value.
+

@@ -1,8 +1,18 @@
 # Simply Ummiby Workshop
 
-**Version 0.6.1**
+**Version 0.6.2**
 
-Version 0.6.1 makes the existing Pack & Ship mailer and company-sticker tasks inventory-aware while preserving Product Master as the source of packaging relationships.
+Version 0.6.2 treats printed care instruction sheets as counted physical inventory while keeping printing and inventory addition intentionally separate. Pack & Ship now shows live care-sheet stock, provides the print link beside the insertion step, consumes one sheet per order, and safely restores it when the step is reversed.
+
+## Version 0.6.2 highlights
+
+- Printed care sheets are tracked under Print & Cricut Supplies.
+- **Print More Care Sheets** opens `printables/caresheet-pt-tp.pdf`.
+- After printing, an editable confirmation defaults to 10 sheets.
+- Opening the printable alone never changes inventory.
+- Inserting a care sheet subtracts one and records the related order in Inventory History.
+- Low-stock messaging uses the care-sheet inventory item's editable Reorder At threshold.
+- Mailer and company-sticker behavior from v0.6.1 remains intact.
 
 ## Product Master
 
