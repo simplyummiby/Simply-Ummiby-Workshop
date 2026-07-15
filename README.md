@@ -1,10 +1,10 @@
 # Simply Ummiby Workshop
 
-**Version 0.6.8.3**
+**Version 0.6.8.3.1**
 
-Version 0.6.8.3 adds safe inventory lifecycle management and refreshes the Add/Edit Inventory experience. Referenced items can be archived without breaking historical records, unused items can be deleted safely, and the editor now shows clear sections and a live Where Used summary.
+Version 0.6.8.3.1 adds safe inventory lifecycle management and refreshes the Add/Edit Inventory experience. Referenced items can be archived without breaking historical records, unused items can be deleted safely, and the editor now shows clear sections and a live Where Used summary.
 
-## Version 0.6.8.3 highlights
+## Version 0.6.8.3.1 highlights
 
 - Archive, restore, and safely delete inventory items.
 - Block permanent deletion when products, colors, prepared components, orders, or transaction history still reference an item.
@@ -12,6 +12,10 @@ Version 0.6.8.3 adds safe inventory lifecycle management and refreshes the Add/E
 - Hide archived items from active restock views and new inventory selectors.
 - Use a redesigned inventory editor with grouped, conditional fields.
 - Review a Where Used panel before archiving or deleting.
+
+## Version 0.6.8.3.1 fix
+
+Inventory row actions now have adequate width and consistent spacing. Edit, Archive/Restore, Delete, Adjust, and quick quantity controls no longer crowd, clip, or overlap.
 
 ## Recipe management
 

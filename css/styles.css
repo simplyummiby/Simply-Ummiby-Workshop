@@ -1314,7 +1314,7 @@ textarea { resize: vertical; }
 /* Version 0.6.6 Products module */
 .inventory-table-polished { overflow:visible; }
 .inventory-data-table-polished {
-  grid-template-columns:minmax(320px,2.4fr) minmax(120px,.8fr) minmax(105px,.7fr) minmax(90px,.65fr) minmax(230px,1.2fr);
+  grid-template-columns:minmax(320px,2.4fr) minmax(120px,.8fr) minmax(105px,.7fr) minmax(90px,.65fr) minmax(300px,1.45fr);
   gap:18px;
   align-items:center;
   padding:16px 18px;
@@ -1340,18 +1340,35 @@ textarea { resize: vertical; }
 }
 .inventory-count-cell strong,.inventory-reorder-cell strong { display:block; font-size:1rem; color:var(--charcoal); }
 .inventory-count-cell small,.inventory-reorder-cell small { display:block; margin-top:3px; color:var(--muted); font-size:.72rem; line-height:1.35; }
-.inventory-row-actions-polished { justify-content:flex-start; flex-wrap:nowrap; }
+.inventory-row-actions-polished {
+  justify-content:flex-start;
+  align-items:center;
+  flex-wrap:wrap;
+  gap:8px;
+  min-width:0;
+}
+.inventory-row-actions-polished > .button.small {
+  flex:0 0 auto;
+  min-width:max-content;
+  line-height:1.1;
+}
+.inventory-row-actions-polished .danger-outline {
+  margin-left:2px;
+}
 .inventory-quick-adjust { display:flex; gap:4px; }
 .inventory-row-actions-polished .inventory-quick-adjust button {
   width:32px; height:32px; border:1px solid var(--line); border-radius:9px;
   background:var(--rose-50); color:var(--rose-700); font-weight:900;
 }
-.inventory-row-actions-polished .button.small { white-space:nowrap; }
+.inventory-row-actions-polished .button.small {
+  white-space:nowrap;
+  padding:8px 12px;
+}
 .inventory-card-image:has(.inventory-thumb:empty),.inventory-card-image:empty { display:none; }
 .inventory-card-image:not(:has(.inventory-thumb)) { display:none; }
 
 @media(max-width:1100px){
-  .inventory-data-table-polished { grid-template-columns:minmax(280px,2fr) .75fr .7fr .65fr minmax(200px,1fr); gap:12px; }
+  .inventory-data-table-polished { grid-template-columns:minmax(280px,2fr) .75fr .7fr .65fr minmax(270px,1.25fr); gap:12px; }
 }
 @media(max-width:850px){
   .inventory-data-table-polished.inventory-data-table-head { display:none; }
@@ -1474,4 +1491,17 @@ textarea { resize: vertical; }
 @media(max-width:620px){
   .inventory-form-grid,.inventory-photo-layout { grid-template-columns:1fr; }
   .inventory-form-grid .full-width { grid-column:auto; }
+}
+
+
+/* v0.6.8.3.1 Inventory action-button layout fix */
+.inventory-row-actions-polished .button.secondary.small {
+  border-radius:10px;
+  min-height:34px;
+}
+@media(max-width:1180px){
+  .inventory-row-actions-polished { align-content:flex-start; }
+}
+@media(max-width:850px){
+  .inventory-row-actions-polished { padding-top:2px; }
 }

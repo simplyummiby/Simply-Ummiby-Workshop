@@ -227,7 +227,7 @@ Inventory table readability pass completed: removed initials, simplified columns
 - Safe migration of existing inventory type names and quantities.
 
 
-## Version 0.6.8.3 — Completed
+## Version 0.6.8.3.1 — Completed
 
 - Safe inventory archive, restore, and deletion
 - Reference checking before removal

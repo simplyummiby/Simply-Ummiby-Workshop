@@ -1,4 +1,4 @@
-## 0.6.8.3 — Safe Inventory Management
+## 0.6.8.3.1 — Safe Inventory Management
 
 - Added Archive, Restore, and safe Delete actions.
 - Added reference checks across products, colors, prepared components, orders, and transaction history.
