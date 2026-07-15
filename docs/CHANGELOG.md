@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.6.5.1
+
+- Added separate raw and prepared Toilet Paper Holder dowel inventory.
+- Toilet Paper Holder dowel preparation now consumes one raw TPH dowel and no end caps.
+- Preserved the Paper Towel Holder recipe of one raw PTH dowel plus two end caps.
+- Added batch and order-time preparation for both product-specific dowel types.
+- Updated Outstanding Work and Pack Mailer blocking for both macramé holder products.
+- Updated all current release references to 0.6.5.1.
+
 ## 0.6.5
 
 - Added Prepared Paper Towel Dowels as a counted prepared component.

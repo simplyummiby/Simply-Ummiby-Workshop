@@ -60,6 +60,43 @@ window.SUW_INVENTORY_CATALOG = {
       notes: "Stored separately; not included in a paper towel holder fabrication kit."
     },
     {
+      id: "toilet-paper-dowels",
+      linkedProductIds: ["macrame-toilet-paper-holder"],
+      category: "raw-materials",
+      name: "Toilet Paper Dowels",
+      materialType: "Wood",
+      craft: "Macramé",
+      tracking: "quantity",
+      quantity: 0,
+      reorderAt: 4,
+      preferredStock: 12,
+      restockType: "purchase",
+      supplier: "",
+      purchaseUrl: "",
+      notes: "Raw toilet paper holder dowels. Cut to the shorter toilet-paper-holder size; no end caps are used."
+    },
+    {
+      id: "prepared-toilet-paper-dowels",
+      components: [
+        { itemId: "toilet-paper-dowels", quantity: 1 }
+      ],
+      linkedProductIds: ["macrame-toilet-paper-holder"],
+      category: "raw-materials",
+      name: "Prepared Toilet Paper Dowels",
+      materialType: "Prepared Component",
+      craft: "Macramé",
+      productId: "macrame-toilet-paper-holder",
+      tracking: "quantity",
+      quantity: 0,
+      reorderAt: 2,
+      preferredStock: 6,
+      restockType: "make",
+      supplier: "",
+      purchaseUrl: "",
+      contents: ["1 toilet paper dowel"],
+      notes: "Cut to the correct toilet paper holder length, inspected, and ready to place in the mailer. No end caps are required."
+    },
+    {
       id: "prepared-paper-towel-dowels",
       components: [
         { itemId: "paper-towel-dowels", quantity: 1 },

@@ -1,17 +1,14 @@
 # Simply Ummiby Workshop
 
-**Version 0.6.5**
+**Version 0.6.5.1**
 
-Version 0.6.5 adds prepared paper towel dowel inventory and a flexible dowel-preparation workflow. Dowels may be prepared in batches ahead of time or prepared directly for an order when stock is empty.
+Version 0.6.5.1 separates the paper towel holder and toilet paper holder dowel workflows so each product consumes the correct materials.
 
-## Version 0.6.5 highlights
+## Version 0.6.5.1 highlights
 
-- Adds **Prepared Paper Towel Dowels** as a counted prepared component.
-- Preparing one uses 1 raw paper towel dowel and 2 end caps.
-- Inventory includes a **Prepare Batch** action for making several ahead.
-- Paper towel holder orders can use prepared stock or prepare one directly in Pack & Ship.
-- Unresolved dowels appear in Outstanding Work and block Pack Mailer until resolved.
-- Resetting or cancelling returns a stock-assigned dowel; a dowel prepared for an order returns as a prepared dowel rather than pretending it is raw again.
-- Inventory transactions record component preparation, assignment, consumption, and returns.
-
-Open `index.html` to run the app locally. Data is stored in browser local storage.
+- Adds separate **Toilet Paper Dowels** and **Prepared Toilet Paper Dowels** inventory items.
+- Preparing a Paper Towel Holder dowel uses 1 raw PTH dowel and 2 end caps.
+- Preparing a Toilet Paper Holder dowel uses 1 raw TPH dowel and no end caps.
+- Supports batch preparation and order-time preparation for both dowel types.
+- Blocks Pack Mailer until the correct product-specific prepared dowel is assigned.
+- Returns an undone or cancelled dowel to the correct prepared-component inventory.

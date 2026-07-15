@@ -1,5 +1,5 @@
 window.SUW_SAMPLE_DATA = {
-  version: "0.6.5",
+  version: "0.6.5.1",
   products: [
     {
       id: "macrame-paper-towel-holder",
@@ -48,7 +48,8 @@ window.SUW_SAMPLE_DATA = {
       colors: ["Natural/Beige","White","Black","Gray","Midnight Blue","Forest Green","Chocolate Brown","Dusty Rose","Blush Pink","Watermelon Pink","Berry Pink","Wine Red"],
       materials: [
         { id: "cord", name: "Macramé cord", defaultStatus: "Available" },
-        { id: "wood-ring", name: "Wooden ring", defaultStatus: "Available" }
+        { id: "wood-ring", name: "Wooden ring", defaultStatus: "Available" },
+        { id: "wood-dowel", name: "Toilet paper dowel", defaultStatus: "Available" }
       ],
       manufacturingSections: [
         {
@@ -66,6 +67,7 @@ window.SUW_SAMPLE_DATA = {
           title: "Assembly",
           steps: [
             "Attach the wooden ring",
+            "Confirm the toilet paper dowel is cut to size",
             "Complete a final visual inspection"
           ]
         }
@@ -125,7 +127,7 @@ window.SUW_SAMPLE_DATA = {
   ],
   orders: [],
   activity: [
-    { text: "Simply Ummiby Workshop v0.6.5 is ready", time: "Today" }
+    { text: "Simply Ummiby Workshop v0.6.5.1 is ready", time: "Today" }
   ],
   settings: {
     lastOpenedOrderId: null,

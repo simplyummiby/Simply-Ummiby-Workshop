@@ -187,3 +187,8 @@ Pack & Ship checklist rows share one explicit font family, title size, and title
 ## Version 0.6.5 — Prepared Dowel Workflow
 
 Paper towel dowels now have two inventory states: raw Paper Towel Dowels and Prepared Paper Towel Dowels. A prepared dowel is cut to length, fitted with two end caps, inspected, and ready for packing. Preparing one consumes one raw dowel and two end caps. Prepared dowels may be made in batches from Inventory or created directly for an order. A paper towel holder cannot complete Pack Mailer until its prepared-dowel requirement is resolved.
+
+## Version 0.6.5.1 — Product-Specific Dowel Workflows
+
+Paper Towel Holder and Toilet Paper Holder dowels are separate raw and prepared inventory items. Preparing a Paper Towel Holder dowel consumes one raw PTH dowel and two end caps. Preparing a Toilet Paper Holder dowel consumes one raw TPH dowel and no end caps. Both may be prepared in batches or directly for an order, and Pack Mailer remains blocked until the correct prepared dowel is assigned.
+

@@ -1,6 +1,6 @@
 (() => {
   const STORAGE_KEY = "simplyUmmibyWorkshopData";
-  const VERSION = "0.6.5";
+  const VERSION = "0.6.5.1";
   const ITEM_STATUSES = ["New","Preparing","Manufacturing","Waiting on Material","Ready for Packing","Packed","Ready to Mail","Completed"];
   const STATUS_PROGRESS = {
     "New": 5, "Preparing": 20, "Manufacturing": 50, "Waiting on Material": 35,
@@ -1592,6 +1592,7 @@
     } else if (item.productId === "macrame-toilet-paper-holder") {
       rows.push({name:"Macramé cord",needed:"Recipe amount",available:"Condition tracked",state:item.workflow.materialStatuses["cord"] || "Available"});
       rows.push({name:"Wooden ring",needed:"1",available:recordedInventoryQuantity("wood-rings"),state:item.workflow.materialStatuses["wood-ring"] || "Available"});
+      rows.push({name:"Prepared toilet paper dowel",needed:"1",available:recordedInventoryQuantity("prepared-toilet-paper-dowels"),state:item.workflow.preparedDowelReady ? "Assigned" : "Needed for packing"});
     } else {
       product.materials.forEach(material => rows.push({
         name:material.name,
@@ -1840,7 +1841,7 @@
 
   function renderPackPane(order,item) {
     const outstanding = order.items.filter(orderItem => !["Ready for Packing","Packed","Ready to Mail","Completed"].includes(orderItem.status));
-    const unresolvedDowels = order.items.filter(orderItem => orderItem.productId === "macrame-paper-towel-holder" && !preparedDowelReady(orderItem));
+    const unresolvedDowels = order.items.filter(orderItem => dowelConfigForProduct(orderItem.productId) && !preparedDowelReady(orderItem));
     return `
       <div class="process-pane-heading"><div><p class="eyebrow">Step 3</p><h4>Pack & Ship</h4><p>Finish item packing, shared order packaging, and shipping in one workspace.</p></div></div>
       ${outstanding.length || unresolvedDowels.length ? `<section class="panel outstanding-work"><div class="panel-heading"><div><p class="eyebrow">Outstanding Work</p><h3>Earlier work still needs attention</h3></div><span class="badge attention">${outstanding.length + unresolvedDowels.length}</span></div><div class="compact-list">${outstanding.map(outstandingItem => `<div><strong>${escapeHTML(outstandingItem.productName)} — ${escapeHTML(outstandingItem.color)}</strong><span>${escapeHTML(outstandingItem.status)}</span></div>`).join("")}${unresolvedDowels.map(dowelItem => `<div><strong>${escapeHTML(dowelItem.productName)} — ${escapeHTML(dowelItem.color)}</strong><span>Prepared dowel still required</span></div>`).join("")}</div></section>` : ""}
@@ -1861,46 +1862,78 @@
     }).join("")}</div>`;
   }
 
+  function dowelConfigForProduct(productId) {
+    if (productId === "macrame-paper-towel-holder") return {
+      preparedId:"prepared-paper-towel-dowels",
+      rawId:"paper-towel-dowels",
+      label:"Paper Towel Holder Dowel",
+      preparedLabel:"Prepared paper towel dowel",
+      components:[{itemId:"paper-towel-dowels",quantity:1,label:"Raw paper towel dowel"},{itemId:"end-caps",quantity:2,label:"End caps"}],
+      preparationDescription:"Cut to length, fit with two end caps, inspect, and make ready for the mailer."
+    };
+    if (productId === "macrame-toilet-paper-holder") return {
+      preparedId:"prepared-toilet-paper-dowels",
+      rawId:"toilet-paper-dowels",
+      label:"Toilet Paper Holder Dowel",
+      preparedLabel:"Prepared toilet paper dowel",
+      components:[{itemId:"toilet-paper-dowels",quantity:1,label:"Raw toilet paper dowel"}],
+      preparationDescription:"Cut to the correct toilet paper holder length, inspect, and make ready for the mailer. No end caps are used."
+    };
+    return null;
+  }
   function preparedDowelTaskKey(item){ return `prepared-dowel-${item.id}`; }
-  function preparedDowelReady(item){ return item.productId !== "macrame-paper-towel-holder" || Boolean(item.workflow.preparedDowelReady); }
+  function preparedDowelReady(item){ return !dowelConfigForProduct(item.productId) || Boolean(item.workflow.preparedDowelReady); }
   function assignPreparedDowelFromStock(order,item){
+    const config=dowelConfigForProduct(item.productId);
+    if(!config)return true;
     const taskKey=preparedDowelTaskKey(item);
     if(item.workflow.preparedDowelReady)return true;
-    const ok=consumeInventoryForTask({order,item,taskKey,inventoryItemId:"prepared-paper-towel-dowels",quantity:1,label:"Prepared paper towel dowel"});
+    const ok=consumeInventoryForTask({order,item,taskKey,inventoryItemId:config.preparedId,quantity:1,label:config.preparedLabel});
     if(!ok)return false;
-    item.workflow.preparedDowelReady=true; item.workflow.preparedDowelMode="stock"; touchOrder(order,item); saveData(); showToast("Prepared dowel assigned to this order."); return true;
+    item.workflow.preparedDowelReady=true; item.workflow.preparedDowelMode="stock"; touchOrder(order,item); saveData(); showToast(`${config.label} assigned to this order.`); return true;
   }
   function prepareDowelForOrder(order,item){
-    if(item.workflow.preparedDowelReady)return true;
-    const raw=inventoryItemById("paper-towel-dowels"), caps=inventoryItemById("end-caps");
-    if(Number(raw?.quantity||0)<1||Number(caps?.quantity||0)<2){showToast("You need 1 raw dowel and 2 end caps to prepare this dowel.");return false;}
-    const rawKey=`${preparedDowelTaskKey(item)}-raw`, capKey=`${preparedDowelTaskKey(item)}-caps`;
-    if(!consumeInventoryForTask({order,item,taskKey:rawKey,inventoryItemId:"paper-towel-dowels",quantity:1,label:"Raw paper towel dowel"}))return false;
-    if(!consumeInventoryForTask({order,item,taskKey:capKey,inventoryItemId:"end-caps",quantity:2,label:"End caps"})){
-      restoreInventoryForTask({order,item,taskKey:rawKey,label:"Raw paper towel dowel"}); return false;
+    const config=dowelConfigForProduct(item.productId);
+    if(!config||item.workflow.preparedDowelReady)return true;
+    const shortages=config.components.filter(component=>Number(inventoryItemById(component.itemId)?.quantity||0)<component.quantity);
+    if(shortages.length){
+      const needs=config.components.map(component=>`${component.quantity} ${component.label.toLowerCase()}`).join(" and ");
+      showToast(`You need ${needs} to prepare this dowel.`); return false;
     }
-    item.workflow.preparedDowelReady=true; item.workflow.preparedDowelMode="order"; touchOrder(order,item); saveData(); showToast("Dowel prepared and assigned to this order."); return true;
+    const consumed=[];
+    for(const component of config.components){
+      const key=`${preparedDowelTaskKey(item)}-${component.itemId}`;
+      if(!consumeInventoryForTask({order,item,taskKey:key,inventoryItemId:component.itemId,quantity:component.quantity,label:component.label})){
+        consumed.forEach(previous=>restoreInventoryForTask({order,item,taskKey:previous.key,label:previous.label}));
+        return false;
+      }
+      consumed.push({key,label:component.label});
+    }
+    item.workflow.preparedDowelReady=true; item.workflow.preparedDowelMode="order"; touchOrder(order,item); saveData(); showToast(`${config.label} prepared and assigned to this order.`); return true;
   }
   function returnPreparedDowel(order,item){
-    if(!item.workflow.preparedDowelReady)return;
-    if(item.workflow.preparedDowelMode==="stock") restoreInventoryForTask({order,item,taskKey:preparedDowelTaskKey(item),label:"Prepared paper towel dowel"});
+    const config=dowelConfigForProduct(item.productId);
+    if(!config||!item.workflow.preparedDowelReady)return;
+    if(item.workflow.preparedDowelMode==="stock") restoreInventoryForTask({order,item,taskKey:preparedDowelTaskKey(item),label:config.preparedLabel});
     if(item.workflow.preparedDowelMode==="order"){
-      const prepared=inventoryItemById("prepared-paper-towel-dowels");
+      const prepared=inventoryItemById(config.preparedId);
       if(prepared){
         prepared.quantity=Number(prepared.quantity||0)+1;
-        recordInventoryTransaction({type:"return",itemId:prepared.id,quantity:1,reason:"Order dowel returned",details:`Returned a prepared dowel from Etsy order ${order.etsyOrderNumber||order.id}.`,relatedItemId:item.id,orderId:order.id,etsyOrderNumber:order.etsyOrderNumber||"",orderItemId:item.id,source:"order-production"});
+        recordInventoryTransaction({type:"return",itemId:prepared.id,quantity:1,reason:"Order dowel returned",details:`Returned a ${config.preparedLabel} from Etsy order ${order.etsyOrderNumber||order.id}.`,relatedItemId:item.id,orderId:order.id,etsyOrderNumber:order.etsyOrderNumber||"",orderItemId:item.id,source:"order-production"});
       }
-      delete item.workflow.inventoryTaskTransactions[`${preparedDowelTaskKey(item)}-raw`];
-      delete item.workflow.inventoryTaskTransactions[`${preparedDowelTaskKey(item)}-caps`];
+      config.components.forEach(component=>delete item.workflow.inventoryTaskTransactions[`${preparedDowelTaskKey(item)}-${component.itemId}`]);
     }
     item.workflow.preparedDowelReady=false; item.workflow.preparedDowelMode="";
   }
   function renderPreparedDowelTask(order,item){
-    if(item.productId!=="macrame-paper-towel-holder")return "";
-    const prepared=inventoryItemById("prepared-paper-towel-dowels"), raw=inventoryItemById("paper-towel-dowels"), caps=inventoryItemById("end-caps");
+    const config=dowelConfigForProduct(item.productId);
+    if(!config)return "";
+    const prepared=inventoryItemById(config.preparedId);
+    const componentSummary=config.components.map(component=>`${Number(inventoryItemById(component.itemId)?.quantity||0)} ${escapeHTML(component.label.toLowerCase())}`).join(" and ");
+    const canPrepare=config.components.every(component=>Number(inventoryItemById(component.itemId)?.quantity||0)>=component.quantity);
     const ready=Boolean(item.workflow.preparedDowelReady);
-    if(ready)return `<div class="process-check inventory-aware-check checked prepared-dowel-task"><span class="check-box">✓</span><span class="process-check-copy"><span>Prepared Dowel Ready — ${escapeHTML(item.color)}</span><small>${item.workflow.preparedDowelMode==="stock"?"Assigned from prepared-dowel inventory.":"Prepared specifically for this order."}</small></span><button class="button secondary small" type="button" data-action="return-prepared-dowel" data-order-id="${order.id}" data-item-id="${item.id}">Undo</button></div>`;
-    return `<div class="process-check inventory-aware-check prepared-dowel-task"><span class="check-box"></span><span class="process-check-copy"><span>Resolve Prepared Dowel — ${escapeHTML(item.color)}</span><small class="inventory-task-detail ${Number(prepared?.quantity||0)<=0?"out":""}">${Number(prepared?.quantity||0)} prepared available · or make one from ${Number(raw?.quantity||0)} raw dowels and ${Number(caps?.quantity||0)} end caps</small><small>Prepared means cut to length, fitted with two end caps, inspected, and ready for the mailer.</small></span><div class="task-row-actions"><button class="button secondary small" type="button" data-action="use-prepared-dowel" data-order-id="${order.id}" data-item-id="${item.id}" ${Number(prepared?.quantity||0)>0?"":"disabled"}>Use Prepared Dowel</button><button class="button primary small" type="button" data-action="prepare-order-dowel" data-order-id="${order.id}" data-item-id="${item.id}" ${Number(raw?.quantity||0)>=1&&Number(caps?.quantity||0)>=2?"":"disabled"}>Prepare One Now</button></div></div>`;
+    if(ready)return `<div class="process-check inventory-aware-check checked prepared-dowel-task"><span class="check-box">✓</span><span class="process-check-copy"><span>${escapeHTML(config.label)} Ready — ${escapeHTML(item.color)}</span><small>${item.workflow.preparedDowelMode==="stock"?"Assigned from prepared-dowel inventory.":"Prepared specifically for this order."}</small></span><button class="button secondary small" type="button" data-action="return-prepared-dowel" data-order-id="${order.id}" data-item-id="${item.id}">Undo</button></div>`;
+    return `<div class="process-check inventory-aware-check prepared-dowel-task"><span class="check-box"></span><span class="process-check-copy"><span>Resolve ${escapeHTML(config.label)} — ${escapeHTML(item.color)}</span><small class="inventory-task-detail ${Number(prepared?.quantity||0)<=0?"out":""}">${Number(prepared?.quantity||0)} prepared available · or make one from ${componentSummary}</small><small>${escapeHTML(config.preparationDescription)}</small></span><div class="task-row-actions"><button class="button secondary small" type="button" data-action="use-prepared-dowel" data-order-id="${order.id}" data-item-id="${item.id}" ${Number(prepared?.quantity||0)>0?"":"disabled"}>Use Prepared Dowel</button><button class="button primary small" type="button" data-action="prepare-order-dowel" data-order-id="${order.id}" data-item-id="${item.id}" ${canPrepare?"":"disabled"}>Prepare One Now</button></div></div>`;
   }
 
   function renderOrderShipping(order,currentItemId=null) {
@@ -1918,7 +1951,7 @@
       return { orderItem, product, entry };
     });
     const mailersDone = mailerTasks.filter(({orderItem,entry}) => entry && Boolean(orderItem.workflow.packingChecks[entry.index])).length;
-    const dowelItems = order.items.filter(orderItem => orderItem.productId === "macrame-paper-towel-holder");
+    const dowelItems = order.items.filter(orderItem => dowelConfigForProduct(orderItem.productId));
     const dowelsDone = dowelItems.filter(preparedDowelReady).length;
     const done = tagDone + mailersDone + dowelsDone + [careSheetDone,labelDone,stickerDone,sealedDone].filter(Boolean).length;
     const total = tagGroups.length + mailerTasks.length + dowelItems.length + 4;
@@ -1945,7 +1978,7 @@
       const config = packingInventoryConfig(orderItem,entry.index,entry.label);
       const mailer = inventoryItemById(config?.inventoryItemId);
       const checked = Boolean(orderItem.workflow.packingChecks[entry.index]);
-      const needsDowel = orderItem.productId === "macrame-paper-towel-holder";
+      const needsDowel = Boolean(dowelConfigForProduct(orderItem.productId));
       const dowelReady = preparedDowelReady(orderItem);
       return `<label class="process-check inventory-aware-check pack-mailer-task ${checked ? "checked" : ""} ${!dowelReady ? "blocked" : ""}">
         <input type="checkbox" ${checked ? "checked" : ""} ${dowelReady ? "" : "disabled"} data-action="packing-check" data-index="${entry.index}" data-order-id="${order.id}" data-item-id="${orderItem.id}">

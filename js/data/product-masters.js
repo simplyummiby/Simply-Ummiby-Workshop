@@ -49,7 +49,8 @@ window.SUW_PRODUCT_MASTERS = [
     },
     materials: [
       { inventoryItemId: "prepared-cord-toilet-paper-natural", quantity: 1, role: "kit", colorSpecific: true },
-      { inventoryItemId: "wood-rings", quantity: 1, role: "kit", colorSpecific: false }
+      { inventoryItemId: "wood-rings", quantity: 1, role: "kit", colorSpecific: false },
+      { inventoryItemId: "prepared-toilet-paper-dowels", quantity: 1, role: "separate", colorSpecific: false }
     ],
     kitDefinition: {
       inventoryItemId: "kit-toilet-paper-natural",
@@ -57,7 +58,9 @@ window.SUW_PRODUCT_MASTERS = [
         { inventoryItemId: "prepared-cord-toilet-paper-natural", quantity: 1 },
         { inventoryItemId: "wood-rings", quantity: 1 }
       ],
-      separateMaterials: []
+      separateMaterials: [
+        { inventoryItemId: "prepared-toilet-paper-dowels", quantity: 1 }
+      ]
     }
   },
   {
