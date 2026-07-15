@@ -1,6 +1,6 @@
 (() => {
   const STORAGE_KEY = "simplyUmmibyWorkshopData";
-  const VERSION = "0.7.0";
+  const VERSION = "0.7.1";
   const ITEM_STATUSES = ["New","Preparing","Manufacturing","Waiting on Material","Ready for Packing","Packed","Ready to Mail","Completed"];
   const STATUS_PROGRESS = {
     "New": 5, "Preparing": 20, "Manufacturing": 50, "Waiting on Material": 35,
@@ -2244,21 +2244,177 @@
       </tr>`).join("")}</tbody></table></div>`;
   }
 
+  function showNewOrder(orderId = null) {
+    editingOrderId = orderId;
+    pageTitle.textContent = orderId ? "Edit Order" : "New Order";
+    setActiveNav("");
+    viewContainer.replaceChildren(document.getElementById("newOrderTemplate").content.cloneNode(true));
+    const order = orderId ? data.orders.find(o => o.id === orderId) : null;
+    if (order) {
+      document.getElementById("orderFormTitle").textContent = "Edit workshop order";
+      const form = document.getElementById("newOrderForm");
+      form.customerName.value = order.customerName;
+      form.etsyOrderNumber.value = order.etsyOrderNumber;
+      form.shipByDate.value = order.shipByDate || "";
+      form.notes.value = order.notes;
+    }
+    const initialLines = order ? groupOrderItems(order.items) : [{productId:data.products[0].id,color:data.products[0].colors[0],quantity:1}];
+    initialLines.forEach(line => addLineItemRow(line));
+    document.getElementById("addLineItem").addEventListener("click", () => addLineItemRow());
+    document.getElementById("newOrderForm").addEventListener("submit", saveOrderForm);
+  }
+
+  function groupOrderItems(items) {
+    const groups = new Map();
+    items.forEach(item => {
+      const key = `${item.productId}|${item.color}`;
+      const existing = groups.get(key) || {productId:item.productId,color:item.color,quantity:0};
+      existing.quantity += 1;
+      groups.set(key,existing);
+    });
+    return [...groups.values()];
+  }
+
+  function addLineItemRow(values = {}) {
+    const lineItems = document.getElementById("lineItems");
+    const row = document.createElement("div");
+    row.className = "line-item-row";
+    row.innerHTML = `<label>Product<select class="line-product"></select></label><label>Color<select class="line-color"></select></label><label>Quantity<input class="line-quantity" type="number" min="1" value="${values.quantity || 1}" /></label><button type="button" class="remove-line" title="Remove product">×</button>`;
+    const productSelect = row.querySelector(".line-product");
+    productSelect.innerHTML = data.products.map(p => `<option value="${p.id}">${escapeHTML(p.name)}</option>`).join("");
+    productSelect.value = values.productId || data.products[0].id;
+    const refreshColors = () => {
+      const product = data.products.find(p => p.id === productSelect.value);
+      const colorSelect = row.querySelector(".line-color");
+      colorSelect.innerHTML = product.colors.map(c => `<option value="${escapeHTML(c)}">${escapeHTML(c)}</option>`).join("");
+      if (values.color && product.colors.includes(values.color)) colorSelect.value = values.color;
+    };
+    productSelect.addEventListener("change", () => { values.color = null; refreshColors(); });
+    refreshColors();
+    row.querySelector(".remove-line").addEventListener("click", () => {
+      if (lineItems.children.length === 1) return showToast("An order needs at least one product.");
+      row.remove();
+    });
+    lineItems.appendChild(row);
+  }
+
+  function saveOrderForm(event) {
+    event.preventDefault();
+    const form = event.currentTarget;
+    const specs = [...document.querySelectorAll(".line-item-row")].map(row => ({
+      productId:row.querySelector(".line-product").value,
+      color:row.querySelector(".line-color").value,
+      quantity:Number(row.querySelector(".line-quantity").value)
+    }));
+    if (specs.some(s => !s.quantity || s.quantity < 1)) return showToast("Please enter a valid quantity.");
+
+    const now = new Date().toISOString();
+    if (editingOrderId) {
+      const order = data.orders.find(o => o.id === editingOrderId);
+      restoreProductTagTasksForOrder(order);
+      const oldItems = [...order.items];
+      const rebuilt = [];
+      specs.forEach(spec => {
+        const product = data.products.find(p => p.id === spec.productId);
+        for (let n=0;n<spec.quantity;n++) {
+          const reusableIndex = oldItems.findIndex(i => i.productId === spec.productId && i.color === spec.color);
+          if (reusableIndex >= 0) rebuilt.push(oldItems.splice(reusableIndex,1)[0]);
+          else rebuilt.push(migrateItem({id:uid("item"),productId:product.id,productName:product.name,color:spec.color,status:"New",updatedAt:now},rebuilt.length));
+        }
+      });
+      rebuilt.forEach((item,index) => item.unitNumber=index+1);
+      order.customerName=form.customerName.value.trim();
+      order.etsyOrderNumber=form.etsyOrderNumber.value.trim();
+      order.shipByDate=form.shipByDate.value;
+      order.notes=form.notes.value.trim();
+      order.items=rebuilt;
+      touchOrder(order);
+      data.activity.unshift({text:`Updated order for ${order.customerName}`,time:"Just now"});
+      saveData();
+      showToast("Order updated.");
+      return openOrder(order.id);
+    }
+
+    const items=[];
+    specs.forEach(spec => {
+      const product=data.products.find(p => p.id===spec.productId);
+      for (let n=0;n<spec.quantity;n++) items.push(migrateItem({id:uid("item"),productId:product.id,productName:product.name,color:spec.color,status:"New",updatedAt:now},items.length));
+    });
+    const order={id:uid("order"),customerName:form.customerName.value.trim(),etsyOrderNumber:form.etsyOrderNumber.value.trim(),shipByDate:form.shipByDate.value,notes:form.notes.value.trim(),status:"New",items,createdAt:now,updatedAt:now,shipping:{careSheetPrinted:false,packingSlipPrinted:false,shippoOpened:false,labelAttached:false,companyStickerAttached:false,mailerSealed:false,packedAt:null,mailedAt:null,productTagChecks:{},inventoryTaskTransactions:{}}};
+    data.orders.unshift(order);
+    data.activity.unshift({text:`Created order for ${order.customerName}`,time:"Just now"});
+    touchOrder(order,items[0]);
+    saveData();
+    showToast("Order saved locally.");
+    openOrder(order.id,items[0].id);
+  }
+
+  function openOrder(orderId, focusItemId = null) {
+    const order=data.orders.find(o => o.id===orderId);
+    if (!order) return showToast("Order not found.");
+    pageTitle.textContent="Processing Area";
+    setActiveNav("workshop");
+    viewContainer.replaceChildren(document.getElementById("orderWorkspaceTemplate").content.cloneNode(true));
+    renderOrderWorkspace(order,focusItemId);
+  }
+
   function renderOrderWorkspace(order,focusItemId=null) {
     const counts={total:order.items.length,active:order.items.filter(i => i.status!=="Completed").length,complete:order.items.filter(i => i.status==="Completed").length};
+    const overall = order.items.length ? Math.round(order.items.reduce((sum,item)=>sum+workflowPercent(item),0)/order.items.length) : 0;
+    const nextStep = orderNextStep(order);
+    const stage = orderStage(order);
+    const statusClass = orderStatusClass(order.status);
+    const stageOrder=["Planning","Manufacturing","Pack & Ship","Ready to Mail","Completed"];
+    const activeStageIndex=Math.max(0,stageOrder.indexOf(stage));
+    const customerNote=order.notes?.trim() || "No order notes added.";
+    const focusItem=focusItemId ? order.items.find(i=>i.id===focusItemId) : null;
     const container=document.getElementById("orderWorkspace");
     container.innerHTML=`
-      <section class="order-hero"><div><p class="eyebrow">Etsy #${escapeHTML(order.etsyOrderNumber)}</p><h3>${escapeHTML(order.customerName)}</h3><div class="order-hero-meta"><p>${escapeHTML(order.status)} · Updated ${formatDate(order.updatedAt)}</p>${renderShipByBadge(order)}</div></div>
-      <div class="order-hero-actions"><button class="button secondary small" data-action="edit-order" data-order-id="${order.id}">Edit Order</button><button class="button secondary small" data-action="reset-order" data-order-id="${order.id}">Reset Progress</button><button class="button danger small" data-action="cancel-order" data-order-id="${order.id}">Cancel Order</button></div></section>
+      <section class="order-workspace-shell">
+        <section class="order-workspace-hero">
+          <div class="order-workspace-hero-copy">
+            <div class="order-workspace-breadcrumb"><button class="text-button" data-view="workshop">Orders</button><span>›</span><strong>Order #${escapeHTML(order.etsyOrderNumber)}</strong></div>
+            <div class="order-workspace-title-row"><h3>Order #${escapeHTML(order.etsyOrderNumber)}</h3><span class="order-status-pill ${statusClass}">${escapeHTML(order.status)}</span></div>
+            <p><strong>${escapeHTML(order.customerName)}</strong> · ${counts.total} item${counts.total===1?"":"s"} · Updated ${escapeHTML(formatDate(order.updatedAt))}</p>
+          </div>
+          <div class="order-workspace-hero-actions">
+            <button class="button secondary small" data-action="edit-order" data-order-id="${order.id}">Edit Order</button>
+            <button class="button secondary small" data-action="reset-order" data-order-id="${order.id}">Reset Progress</button>
+            <button class="button danger small" data-action="cancel-order" data-order-id="${order.id}">Cancel Order</button>
+          </div>
+        </section>
 
-      <section class="order-summary-grid"><div class="summary-card"><strong>${counts.total}</strong><span>Total items</span></div><div class="summary-card"><strong>${counts.active}</strong><span>Still active</span></div><div class="summary-card"><strong>${counts.complete}</strong><span>Completed</span></div></section>
+        <section class="order-workspace-summary-grid">
+          <article class="workspace-summary-card ship-card"><span>Ship By</span><strong>${escapeHTML(order.shipByDate?formatShipByDate(order.shipByDate):"Not set")}</strong>${renderShipByBadge(order)}</article>
+          <article class="workspace-summary-card"><span>Overall Progress</span><strong>${overall}%</strong><div class="workspace-progress-track"><i style="width:${overall}%"></i></div></article>
+          <article class="workspace-summary-card"><span>Current Stage</span><strong>${escapeHTML(stage)}</strong><small>Next: ${escapeHTML(nextStep)}</small></article>
+          <article class="workspace-summary-card"><span>Order Items</span><strong>${counts.complete} of ${counts.total} complete</strong><small>${counts.active} still active</small></article>
+          <article class="workspace-summary-card note-card"><span>Order Note</span><p>${escapeHTML(customerNote)}</p></article>
+        </section>
 
-      <section class="processing-intro panel"><div><p class="eyebrow">Processing area</p><h3>Production Planning → Manufacturing & Assembly → Pack & Ship</h3><p>Open an item and use the three tabs. Every checkbox, note, fulfillment choice, and active tab is saved automatically.</p></div></section>
+        <section class="order-workflow-strip panel" aria-label="Order workflow">
+          ${stageOrder.map((label,index)=>`<div class="workflow-step ${index<activeStageIndex?"done":""} ${index===activeStageIndex?"active":""}"><span>${index+1}</span><div><strong>${escapeHTML(label)}</strong><small>${index===0?"Plan materials":index===1?"Make and assemble":index===2?"Pack the order":index===3?"Await mailing":"Order complete"}</small></div></div>`).join('<b class="workflow-connector"></b>')}
+        </section>
 
-      <section class="item-workspace-list">${order.items.map((item,index) => renderItemCard(order,item,index,focusItemId)).join("")}</section>
+        <section class="order-workspace-layout">
+          <aside class="order-workspace-sidebar">
+            <article class="panel workspace-info-card"><div class="workspace-card-heading"><h4>Order Details</h4><button class="text-button" data-action="edit-order" data-order-id="${order.id}">Edit</button></div><dl><dt>Customer</dt><dd>${escapeHTML(order.customerName)}</dd><dt>Etsy order</dt><dd>#${escapeHTML(order.etsyOrderNumber)}</dd><dt>Status</dt><dd>${escapeHTML(order.status)}</dd><dt>Last updated</dt><dd>${escapeHTML(formatDate(order.updatedAt))}</dd></dl></article>
+            <article class="panel workspace-info-card"><div class="workspace-card-heading"><h4>Progress</h4></div><div class="workspace-large-progress"><div><i style="width:${overall}%"></i></div><strong>${overall}%</strong></div><p>${counts.complete} completed · ${counts.active} active</p></article>
+            <button class="button secondary workspace-back-button" data-view="workshop">← Back to Orders</button>
+          </aside>
 
-      ${order.notes ? `<section class="order-notes"><h4>Order Notes</h4><p>${escapeHTML(order.notes)}</p></section>` : ""}
-    `;
+          <main class="order-workspace-main">
+            <section class="workspace-section-heading"><div><p class="eyebrow">Order items</p><h3>Process This Order</h3><p>Open an item to continue Production Planning, Manufacturing & Assembly, or Pack & Ship.</p></div></section>
+            <section class="item-workspace-list workspace-item-list">${order.items.map((item,index) => renderItemCard(order,item,index,focusItemId)).join("")}</section>
+          </main>
+
+          <aside class="order-workspace-rail">
+            <article class="panel workspace-quick-card"><h4>Quick Actions</h4><button class="button secondary" data-action="edit-order" data-order-id="${order.id}">Edit Order</button>${focusItem?`<button class="button secondary" data-action="open-item-recipe" data-order-id="${order.id}" data-item-id="${focusItem.id}" data-recipe-id="${focusItem.productId}">Open Current Recipe</button>`:""}<button class="button secondary" data-action="reset-order" data-order-id="${order.id}">Reset Progress</button></article>
+            <article class="panel workspace-quick-card"><h4>Recipe Resources</h4>${order.items.map(item=>`<button class="workspace-resource-link" data-action="open-item-recipe" data-order-id="${order.id}" data-item-id="${item.id}" data-recipe-id="${item.productId}"><span>${escapeHTML(item.productName)}</span><small>${escapeHTML(item.color)}</small></button>`).join("")}</article>
+            <article class="panel workspace-danger-card"><h4>Need to cancel?</h4><p>Cancel this order and safely return tracked inventory.</p><button class="button danger" data-action="cancel-order" data-order-id="${order.id}">Cancel Order</button></article>
+          </aside>
+        </section>
+      </section>`;
     touchOrder(order,focusItemId ? order.items.find(i => i.id===focusItemId) : order.items[0]);
     saveData();
     if (focusItemId) setTimeout(() => document.querySelector(`[data-item-card="${focusItemId}"]`)?.scrollIntoView({behavior:"smooth",block:"center"}),50);

@@ -1,10 +1,10 @@
 # Simply Ummiby Workshop
 
-**Version 0.7.0**
+**Version 0.7.1**
 
-Version 0.7.0 promotes Workshop to **Orders** and refreshes the primary order-management experience while preserving the complete planning, manufacturing, packing, inventory, and mailing workflow.
+Version 0.7.1 restores the complete New Order and View Order flows and introduces a polished Order Workspace while preserving the existing planning, manufacturing, packing, inventory, and mailing workflow.
 
-## Version 0.7.0 highlights
+## Version 0.7.1 highlights
 
 - Renames Workshop to Orders throughout visible navigation and workflow copy.
 - Adds a warm Orders hero banner while leaving the Dashboard design unchanged.

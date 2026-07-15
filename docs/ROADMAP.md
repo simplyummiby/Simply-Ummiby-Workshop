@@ -248,6 +248,6 @@ Inventory table readability pass completed: removed initials, simplified columns
 Completed the sidebar SVG icon refresh and standardized navigation icon sizing and interaction states.
 
 
-## Version 0.7.0 — Orders Experience
+## Version 0.7.1 — Orders Experience
 
 The former Workshop destination is presented as **Orders**. Its internal `workshop` view key remains stable for backward compatibility, while the user-facing module now provides an Orders hero, live metrics, richer filtering, deadline visibility, and a table-based index. Existing order and workflow data structures are unchanged.
