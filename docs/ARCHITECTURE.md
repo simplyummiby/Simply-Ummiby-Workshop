@@ -1,6 +1,6 @@
 # Architecture
 
-## Version 0.6.0
+## Version 0.6.1
 
 Simply Ummiby Workshop remains a static, local-first web application.
 
@@ -139,3 +139,13 @@ The working records are stored in `data.productMasters`. The legacy `data.produc
 Inventory product relationships are derived by scanning Product Master materials, kit definitions, separate materials, and packaging resource IDs.
 
 Inventory deletion is blocked while a Product Master or kit component references the record.
+
+## Version 0.6.1 inventory-aware Pack & Ship tasks
+
+Mailer and company-sticker checklist actions use the shared Pack & Ship inventory transaction helpers in `js/app.js`. Each completed task stores its transaction ID on the owning order item or order-level shipping record. That durable reference makes task completion idempotent across rerenders, refreshes, and reopened orders.
+
+Mailer inventory is resolved from the Product Master `packaging.mailerType` relationship. The current supported mappings are Large Poly Mailer → `poly-mailer-large` and Standard Poly Mailer → `poly-mailer-standard`. Company stickers resolve from `packaging.companyStickerInventoryId`.
+
+Consumption transactions record the inventory item, quantity, order ID, Etsy order number, optional order-item ID, checklist task ID, source (`pack-and-ship`), and timestamp. Unchecking creates a linked restoration transaction and removes the active task reference. Inventory is never allowed to become negative.
+
+Legacy checked tasks without a stored transaction are preserved without making an automatic historical deduction. Clearing one of those tasks changes only the checklist state and shows a reconciliation notice.

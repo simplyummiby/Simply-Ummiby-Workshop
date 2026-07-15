@@ -1,6 +1,6 @@
 (() => {
   const STORAGE_KEY = "simplyUmmibyWorkshopData";
-  const VERSION = "0.6.0";
+  const VERSION = "0.6.1";
   const ITEM_STATUSES = ["New","Preparing","Manufacturing","Waiting on Material","Ready for Packing","Packed","Ready to Mail","Completed"];
   const STATUS_PROGRESS = {
     "New": 5, "Preparing": 20, "Manufacturing": 50, "Waiting on Material": 35,
@@ -71,7 +71,8 @@
         shippoOpened: Boolean(order.shipping?.shippoOpened),
         labelAttached: Boolean(order.shipping?.labelAttached),
         companyStickerAttached: Boolean(order.shipping?.companyStickerAttached),
-        mailerSealed: Boolean(order.shipping?.mailerSealed)
+        mailerSealed: Boolean(order.shipping?.mailerSealed),
+        inventoryTaskTransactions: { ...(order.shipping?.inventoryTaskTransactions || {}) }
       },
       items: (order.items || []).map((item, index) => migrateItem(item, index))
     }));
@@ -174,9 +175,13 @@
     return Number(item.quantity || 0) + allocatedInKits(item.id);
   }
 
-  function recordInventoryTransaction({type,itemId,quantity,reason,details = "",relatedItemId = ""}) {
+  function recordInventoryTransaction({
+    type,itemId,quantity,reason,details = "",relatedItemId = "",
+    orderId = "",etsyOrderNumber = "",orderItemId = "",checklistTaskId = "",
+    source = "",relatedTransactionId = ""
+  }) {
     const item = inventoryItemById(itemId);
-    data.inventoryTransactions.unshift({
+    const transaction = {
       id: uid("txn"),
       createdAt: new Date().toISOString(),
       type,
@@ -185,10 +190,127 @@
       quantity: Number(quantity || 0),
       reason: reason || "",
       details,
-      relatedItemId
-    });
+      relatedItemId,
+      orderId,
+      etsyOrderNumber,
+      orderItemId,
+      checklistTaskId,
+      source,
+      relatedTransactionId
+    };
+    data.inventoryTransactions.unshift(transaction);
     data.inventoryTransactions = data.inventoryTransactions.slice(0,250);
+    return transaction;
   }
+
+  function mailerInventoryIdForProduct(productId) {
+    const master = productMasterById(productId);
+    const mailerType = String(master?.packaging?.mailerType || "").toLowerCase();
+    if (mailerType.includes("large")) return "poly-mailer-large";
+    if (mailerType.includes("standard") || mailerType.includes("small")) return "poly-mailer-standard";
+    return "";
+  }
+
+  function companyStickerInventoryIdForOrder(order) {
+    const configured = (order?.items || [])
+      .map(item => productMasterById(item.productId)?.packaging?.companyStickerInventoryId)
+      .filter(Boolean);
+    return configured[0] || "company-stickers";
+  }
+
+  function inventoryTaskStore(order,item) {
+    if (item) {
+      item.workflow.inventoryTaskTransactions ||= {};
+      return item.workflow.inventoryTaskTransactions;
+    }
+    order.shipping.inventoryTaskTransactions ||= {};
+    return order.shipping.inventoryTaskTransactions;
+  }
+
+  function consumeInventoryForTask({order,item=null,taskKey,inventoryItemId,quantity=1,label}) {
+    const store = inventoryTaskStore(order,item);
+    const existingId = store[taskKey];
+    if (existingId && data.inventoryTransactions.some(tx => tx.id === existingId && tx.quantity < 0)) return true;
+    const inventoryItem = inventoryItemById(inventoryItemId);
+    if (!inventoryItem || inventoryItem.tracking !== "quantity") {
+      showToast(`${label} is not linked to a valid counted inventory item.`);
+      return false;
+    }
+    quantity = Math.max(1,Number(quantity || 1));
+    if (Number(inventoryItem.quantity || 0) < quantity) {
+      showToast(`${inventoryItem.name} is out of stock. Add inventory before completing this step.`);
+      return false;
+    }
+    inventoryItem.quantity = Number(inventoryItem.quantity || 0) - quantity;
+    const tx = recordInventoryTransaction({
+      type:"consume",
+      itemId:inventoryItem.id,
+      quantity:-quantity,
+      reason:"Pack & Ship",
+      details:`Used ${quantity} ${inventoryItem.name} for Etsy order ${order.etsyOrderNumber || order.id}.`,
+      relatedItemId:item?.id || order.id,
+      orderId:order.id,
+      etsyOrderNumber:order.etsyOrderNumber || "",
+      orderItemId:item?.id || "",
+      checklistTaskId:taskKey,
+      source:"pack-and-ship"
+    });
+    store[taskKey] = tx.id;
+    return true;
+  }
+
+  function restoreInventoryForTask({order,item=null,taskKey,label}) {
+    const store = inventoryTaskStore(order,item);
+    const transactionId = store[taskKey];
+    if (!transactionId) return { restored:false, legacy:true };
+    const original = data.inventoryTransactions.find(tx => tx.id === transactionId);
+    if (!original || original.quantity >= 0) {
+      delete store[taskKey];
+      return { restored:false, legacy:true };
+    }
+    const inventoryItem = inventoryItemById(original.itemId);
+    if (!inventoryItem || inventoryItem.tracking !== "quantity") {
+      showToast(`${label} could not be returned because its inventory item is missing.`);
+      return { restored:false, error:true };
+    }
+    const quantity = Math.abs(Number(original.quantity || 0));
+    inventoryItem.quantity = Number(inventoryItem.quantity || 0) + quantity;
+    const reversal = recordInventoryTransaction({
+      type:"restore",
+      itemId:inventoryItem.id,
+      quantity,
+      reason:"Pack & Ship reversal",
+      details:`Returned ${quantity} ${inventoryItem.name} from Etsy order ${order.etsyOrderNumber || order.id}.`,
+      relatedItemId:item?.id || order.id,
+      orderId:order.id,
+      etsyOrderNumber:order.etsyOrderNumber || "",
+      orderItemId:item?.id || "",
+      checklistTaskId:taskKey,
+      source:"pack-and-ship",
+      relatedTransactionId:original.id
+    });
+    original.reversedByTransactionId = reversal.id;
+    delete store[taskKey];
+    return { restored:true, quantity, itemName:inventoryItem.name };
+  }
+
+  function packingInventoryConfig(item,index,label) {
+    if (!/poly mailer/i.test(label)) return null;
+    const inventoryItemId = mailerInventoryIdForProduct(item.productId);
+    return inventoryItemId ? { taskKey:`packing-mailer-${index}`, inventoryItemId, quantity:1 } : null;
+  }
+  function restoreAllInventoryTasksForItem(order,item) {
+    const keys = Object.keys(item?.workflow?.inventoryTaskTransactions || {});
+    keys.forEach(taskKey => restoreInventoryForTask({order,item,taskKey,label:"Packing supply"}));
+  }
+
+  function restoreAllInventoryTasksForOrder(order) {
+    (order?.items || []).forEach(item => restoreAllInventoryTasksForItem(order,item));
+    Object.keys(order?.shipping?.inventoryTaskTransactions || {}).forEach(taskKey =>
+      restoreInventoryForTask({order,taskKey,label:"Shipping supply"})
+    );
+  }
+
 
   function kitAvailability(kit, count = 1) {
     const shortages = [];
@@ -425,7 +547,8 @@
         fulfillmentMethod: workflow.fulfillmentMethod || "",
         materialStatuses: normalizeMaterialStatuses(workflow.materialStatuses, product.materials),
         manufacturingChecks: normalizeManufacturingChecks(workflow.manufacturingChecks, workflow.manufacturingChecks, product.manufacturingSections),
-        packingChecks: normalizeChecks(workflow.packingChecks, product.packingChecklist)
+        packingChecks: normalizeChecks(workflow.packingChecks, product.packingChecklist),
+        inventoryTaskTransactions: { ...(workflow.inventoryTaskTransactions || {}) }
       }
     };
   }
@@ -1274,7 +1397,7 @@
       const product=data.products.find(p => p.id===spec.productId);
       for (let n=0;n<spec.quantity;n++) items.push(migrateItem({id:uid("item"),productId:product.id,productName:product.name,color:spec.color,status:"New",updatedAt:now},items.length));
     });
-    const order={id:uid("order"),customerName:form.customerName.value.trim(),etsyOrderNumber:form.etsyOrderNumber.value.trim(),notes:form.notes.value.trim(),status:"New",items,createdAt:now,updatedAt:now,shipping:{careSheetPrinted:false,packingSlipPrinted:false,shippoOpened:false,labelAttached:false,companyStickerAttached:false,mailerSealed:false}};
+    const order={id:uid("order"),customerName:form.customerName.value.trim(),etsyOrderNumber:form.etsyOrderNumber.value.trim(),notes:form.notes.value.trim(),status:"New",items,createdAt:now,updatedAt:now,shipping:{careSheetPrinted:false,packingSlipPrinted:false,shippoOpened:false,labelAttached:false,companyStickerAttached:false,mailerSealed:false,inventoryTaskTransactions:{}}};
     data.orders.unshift(order);
     data.activity.unshift({text:`Created order for ${order.customerName}`,time:"Just now"});
     touchOrder(order,items[0]);
@@ -1624,9 +1747,17 @@
   }
 
   function renderChecklist(labels,checks,action,orderId,itemId,numbered=false) {
-    return `<div class="process-checklist">${labels.map((label,index) => `
-      <label class="process-check ${checks[index] ? "checked" : ""}"><input type="checkbox" ${checks[index] ? "checked" : ""} data-action="${action}" data-index="${index}" data-order-id="${orderId}" data-item-id="${itemId}">
-      <span class="check-box">${checks[index] ? "✓" : ""}</span>${numbered ? `<span class="step-number">${index+1}</span>` : ""}<span>${escapeHTML(label)}</span></label>`).join("")}</div>`;
+    const order = data.orders.find(order => order.id === orderId);
+    const item = order?.items.find(item => item.id === itemId);
+    return `<div class="process-checklist">${labels.map((label,index) => {
+      const inventoryConfig = item ? packingInventoryConfig(item,index,label) : null;
+      const inventoryItem = inventoryConfig ? inventoryItemById(inventoryConfig.inventoryItemId) : null;
+      const inventoryLine = inventoryConfig
+        ? `<small class="inventory-task-detail ${Number(inventoryItem?.quantity || 0) <= 0 ? "out" : ""}">${inventoryItem ? `${Number(inventoryItem.quantity || 0)} available · Uses ${inventoryConfig.quantity} ${escapeHTML(inventoryItem.name)}` : "Mailer inventory link missing"}</small>`
+        : "";
+      return `<label class="process-check inventory-aware-check ${checks[index] ? "checked" : ""}"><input type="checkbox" ${checks[index] ? "checked" : ""} data-action="${action}" data-index="${index}" data-order-id="${orderId}" data-item-id="${itemId}">
+      <span class="check-box">${checks[index] ? "✓" : ""}</span>${numbered ? `<span class="step-number">${index+1}</span>` : ""}<span class="process-check-copy"><span>${escapeHTML(label)}</span>${inventoryLine}</span></label>`;
+    }).join("")}</div>`;
   }
 
   function renderOrderShipping(order) {
@@ -1644,9 +1775,15 @@
     return `<section class="order-shipping panel">
       <div class="panel-heading"><div><p class="eyebrow">Whole order</p><h3>Final Shipping Checklist</h3><p>Every item must be packed before the whole Etsy order can be marked Ready to Mail.</p></div><span class="badge ${ready ? "complete" : "status"}">${done} of ${checks.length}</span></div>
       ${!allPacked ? `<div class="shipping-notice">Finish packing every item above to unlock Ready to Mail.</div>` : ""}
-      <div class="process-checklist">${checks.map(([key,label]) => `
-        <label class="process-check ${order.shipping[key] ? "checked" : ""}"><input type="checkbox" ${order.shipping[key] ? "checked" : ""} data-action="shipping-check" data-key="${key}" data-order-id="${order.id}">
-        <span class="check-box">${order.shipping[key] ? "✓" : ""}</span><span>${label}</span></label>`).join("")}</div>
+      <div class="process-checklist">${checks.map(([key,label]) => {
+        const stickerId = key === "companyStickerAttached" ? companyStickerInventoryIdForOrder(order) : "";
+        const sticker = stickerId ? inventoryItemById(stickerId) : null;
+        const inventoryLine = key === "companyStickerAttached"
+          ? `<small class="inventory-task-detail ${Number(sticker?.quantity || 0) <= 0 ? "out" : ""}">${sticker ? `${Number(sticker.quantity || 0)} available · Uses 1 ${escapeHTML(sticker.name)}` : "Company sticker inventory link missing"}</small>`
+          : "";
+        return `<label class="process-check ${key === "companyStickerAttached" ? "inventory-aware-check" : ""} ${order.shipping[key] ? "checked" : ""}"><input type="checkbox" ${order.shipping[key] ? "checked" : ""} data-action="shipping-check" data-key="${key}" data-order-id="${order.id}">
+        <span class="check-box">${order.shipping[key] ? "✓" : ""}</span><span class="process-check-copy"><span>${label}</span>${inventoryLine}</span></label>`;
+      }).join("")}</div>
       <div class="resource-shortcuts">
         <button class="button secondary small" data-action="print-care-sheet">Print Care Sheet</button>
         <button class="button secondary small" data-action="external-link" data-link="etsyOrders">Open Etsy Orders</button>
@@ -1686,6 +1823,19 @@
     const order = data.orders.find(o => o.id === orderId);
     const item = order?.items.find(i => i.id === itemId);
     if (!item) return;
+    const product = productById(item.productId);
+    const label = product?.packingChecklist?.[Number(index)] || "Packing task";
+    const inventoryConfig = packingInventoryConfig(item,Number(index),label);
+    if (inventoryConfig && checked) {
+      const completed = consumeInventoryForTask({order,item,label, ...inventoryConfig});
+      if (!completed) return renderOrderWorkspace(order,item.id);
+    }
+    if (inventoryConfig && !checked) {
+      const result = restoreInventoryForTask({order,item,taskKey:inventoryConfig.taskKey,label});
+      if (result.error) return renderOrderWorkspace(order,item.id);
+      if (result.restored) showToast(`${result.quantity} ${result.itemName} returned to inventory.`);
+      else if (result.legacy) showToast("Legacy checklist step cleared; no inventory was changed.");
+    }
     item.workflow.packingChecks[index] = checked;
     if (!["Packed","Ready to Mail","Completed"].includes(item.status)) item.status = "Ready for Packing";
     touchOrder(order,item);
@@ -1826,6 +1976,20 @@
   function updateShippingCheck(orderId,key,checked) {
     const order=data.orders.find(o => o.id===orderId);
     if (!order) return;
+    if (key === "companyStickerAttached") {
+      const inventoryItemId = companyStickerInventoryIdForOrder(order);
+      const taskKey = "shipping-company-sticker";
+      const label = "Simply Ummiby company sticker";
+      if (checked) {
+        const completed = consumeInventoryForTask({order,taskKey,inventoryItemId,quantity:1,label});
+        if (!completed) return renderOrderWorkspace(order);
+      } else {
+        const result = restoreInventoryForTask({order,taskKey,label});
+        if (result.error) return renderOrderWorkspace(order);
+        if (result.restored) showToast(`${result.quantity} ${result.itemName} returned to inventory.`);
+        else if (result.legacy) showToast("Legacy checklist step cleared; no inventory was changed.");
+      }
+    }
     order.shipping[key]=checked;
     touchOrder(order); saveData(); renderOrderWorkspace(order);
   }
@@ -1840,12 +2004,11 @@
   }
 
   function printCareSheet() {
-  window.open(
-    "printables/caresheet-pt-tp.pdf",
-    "_blank",
-    "noopener"
-  );
-}
+    const popup=window.open("","_blank","width=800,height=900");
+    if (!popup) return showToast("Please allow pop-ups to print the care sheet.");
+    popup.document.write(`<!doctype html><html><head><title>Simply Ummiby Care Instructions</title><style>body{font-family:Arial,sans-serif;color:#333;padding:60px;line-height:1.6}.sheet{border:3px solid #d96d7b;border-radius:24px;padding:42px;max-width:650px;margin:auto}h1{color:#9f3d4d;margin-top:0}.note{margin-top:32px;font-size:12px;color:#777}@media print{body{padding:0}.sheet{border-width:2px}}</style></head><body><section class="sheet"><h1>Simply Ummiby</h1><h2>Care Instructions</h2><p>Thank you for supporting handmade work.</p><p><strong>Gentle care:</strong> Spot clean as needed and allow the item to air dry. Handle the handmade fibers and finished details gently.</p><p><strong>Macramé:</strong> If the cord shifts during use or shipping, gently straighten and smooth it by hand.</p><p><strong>Crochet:</strong> Reshape gently after cleaning and allow it to dry flat when appropriate.</p><p class="note">Temporary Version 0.3 care sheet. Replace with your final shop PDF when the Resources module is completed.</p></section><script>window.onload=()=>window.print();<\/script></body></html>`);
+    popup.document.close();
+  }
 
   function openExternal(key) {
     const url=data.settings.externalLinks[key];
@@ -1878,9 +2041,10 @@
   function resetItem(orderId,itemId) {
     const order=data.orders.find(o => o.id===orderId);
     const item=order?.items.find(i => i.id===itemId);
-    showModal("Reset this item?",`<p>This returns <strong>${escapeHTML(item.productName)}</strong> to New and clears its workflow and notes. Inventory is not affected in Version 0.3.2.</p>`,[
+    showModal("Reset this item?",`<p>This returns <strong>${escapeHTML(item.productName)}</strong> to New, clears its workflow and notes, and returns any Pack & Ship supplies used by this item to inventory.</p>`,[
       {label:"Keep Progress"},
       {label:"Reset Item",kind:"danger",onClick:() => {
+        restoreAllInventoryTasksForItem(order,item);
         const reset=migrateItem({id:item.id,productId:item.productId,productName:item.productName,color:item.color,status:"New"},item.unitNumber-1);
         Object.assign(item,reset); touchOrder(order,item); data.activity.unshift({text:`Reset ${item.productName}`,time:"Just now"}); saveData(); renderOrderWorkspace(order,item.id);
       }}
@@ -1892,6 +2056,7 @@
     showModal("Reset the whole order?",`<p>Every item in <strong>${escapeHTML(order.customerName)}'s</strong> order will return to New. All workflow checklists and notes will be cleared.</p>`,[
       {label:"Keep Progress"},
       {label:"Reset Order",kind:"danger",onClick:() => {
+        restoreAllInventoryTasksForOrder(order);
         order.items=order.items.map((item,index) => migrateItem({id:item.id,productId:item.productId,productName:item.productName,color:item.color,status:"New"},index));
         order.shipping={careSheetPrinted:false,packingSlipPrinted:false,shippoOpened:false,labelAttached:false,companyStickerAttached:false,mailerSealed:false};
         touchOrder(order); data.activity.unshift({text:`Reset order for ${order.customerName}`,time:"Just now"}); saveData(); renderOrderWorkspace(order);
@@ -1903,7 +2068,7 @@
     const order=data.orders.find(o => o.id===orderId);
     showModal("Cancel this order?",`<p>This removes <strong>${escapeHTML(order.customerName)} · Etsy #${escapeHTML(order.etsyOrderNumber)}</strong> from the Workshop.</p>`,[
       {label:"Keep Order"},
-      {label:"Cancel Order",kind:"danger",onClick:() => { data.orders=data.orders.filter(o => o.id!==orderId); data.activity.unshift({text:`Cancelled order for ${order.customerName}`,time:"Just now"}); saveData(); showView("workshop"); showToast("Order cancelled."); }}
+      {label:"Cancel Order",kind:"danger",onClick:() => { restoreAllInventoryTasksForOrder(order); data.orders=data.orders.filter(o => o.id!==orderId); data.activity.unshift({text:`Cancelled order for ${order.customerName}`,time:"Just now"}); saveData(); showView("workshop"); showToast("Order cancelled."); }}
     ]);
   }
 

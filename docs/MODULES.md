@@ -139,3 +139,12 @@ Working in Version 0.6.0:
 - Product editor
 - Product creation
 - Automatic Inventory “Used by Products”
+
+## Pack & Ship inventory behavior — Version 0.6.1
+
+- Product mailer checklist steps display the resolved mailer and current quantity.
+- Completing a mailer step consumes one configured mailer for that order item.
+- The whole-order company-sticker step displays and consumes one configured sticker.
+- Unchecking either step restores the exact supply and records the return in Inventory History.
+- Missing or zero inventory blocks completion and prevents negative counts.
+- Product tags and printed care-sheet inventory remain scheduled for later releases.

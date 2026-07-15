@@ -1176,3 +1176,9 @@ textarea { resize: vertical; }
   .product-material-row strong { grid-column:1 / -1; }
   .product-material-edit-row { grid-template-columns:1fr; }
 }
+
+/* Version 0.6.1 inventory-aware Pack & Ship tasks */
+.process-check-copy { display:flex; flex-direction:column; gap:4px; min-width:0; }
+.inventory-task-detail { color:var(--muted); font-size:.78rem; font-weight:600; line-height:1.35; }
+.inventory-task-detail.out { color:#a53b49; }
+.inventory-aware-check { align-items:flex-start; }

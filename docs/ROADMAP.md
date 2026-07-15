@@ -106,3 +106,12 @@ A stable local-first workshop management system ready for everyday use.
 - Product creation and editing
 - Inventory deletion with reference protection
 - Return to current inventory tab after modal actions
+
+## Version 0.6.1 — Inventory-Aware Packaging Tasks — Complete
+
+- Mailer checklist deductions and returns
+- Company-sticker deductions and returns
+- Pack & Ship transaction references and Inventory History records
+- Duplicate-deduction protection across refresh and reopen
+- Zero-stock protection
+- Product-tag and care-sheet audit for upcoming releases

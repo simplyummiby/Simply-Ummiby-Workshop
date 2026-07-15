@@ -1,8 +1,8 @@
 # Simply Ummiby Workshop
 
-**Version 0.6.0**
+**Version 0.6.1**
 
-Version 0.6.0 introduces Product Master as the single source of truth for each sellable product.
+Version 0.6.1 makes the existing Pack & Ship mailer and company-sticker tasks inventory-aware while preserving Product Master as the source of packaging relationships.
 
 ## Product Master
 
