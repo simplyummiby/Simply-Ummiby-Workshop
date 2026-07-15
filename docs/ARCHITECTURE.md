@@ -214,6 +214,6 @@ Inventory category IDs now separate fibers from hardware:
 The inventory migration maps legacy `raw-materials`, `fabrication-kits`, and `print-supplies` records to the new categories while preserving quantities and user edits.
 
 
-## Version 0.6.5.3 — Inventory Table Presentation
+## Version 0.6.6 — Inventory Table Presentation
 
 The inventory catalog continues to use the same data and transaction architecture. This release changes presentation only: descriptive metadata is contained in the Item cell, quantity allocation context appears under On Hand, and placeholder initials are no longer rendered. Long text uses wrapping and overflow protection so it cannot cross grid columns.

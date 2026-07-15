@@ -1,6 +1,6 @@
 (() => {
   const STORAGE_KEY = "simplyUmmibyWorkshopData";
-  const VERSION = "0.6.5.3";
+  const VERSION = "0.6.6";
   const ITEM_STATUSES = ["New","Preparing","Manufacturing","Waiting on Material","Ready for Packing","Packed","Ready to Mail","Completed"];
   const STATUS_PROGRESS = {
     "New": 5, "Preparing": 20, "Manufacturing": 50, "Waiting on Material": 35,
@@ -13,6 +13,7 @@
   const pageTitle = document.getElementById("pageTitle");
   const sidebar = document.getElementById("sidebar");
   let currentWorkshopFilter = "Active";
+  let productsModuleView = "catalog";
   let editingOrderId = null;
   let inventoryViewState = {
     category: "overview", search: "", craft: "All", materialType: "All",
@@ -51,6 +52,13 @@
     initial.inventoryCatalog = migrateInventoryCatalog(initial.inventoryCatalog, initial.inventory);
     initial.inventoryTransactions ||= [];
     initial.productMasters = migrateProductMasters(initial.productMasters);
+    initial.colorCatalog = migrateColorCatalog(initial.colorCatalog, initial.productMasters);
+    initial.productMasters.forEach(master => {
+      if (!Array.isArray(master.colorIds) || !master.colorIds.length) {
+        master.colorIds = (master.colors || []).map(name => colorByNameFrom(initial.colorCatalog,name)?.id).filter(Boolean);
+      }
+      master.colors = master.colorIds.map(id => initial.colorCatalog.find(color => color.id === id)?.name).filter(Boolean);
+    });
     initial.products = initial.productMasters.map(master => ({
       id: master.id,
       name: master.name,
@@ -569,6 +577,39 @@
     return merged;
   }
 
+  function colorSlug(name) {
+    return String(name || "color").trim().toLowerCase().replace(/[^a-z0-9]+/g,"-").replace(/^-|-$/g,"") || uid("color");
+  }
+
+  function colorByNameFrom(catalog,name) {
+    const target=String(name||"").trim().toLowerCase();
+    return (catalog||[]).find(color => String(color.name||"").trim().toLowerCase() === target);
+  }
+
+  function migrateColorCatalog(savedCatalog, masters) {
+    const catalog=(savedCatalog || []).map(color => ({
+      id: color.id || colorSlug(color.name),
+      name: color.name || "Unnamed Color",
+      craft: color.craft || "Shared",
+      active: color.active !== false,
+      notes: color.notes || "",
+      swatch: color.swatch || ""
+    }));
+    (masters || []).forEach(master => (master.colors || []).forEach(name => {
+      let color=colorByNameFrom(catalog,name);
+      if (!color) {
+        let id=colorSlug(name), base=id, n=2;
+        while(catalog.some(item => item.id===id)) id=`${base}-${n++}`;
+        catalog.push({id,name,craft:master.craft || "Shared",active:true,notes:"",swatch:""});
+      } else if (color.craft !== master.craft && color.craft !== "Shared") color.craft="Shared";
+    }));
+    return catalog;
+  }
+
+  function colorsCatalog() { return data.colorCatalog || []; }
+  function colorById(id) { return colorsCatalog().find(color => color.id === id); }
+  function productsUsingColor(colorId) { return productMasters().filter(master => (master.colorIds || []).includes(colorId)); }
+
   function productMasters() {
     return data.productMasters || [];
   }
@@ -732,7 +773,7 @@
     if (view === "dashboard") return renderDashboardView();
     if (view === "workshop") return renderWorkshopView();
     if (view === "inventory") return renderInventoryCatalog();
-    if (view === "products") return renderProductMasterLibrary();
+    if (view === "products") { productsModuleView = "catalog"; return renderProductsModule(); }
 
     const config = viewContent[view];
     if (!config) return;
@@ -1079,50 +1120,92 @@
   function recipeByProductId(productId){ return (window.SUW_RECIPES||[]).find(r=>r.productId===productId); }
 
 
-  function renderProductMasterLibrary() {
-    pageTitle.textContent = "Product Master";
+  function renderProductsSubnav(active=productsModuleView) {
+    return `<nav class="products-subnav" aria-label="Products sections">
+      ${[["catalog","Catalog"],["colors","Colors"],["recipes","Recipes"]].map(([id,label]) => `<button class="${active===id?"active":""}" data-action="products-subview" data-subview="${id}">${label}</button>`).join("")}
+    </nav>`;
+  }
+
+  function renderProductsModule(subview=productsModuleView) {
+    productsModuleView=subview;
+    pageTitle.textContent = "Products";
     setActiveNav("products");
-    viewContainer.innerHTML = `
-      <section class="page-section wide">
-        <section class="recipe-library-hero">
-          <div>
-            <p class="eyebrow">Single source of truth</p>
-            <h3>Product Master</h3>
-            <p>Define each product once: colors, recipe, materials, prepared component, packaging, and inventory relationships.</p>
-          </div>
-          <button class="button primary" data-action="add-product-master">+ Add Product</button>
-        </section>
-        <section class="recipe-library-grid">
-          ${productMasters().map(master => `
-            <article class="recipe-library-card">
-              <div class="recipe-card-art">${master.imageData ? `<img src="${master.imageData}" alt="">` : master.craft === "Crochet" ? "⌁" : "✦"}</div>
-              <div class="recipe-card-body">
-                <p class="eyebrow">${escapeHTML(master.craft || "Other")} · ${escapeHTML(master.status || "Active")}</p>
-                <h3>${escapeHTML(master.name)}</h3>
-                <p>${master.colors?.length || 0} color${master.colors?.length === 1 ? "" : "s"} · ${(master.materials || []).length} material connection${(master.materials || []).length === 1 ? "" : "s"}</p>
-                <div class="recipe-card-meta">
-                  <span>${master.recipeId ? "Recipe linked" : "No recipe"}</span>
-                  <span>${escapeHTML(master.packaging?.mailerType || "No mailer")}</span>
-                </div>
-                <div class="inventory-card-actions">
-                  <button class="button primary" data-action="open-product-master" data-product-id="${master.id}">Open Product</button>
-                  <button class="button secondary" data-action="open-recipe" data-recipe-id="${master.recipeId || master.id}">Open Recipe</button>
-                </div>
-              </div>
-            </article>`).join("")}
-        </section>
-      </section>`;
+    if (subview === "colors") return renderColorsModule();
+    if (subview === "recipes") return renderRecipeLibrary();
+    return renderProductCatalog();
+  }
+
+  function renderProductCatalog() {
+    pageTitle.textContent = "Products";
+    setActiveNav("products");
+    viewContainer.innerHTML = `<section class="page-section wide">
+      ${renderProductsSubnav("catalog")}
+      <section class="product-catalog-heading">
+        <div><p class="eyebrow">Your sellable products</p><h3>Catalog</h3><p>Open a product or jump directly to its permanent workshop recipe.</p></div>
+        <button class="button primary" data-action="add-product-master">+ Add Product</button>
+      </section>
+      <section class="panel product-catalog-panel">
+        <div class="product-catalog-table">
+          <div class="product-catalog-row product-catalog-head"><span>Product</span><span>Code</span><span>Craft</span><span>Colors</span><span>Recipe</span><span>Status</span><span>Actions</span></div>
+          ${productMasters().map(master => { const recipe=recipeById(master.recipeId || master.id); return `<div class="product-catalog-row">
+            <div class="product-catalog-name"><strong>${escapeHTML(master.name)}</strong><small>${escapeHTML(master.shortName || master.name)}</small></div>
+            <span>${escapeHTML(master.code || productCode(master))}</span>
+            <span>${escapeHTML(master.craft || "Other")}</span>
+            <span>${(master.colorIds || []).length || (master.colors || []).length}</span>
+            <span><span class="badge ${recipe?"good":"attention"}">${recipe?"Linked":"Not linked"}</span></span>
+            <span><span class="badge status">${escapeHTML(master.status || "Active")}</span></span>
+            <div class="catalog-actions"><button class="button secondary small" data-action="open-product-master" data-product-id="${master.id}">Open Product</button><button class="button secondary small" data-action="open-recipe" data-recipe-id="${master.recipeId || master.id}" ${recipe?"":"disabled"}>Open Recipe</button></div>
+          </div>`; }).join("")}
+        </div>
+      </section>
+    </section>`;
+  }
+
+  function productCode(master) {
+    const known={"macrame-paper-towel-holder":"M-PTH","macrame-toilet-paper-holder":"M-TPH","crochet-oven-door-towel-holder":"C-ODTH"};
+    return known[master.id] || master.id.split("-").map(part=>part[0]).join("").toUpperCase();
+  }
+
+  function renderColorsModule() {
+    pageTitle.textContent="Products · Colors"; setActiveNav("products");
+    viewContainer.innerHTML=`<section class="page-section wide">${renderProductsSubnav("colors")}
+      <section class="product-catalog-heading"><div><p class="eyebrow">Reusable product attributes</p><h3>Colors</h3><p>Define each color once, then select it for any product.</p></div><button class="button primary" data-action="add-color">+ Add Color</button></section>
+      <section class="panel product-catalog-panel"><div class="color-catalog-table">
+        <div class="color-catalog-row color-catalog-head"><span>Color</span><span>Craft</span><span>Status</span><span>Used By</span><span>Actions</span></div>
+        ${colorsCatalog().map(color => `<div class="color-catalog-row"><div class="color-name-cell">${color.swatch?`<span class="color-swatch" style="background:${escapeHTML(color.swatch)}"></span>`:""}<div><strong>${escapeHTML(color.name)}</strong>${color.notes?`<small>${escapeHTML(color.notes)}</small>`:""}</div></div><span>${escapeHTML(color.craft || "Shared")}</span><span><span class="badge ${color.active!==false?"good":"status"}">${color.active!==false?"Active":"Inactive"}</span></span><span>${productsUsingColor(color.id).map(product=>escapeHTML(product.shortName || product.name)).join(", ") || "Not used"}</span><div class="catalog-actions"><button class="button secondary small" data-action="edit-color" data-color-id="${color.id}">Edit</button></div></div>`).join("")}
+      </div></section></section>`;
+  }
+
+  function showColorEditor(colorId=null) {
+    const color=colorId?colorById(colorId):null;
+    showModal(color?"Edit Color":"Add Color",`<form id="colorEditorForm" class="product-master-form">
+      <label>Color Name<input name="name" value="${escapeHTML(color?.name||"")}" required></label>
+      <label>Craft<select name="craft">${["Shared","Macramé","Crochet","Other"].map(value=>`<option value="${value}" ${color?.craft===value?"selected":""}>${value}</option>`).join("")}</select></label>
+      <label>Status<select name="active"><option value="true" ${color?.active!==false?"selected":""}>Active</option><option value="false" ${color?.active===false?"selected":""}>Inactive</option></select></label>
+      <label>Optional Swatch<input name="swatch" value="${escapeHTML(color?.swatch||"")}" placeholder="#d8c5a5"></label>
+      <label class="full-width">Notes<textarea name="notes" rows="3">${escapeHTML(color?.notes||"")}</textarea></label>
+    </form>`,[{label:"Cancel"},{label:color?"Save Color":"Add Color",kind:"primary",onClick:()=>saveColor(colorId)}]);
+  }
+
+  function saveColor(colorId) {
+    const form=document.getElementById("colorEditorForm"); if(!form)return; const fd=new FormData(form); const name=fd.get("name").trim(); if(!name)return showToast("Enter a color name.");
+    const duplicate=colorsCatalog().find(color=>color.id!==colorId && color.name.toLowerCase()===name.toLowerCase()); if(duplicate)return showToast("That color already exists.");
+    const existing=colorId?colorById(colorId):null; const record={id:existing?.id||colorSlug(name),name,craft:fd.get("craft"),active:fd.get("active")==="true",swatch:fd.get("swatch").trim(),notes:fd.get("notes").trim()};
+    if(existing)Object.assign(existing,record); else data.colorCatalog.push(record);
+    data.productMasters.forEach(master=>master.colors=(master.colorIds||[]).map(id=>colorById(id)?.name).filter(Boolean));
+    data.products=data.productMasters.map(master=>({id:master.id,name:master.name,colors:master.colors||[]}));
+    data.activity.unshift({text:`${existing?"Updated":"Added"} color: ${name}`,time:"Just now"}); saveData(); hideModal(); renderProductsModule("colors");
   }
 
   function openProductMaster(productId) {
     const master = productMasterById(productId);
     if (!master) return showToast("Product not found.");
     const recipe = recipeById(master.recipeId || master.id);
-    pageTitle.textContent = "Product Master";
+    pageTitle.textContent = "Products";
     setActiveNav("products");
     viewContainer.innerHTML = `
       <section class="page-section wide">
-        <button class="back-button" data-view="products">← Back to Product Master</button>
+        <button class="back-button" data-view="products">← Back to Catalog</button>
         <section class="product-master-hero">
           <div>
             <p class="eyebrow">${escapeHTML(master.craft || "Other")} · ${escapeHTML(master.status || "Active")}</p>
@@ -1213,9 +1296,7 @@
         <label>Short Name<input name="shortName" value="${escapeHTML(master?.shortName || "")}"></label>
         <label>Craft<select name="craft">${["Macramé","Crochet","Other"].map(value => `<option value="${value}" ${master?.craft === value ? "selected" : ""}>${value}</option>`).join("")}</select></label>
         <label>Status<select name="status">${["Active","Coming Soon","Archived"].map(value => `<option value="${value}" ${master?.status === value ? "selected" : ""}>${value}</option>`).join("")}</select></label>
-        <label class="full-width">Colors
-          <input name="colors" value="${escapeHTML((master?.colors || []).join(", "))}" placeholder="Natural/Beige, White, Black">
-        </label>
+        <fieldset class="full-width color-picker-fieldset"><legend>Available Colors</legend><div class="product-color-picker">${colorsCatalog().map(color => `<label class="color-choice"><input type="checkbox" name="colorIds" value="${color.id}" ${(master?.colorIds || []).includes(color.id)?"checked":""}><span>${escapeHTML(color.name)}</span></label>`).join("") || `<p>No colors are defined yet. Add them in Products → Colors.</p>`}</div><button type="button" class="text-button" data-action="manage-colors">Manage Colors</button></fieldset>
         <label>Workshop Recipe<select name="recipeId"><option value="">No recipe</option>${recipes.map(recipe => `<option value="${recipe.id}" ${master?.recipeId === recipe.id ? "selected" : ""}>${escapeHTML(recipe.title)}</option>`).join("")}</select></label>
         <label>Mailer Type<input name="mailerType" value="${escapeHTML(master?.packaging?.mailerType || "")}"></label>
         <label>Product Tag Inventory Item<select name="productTagInventoryId"><option value="">Not set</option>${productTagOptions}</select></label>
@@ -1283,7 +1364,8 @@
       shortName: fd.get("shortName").trim() || fd.get("name").trim(),
       craft: fd.get("craft"),
       status: fd.get("status"),
-      colors: fd.get("colors").split(",").map(value => value.trim()).filter(Boolean),
+      colorIds: fd.getAll("colorIds"),
+      colors: fd.getAll("colorIds").map(id => colorById(id)?.name).filter(Boolean),
       recipeId: fd.get("recipeId"),
       materials: rows,
       packaging: {
@@ -1307,16 +1389,16 @@
 
 
   function renderRecipeLibrary(){
-    pageTitle.textContent="Product Master"; setActiveNav("products");
+    productsModuleView="recipes"; pageTitle.textContent="Products · Recipes"; setActiveNav("products");
     const recipes=window.SUW_RECIPES||[];
-    viewContainer.innerHTML=`<section class="page-section wide"><section class="recipe-library-hero"><div><p class="eyebrow">Your digital cut sheets</p><h3>Product Master</h3><p>Keep every measurement, pattern, milestone, quality check, and workshop tip in one permanent place.</p></div><div class="recipe-hero-mark">SU</div></section><section class="recipe-library-grid">${recipes.map(r=>`<article class="recipe-library-card"><div class="recipe-card-art">${r.category==="Crochet"?"⌁":"✦"}</div><div class="recipe-card-body"><p class="eyebrow">${escapeHTML(r.category)} · Recipe v${escapeHTML(r.version)}</p><h3>${escapeHTML(r.title)}</h3><p>${escapeHTML(r.summary)}</p><div class="recipe-card-meta"><span>${escapeHTML(r.estimatedTime)}</span><span>${escapeHTML(r.status)}</span></div><button class="button primary" data-action="open-recipe" data-recipe-id="${r.id}">Open Recipe</button></div></article>`).join("")}</section></section>`;
+    viewContainer.innerHTML=`<section class="page-section wide">${renderProductsSubnav("recipes")}<section class="recipe-library-hero"><div><p class="eyebrow">Your digital cut sheets</p><h3>Recipes</h3><p>Keep every measurement, pattern, milestone, quality check, and workshop tip in one permanent place.</p></div><div class="recipe-hero-mark">SU</div></section><section class="recipe-library-grid">${recipes.map(r=>`<article class="recipe-library-card"><div class="recipe-card-art">${r.category==="Crochet"?"⌁":"✦"}</div><div class="recipe-card-body"><p class="eyebrow">${escapeHTML(r.category)} · Recipe v${escapeHTML(r.version)}</p><h3>${escapeHTML(r.title)}</h3><p>${escapeHTML(r.summary)}</p><div class="recipe-card-meta"><span>${escapeHTML(r.estimatedTime)}</span><span>${escapeHTML(r.status)}</span></div><button class="button primary" data-action="open-recipe" data-recipe-id="${r.id}">Open Recipe</button></div></article>`).join("")}</section></section>`;
   }
 
   function openRecipe(recipeId,orderId=null,itemId=null){
     const r=recipeById(recipeId); if(!r)return showToast("Recipe not found.");
     pageTitle.textContent="Workshop Recipe"; setActiveNav("products");
     const order=orderId?data.orders.find(o=>o.id===orderId):null; const item=order?.items.find(i=>i.id===itemId);
-    viewContainer.innerHTML=`<section class="page-section wide">${orderId ? `<button class="back-button" data-action="return-to-order" data-order-id="${orderId}" data-item-id="${itemId}">← Return to This Order</button>` : `<button class="back-button" data-view="products">← Back to Product Master</button>`}<section class="recipe-view-hero"><div><p class="eyebrow">${escapeHTML(r.category)} · Master Recipe v${escapeHTML(r.version)}</p><h3>${escapeHTML(r.title)}</h3><p>${escapeHTML(r.summary)}</p>${item?'<div class="recipe-order-context">Opened for an active production traveler.</div>':''}</div><div class="recipe-hero-actions"><button class="button secondary" data-action="recipe-focus" data-recipe-id="${r.id}">Focus View</button><button class="button primary" data-action="print-recipe" data-recipe-id="${r.id}">Print Cut Sheet</button></div></section><section class="recipe-overview-grid">${[['Estimated Time',r.estimatedTime],['Difficulty',r.difficulty],['Last Revised',r.lastRevised],['Recipe Status',r.status]].map(([a,b])=>`<article class="summary-card"><strong>${escapeHTML(b)}</strong><span>${escapeHTML(a)}</span></article>`).join('')}</section><section class="recipe-section panel"><div class="panel-heading"><div><p class="eyebrow">Choose the path</p><h3>Production Methods</h3></div></div><div class="recipe-method-grid">${r.methods.map(m=>`<article class="recipe-method-card"><strong>${escapeHTML(m.title)}</strong><p>${escapeHTML(m.description)}</p></article>`).join('')}</div></section><section class="recipe-section panel"><div class="panel-heading"><div><p class="eyebrow">At a glance</p><h3>Quick Reference</h3></div></div><div class="quick-reference-grid">${r.quickReference.map(q=>`<article class="quick-reference-card"><span>${escapeHTML(q.label)}</span><strong>${escapeHTML(q.value)}</strong><small>${escapeHTML(q.note||'')}</small></article>`).join('')}</div></section><section class="recipe-two-column"><article class="recipe-section panel"><div class="panel-heading"><div><p class="eyebrow">What you need</p><h3>Materials</h3></div></div><div class="recipe-list">${r.materials.map(m=>`<div><strong>${escapeHTML(m.name)}</strong><span>${escapeHTML(m.quantity)}</span></div>`).join('')}</div></article><article class="recipe-section panel"><div class="panel-heading"><div><p class="eyebrow">Worktable</p><h3>Tools</h3></div></div><div class="recipe-list simple">${r.tools.map(t=>`<div><strong>${escapeHTML(t)}</strong></div>`).join('')}</div></article></section><section class="recipe-section"><div class="section-heading"><p class="eyebrow">Build from scratch</p><h3>Production Stages</h3><p>Open details only when needed. Check off the meaningful milestone.</p></div><div class="recipe-stage-list">${r.stages.map((st,idx)=>renderRecipeStage(r,st,idx,orderId,itemId)).join('')}</div></section><section class="recipe-wisdom"><div><p class="eyebrow">Lessons from the workbench</p><h3>Workshop Wisdom</h3></div><div class="wisdom-list">${r.wisdom.map(w=>`<blockquote>${escapeHTML(w)}</blockquote>`).join('')}</div></section><section class="recipe-two-column"><article class="recipe-section panel"><div class="panel-heading"><div><p class="eyebrow">Before mailing</p><h3>Packing</h3></div></div><ol class="recipe-numbered-list">${r.packing.map(x=>`<li>${escapeHTML(x)}</li>`).join('')}</ol></article><article class="recipe-section panel"><div class="panel-heading"><div><p class="eyebrow">Master record</p><h3>Recipe History</h3></div></div><div class="recipe-history">${r.history.map(h=>`<div><strong>v${escapeHTML(h.version)} · ${escapeHTML(h.date)}</strong><p>${escapeHTML(h.changes)}</p></div>`).join('')}</div></article></section></section>`;
+    viewContainer.innerHTML=`<section class="page-section wide">${orderId ? `<button class="back-button" data-action="return-to-order" data-order-id="${orderId}" data-item-id="${itemId}">← Return to This Order</button>` : `<button class="back-button" data-view="products">← Back to Catalog</button>`}<section class="recipe-view-hero"><div><p class="eyebrow">${escapeHTML(r.category)} · Master Recipe v${escapeHTML(r.version)}</p><h3>${escapeHTML(r.title)}</h3><p>${escapeHTML(r.summary)}</p>${item?'<div class="recipe-order-context">Opened for an active production traveler.</div>':''}</div><div class="recipe-hero-actions"><button class="button secondary" data-action="recipe-focus" data-recipe-id="${r.id}">Focus View</button><button class="button primary" data-action="print-recipe" data-recipe-id="${r.id}">Print Cut Sheet</button></div></section><section class="recipe-overview-grid">${[['Estimated Time',r.estimatedTime],['Difficulty',r.difficulty],['Last Revised',r.lastRevised],['Recipe Status',r.status]].map(([a,b])=>`<article class="summary-card"><strong>${escapeHTML(b)}</strong><span>${escapeHTML(a)}</span></article>`).join('')}</section><section class="recipe-section panel"><div class="panel-heading"><div><p class="eyebrow">Choose the path</p><h3>Production Methods</h3></div></div><div class="recipe-method-grid">${r.methods.map(m=>`<article class="recipe-method-card"><strong>${escapeHTML(m.title)}</strong><p>${escapeHTML(m.description)}</p></article>`).join('')}</div></section><section class="recipe-section panel"><div class="panel-heading"><div><p class="eyebrow">At a glance</p><h3>Quick Reference</h3></div></div><div class="quick-reference-grid">${r.quickReference.map(q=>`<article class="quick-reference-card"><span>${escapeHTML(q.label)}</span><strong>${escapeHTML(q.value)}</strong><small>${escapeHTML(q.note||'')}</small></article>`).join('')}</div></section><section class="recipe-two-column"><article class="recipe-section panel"><div class="panel-heading"><div><p class="eyebrow">What you need</p><h3>Materials</h3></div></div><div class="recipe-list">${r.materials.map(m=>`<div><strong>${escapeHTML(m.name)}</strong><span>${escapeHTML(m.quantity)}</span></div>`).join('')}</div></article><article class="recipe-section panel"><div class="panel-heading"><div><p class="eyebrow">Worktable</p><h3>Tools</h3></div></div><div class="recipe-list simple">${r.tools.map(t=>`<div><strong>${escapeHTML(t)}</strong></div>`).join('')}</div></article></section><section class="recipe-section"><div class="section-heading"><p class="eyebrow">Build from scratch</p><h3>Production Stages</h3><p>Open details only when needed. Check off the meaningful milestone.</p></div><div class="recipe-stage-list">${r.stages.map((st,idx)=>renderRecipeStage(r,st,idx,orderId,itemId)).join('')}</div></section><section class="recipe-wisdom"><div><p class="eyebrow">Lessons from the workbench</p><h3>Workshop Wisdom</h3></div><div class="wisdom-list">${r.wisdom.map(w=>`<blockquote>${escapeHTML(w)}</blockquote>`).join('')}</div></section><section class="recipe-two-column"><article class="recipe-section panel"><div class="panel-heading"><div><p class="eyebrow">Before mailing</p><h3>Packing</h3></div></div><ol class="recipe-numbered-list">${r.packing.map(x=>`<li>${escapeHTML(x)}</li>`).join('')}</ol></article><article class="recipe-section panel"><div class="panel-heading"><div><p class="eyebrow">Master record</p><h3>Recipe History</h3></div></div><div class="recipe-history">${r.history.map(h=>`<div><strong>v${escapeHTML(h.version)} · ${escapeHTML(h.date)}</strong><p>${escapeHTML(h.changes)}</p></div>`).join('')}</div></article></section></section>`;
   }
 
   function renderRecipeStage(r,st,idx,orderId,itemId){ const order=orderId?data.orders.find(o=>o.id===orderId):null; const item=order?.items.find(i=>i.id===itemId); const checked=Boolean(item?.recipeStageChecks?.[st.id]); return `<article class="recipe-stage-card"><div class="recipe-stage-heading"><div class="recipe-stage-number">${idx+1}</div><div><p class="eyebrow">Stage ${idx+1}</p><h3>${escapeHTML(st.title)}</h3></div>${item?`<label class="recipe-checkpoint ${checked?'checked':''}"><input type="checkbox" data-action="recipe-stage-check" data-order-id="${orderId}" data-item-id="${itemId}" data-stage-id="${st.id}" ${checked?'checked':''}><span>${checked?'✓':''}</span>${escapeHTML(st.checkpoint)}</label>`:`<span class="badge status">${escapeHTML(st.checkpoint)}</span>`}</div><div class="recipe-stage-quick">${st.quick.map(x=>`<span>${escapeHTML(x)}</span>`).join('')}</div><details><summary>Show Detailed Instructions</summary><ol>${st.instructions.map(x=>`<li>${escapeHTML(x)}</li>`).join('')}</ol></details></article>`; }
@@ -2438,9 +2520,13 @@
     if (!button) return;
     const {action,orderId,itemId,filter,tab,link}=button.dataset;
     if (action==="new-order") showNewOrder();
+    if (action==="products-subview") renderProductsModule(button.dataset.subview);
     if (action==="open-product-master") openProductMaster(button.dataset.productId);
     if (action==="edit-product-master") showProductMasterEditor(button.dataset.productId);
     if (action==="add-product-master") showProductMasterEditor();
+    if (action==="add-color") showColorEditor();
+    if (action==="edit-color") showColorEditor(button.dataset.colorId);
+    if (action==="manage-colors") { hideModal(); renderProductsModule("colors"); }
     if (action==="inventory-category") { inventoryViewState={category:button.dataset.category,search:"",craft:"All",materialType:"All",stock:"All",sort:"name-asc",group:"none"}; renderInventoryCatalog(button.dataset.category); }
     if (action==="adjust-inventory") adjustInventory(button.dataset.itemId,button.dataset.delta);
     if (action==="edit-inventory-item") showInventoryItemEditor(button.dataset.itemId);

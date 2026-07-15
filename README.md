@@ -1,17 +1,17 @@
 # Simply Ummiby Workshop
 
-**Version 0.6.5.3**
+**Version 0.6.6**
 
-Version 0.6.5.3 polishes the Inventory table so stock is easier to scan and long item details stay contained within the Item column.
+Version 0.6.6 introduces a dedicated Products module with a table-based Catalog, reusable Colors, and direct access to Recipes.
 
-## Version 0.6.5.3 highlights
+## Version 0.6.6 highlights
 
-- Removed decorative initials/placeholder squares from inventory items.
-- Simplified the stock table to Item, On Hand, Reorder At, Status, and Actions.
-- Kept type, craft, linked products, allocation details, and descriptions inside the Item/On Hand areas.
-- Added safe wrapping for long descriptions so they cannot overlap neighboring columns.
-- Standardized quick adjustments, Adjust, and Edit controls.
-- Preserved uploaded item photos when one exists.
+- Products is now a main navigation module.
+- Catalog replaces product cards with a structured table.
+- Each catalog row can open the product or its linked recipe.
+- Colors are reusable records with stable IDs and product usage.
+- Existing product colors migrate automatically without changing order color names.
+- Recipes remain available inside the Products module.
 
 ## Version 0.6.5.1 highlights
 

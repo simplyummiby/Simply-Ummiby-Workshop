@@ -179,6 +179,6 @@ Paper Towel Holder and Toilet Paper Holder dowels are separate raw and prepared 
 - Migrate legacy and custom inventory records without resetting stock.
 
 
-## Version 0.6.5.3 — Completed
+## Version 0.6.6 — Completed
 
 Inventory table readability pass completed: removed initials, simplified columns, standardized controls, and fixed long-description overlap.

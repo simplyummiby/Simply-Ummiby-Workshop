@@ -1,4 +1,13 @@
-## 0.6.5.3
+# Changelog
+
+## 0.6.6 — Products Module
+- Promoted Products to the main navigation with Catalog, Colors, and Recipes sections.
+- Replaced product cards with a table that opens products and recipes directly.
+- Added reusable color records and migrated existing product colors to stable IDs.
+- Added color creation and editing with product usage visibility.
+- Preserved existing product, order, recipe, and inventory relationships.
+
+## 0.6.6
 
 - Removed inventory initials and decorative placeholder squares.
 - Reorganized the standard inventory table into Item, On Hand, Reorder At, Status, and Actions.
@@ -6,7 +15,7 @@
 - Fixed long supplier/notes text so it wraps inside the Item column and never collides with adjacent columns.
 - Standardized inventory quick-adjust, Adjust, and Edit controls.
 - Preserved real uploaded item photos while hiding empty image placeholders.
-- Updated all current release references to 0.6.5.3.
+- Updated all current release references to 0.6.6.
 
 ## 0.6.5.2
 
