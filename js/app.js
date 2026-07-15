@@ -1,6 +1,6 @@
 (() => {
   const STORAGE_KEY = "simplyUmmibyWorkshopData";
-  const VERSION = "0.6.8";
+  const VERSION = "0.6.8.1";
   const ITEM_STATUSES = ["New","Preparing","Manufacturing","Waiting on Material","Ready for Packing","Packed","Ready to Mail","Completed"];
   const STATUS_PROGRESS = {
     "New": 5, "Preparing": 20, "Manufacturing": 50, "Waiting on Material": 35,
@@ -64,6 +64,7 @@
     };
 
     initial.inventoryCatalog = migrateInventoryCatalog(initial.inventoryCatalog, initial.inventory);
+    initial.suppliers = migrateSuppliers(initial.suppliers, initial.inventoryCatalog.items);
     initial.inventoryTransactions ||= [];
     initial.productMasters = migrateProductMasters(initial.productMasters);
     initial.recipes = migrateRecipes(initial.recipes, initial.productMasters);
@@ -168,6 +169,44 @@
 
     return defaults;
   }
+
+  function migrateSuppliers(savedSuppliers, items) {
+    const suppliers = Array.isArray(savedSuppliers) ? structuredClone(savedSuppliers) : [];
+    const byName = new Map(suppliers.map(supplier => [String(supplier.name || "").trim().toLowerCase(), supplier]));
+    (items || []).forEach(item => {
+      const legacyName = String(item.supplier || "").trim();
+      if (!item.supplierId && legacyName) {
+        const key = legacyName.toLowerCase();
+        let supplier = byName.get(key);
+        if (!supplier) {
+          supplier = {
+            id: uid("supplier"),
+            name: legacyName,
+            website: item.purchaseUrl || "",
+            contactName: "",
+            email: "",
+            phone: "",
+            leadTimeDays: "",
+            minimumOrder: "",
+            freeShippingThreshold: "",
+            status: "Active",
+            notes: ""
+          };
+          suppliers.push(supplier);
+          byName.set(key, supplier);
+        }
+        item.supplierId = supplier.id;
+      }
+      const linked = suppliers.find(supplier => supplier.id === item.supplierId);
+      item.supplier = linked?.name || legacyName || "";
+    });
+    return suppliers;
+  }
+
+  function suppliers() { return data.suppliers || []; }
+  function supplierById(id) { return suppliers().find(supplier => supplier.id === id); }
+  function supplierNameForItem(item) { return supplierById(item?.supplierId)?.name || item?.supplier || ""; }
+  function itemsForSupplier(supplierId) { return inventoryItems().filter(item => item.supplierId === supplierId); }
 
   function inventoryItems() {
     return data.inventoryCatalog?.items || [];
@@ -915,9 +954,10 @@
         <section class="inventory-tabs">
           <button class="${activeCategory === "overview" ? "active" : ""}" data-action="inventory-category" data-category="overview">Overview</button>
           ${inventoryCategories().map(category => `<button class="${activeCategory === category.id ? "active" : ""}" data-action="inventory-category" data-category="${category.id}">${escapeHTML(category.name)}</button>`).join("")}
+          <button class="${activeCategory === "suppliers" ? "active" : ""}" data-action="inventory-category" data-category="suppliers">Suppliers</button>
           <button class="${activeCategory === "restock" ? "active" : ""}" data-action="inventory-category" data-category="restock">Restock Center</button>
         </section>
-        <div id="inventoryContent">${activeCategory === "overview" ? renderInventoryOverview(attentionItems,orderNeeds) : activeCategory === "restock" ? renderCombinedRestockCenter(attentionItems,orderNeeds) : renderInventoryCategory(activeCategory)}</div>
+        <div id="inventoryContent">${activeCategory === "overview" ? renderInventoryOverview(attentionItems,orderNeeds) : activeCategory === "restock" ? renderCombinedRestockCenter(attentionItems,orderNeeds) : activeCategory === "suppliers" ? renderSuppliersTable() : renderInventoryCategory(activeCategory)}</div>
       </section>`;
   }
 
@@ -938,7 +978,7 @@
   function filteredInventoryItems(categoryId){
     let items=inventoryItems().filter(item=>item.category===categoryId);
     const q=inventoryViewState.search.trim().toLowerCase();
-    if(q) items=items.filter(item=>[item.name,item.materialType,item.craft,item.color,item.notes,item.supplier].filter(Boolean).some(v=>String(v).toLowerCase().includes(q)));
+    if(q) items=items.filter(item=>[item.name,item.materialType,item.craft,item.color,item.notes,supplierNameForItem(item)].filter(Boolean).some(v=>String(v).toLowerCase().includes(q)));
     if(inventoryViewState.craft!=="All") items=items.filter(item=>(item.craft||"Shared")===inventoryViewState.craft);
     if(inventoryViewState.materialType!=="All") items=items.filter(item=>(item.materialType||"Other")===inventoryViewState.materialType);
     if(inventoryViewState.stock!=="All") items=items.filter(item=>inventoryStatus(item)===inventoryViewState.stock);
@@ -949,7 +989,7 @@
   function renderInventoryControls(categoryId,options={}){const values=inventoryFilterValues(categoryId);return `<section class="inventory-controls panel"><div class="inventory-control-grid"><label class="inventory-search">Search<input type="search" value="${escapeHTML(inventoryViewState.search)}" data-action="inventory-search" placeholder="Search this category..."></label><label>Craft<select data-action="inventory-filter" data-filter="craft"><option value="All">All crafts</option>${values.crafts.map(v=>`<option value="${escapeHTML(v)}" ${inventoryViewState.craft===v?"selected":""}>${escapeHTML(v)}</option>`).join("")}</select></label><label>Type<select data-action="inventory-filter" data-filter="materialType"><option value="All">All types</option>${values.materialTypes.map(v=>`<option value="${escapeHTML(v)}" ${inventoryViewState.materialType===v?"selected":""}>${escapeHTML(v)}</option>`).join("")}</select></label><label>Stock<select data-action="inventory-filter" data-filter="stock">${["All","Good","Low","Out"].map(v=>`<option value="${v}" ${inventoryViewState.stock===v?"selected":""}>${v==="All"?"All stock levels":v}</option>`).join("")}</select></label><label>Sort<select data-action="inventory-sort"><option value="name-asc" ${inventoryViewState.sort==="name-asc"?"selected":""}>A–Z</option><option value="name-desc" ${inventoryViewState.sort==="name-desc"?"selected":""}>Z–A</option><option value="quantity-asc" ${inventoryViewState.sort==="quantity-asc"?"selected":""}>Lowest quantity</option><option value="quantity-desc" ${inventoryViewState.sort==="quantity-desc"?"selected":""}>Highest quantity</option><option value="stock-asc" ${inventoryViewState.sort==="stock-asc"?"selected":""}>Urgent stock first</option><option value="product-asc" ${inventoryViewState.sort==="product-asc"?"selected":""}>Product order</option></select></label>${options.allowGroup?`<label>Group<select data-action="inventory-group"><option value="none" ${inventoryViewState.group==="none"?"selected":""}>No grouping</option><option value="product" ${inventoryViewState.group==="product"?"selected":""}>Group by product</option><option value="color" ${inventoryViewState.group==="color"?"selected":""}>Group by color</option><option value="stock" ${inventoryViewState.group==="stock"?"selected":""}>Group by stock</option></select></label>`:""}<button class="button secondary inventory-clear-button" data-action="clear-inventory-filters">Clear Filters</button></div></section>`;}
 
   function renderInventoryCategory(categoryId){const category=inventoryCategories().find(c=>c.id===categoryId);const items=filteredInventoryItems(categoryId);const cards=["prepared-components","finished-inventory"].includes(categoryId);return `<section class="inventory-category-heading"><div><p class="eyebrow">Inventory category</p><h3>${escapeHTML(category?.name||"Inventory")}</h3><p>${escapeHTML(category?.description||"")}</p></div></section>${renderInventoryControls(categoryId,{allowGroup:cards})}${cards?renderGroupedInventoryCards(items):renderInventoryTable(items)}`;}
-  function renderInventoryTable(items){return `<section class="inventory-table-card inventory-table-polished"><div class="inventory-data-table inventory-data-table-head inventory-data-table-polished"><span>Item</span><span>On Hand</span><span>Reorder At</span><span>Status</span><span>Actions</span></div>${items.length?items.map(item=>{const allocated=item.tracking==="quantity"?allocatedInKits(item.id):0;const description=item.supplier||item.notes||"";return `<article class="inventory-data-table inventory-data-table-polished"><div class="inventory-name-cell inventory-name-cell-polished">${item.imageData?`<img class="inventory-thumb inventory-thumb-photo" src="${item.imageData}" alt="">`:""}<div class="inventory-item-copy"><strong>${escapeHTML(item.name)}</strong><div class="inventory-item-meta"><span>${escapeHTML(item.materialType||"Other")}</span><span>${escapeHTML(item.craft||"Shared")}</span></div>${(item.linkedProductIds||[]).length?`<div class="inventory-product-pills">${(item.linkedProductIds||[]).map(id=>`<span class="product-link-pill">${escapeHTML(productNameById(id))}</span>`).join("")}</div>`:""}${description?`<small class="inventory-item-description" title="${escapeHTML(description)}">${escapeHTML(description)}</small>`:""}</div></div><div class="inventory-count-cell">${item.tracking==="quantity"?`<strong>${Number(item.quantity||0)}</strong>${allocated?`<small>${allocated} in prepared components · ${totalOwned(item)} total owned</small>`:"<small>Loose stock</small>"}`:`<strong>${escapeHTML(item.condition||"Not set")}</strong><small>Condition tracked</small>`}</div><div class="inventory-reorder-cell">${item.tracking==="quantity"?`<strong>${Number(item.reorderAt||0)}</strong><small>Preferred ${Number(item.preferredStock||0)}</small>`:"<strong>—</strong>"}</div><div><span class="inventory-stock-badge ${inventoryStatus(item).toLowerCase()}">${escapeHTML(inventoryStatus(item))}</span></div><div class="inventory-row-actions inventory-row-actions-polished">${item.tracking==="quantity"?`<div class="inventory-quick-adjust" aria-label="Quick quantity adjustment"><button title="Subtract one" aria-label="Subtract one ${escapeHTML(item.name)}" data-action="adjust-inventory" data-item-id="${item.id}" data-delta="-1">−</button><button title="Add one" aria-label="Add one ${escapeHTML(item.name)}" data-action="adjust-inventory" data-item-id="${item.id}" data-delta="1">+</button></div><button class="button secondary small" data-action="stock-adjustment" data-item-id="${item.id}">Adjust</button>`:""}<button class="button secondary small" data-action="edit-inventory-item" data-item-id="${item.id}">Edit</button></div></article>`}).join(""):`<div class="inventory-empty-filter">No inventory items match these filters.</div>`}</section>`;}
+  function renderInventoryTable(items){return `<section class="inventory-table-card inventory-table-polished"><div class="inventory-data-table inventory-data-table-head inventory-data-table-polished"><span>Item</span><span>On Hand</span><span>Reorder At</span><span>Status</span><span>Actions</span></div>${items.length?items.map(item=>{const allocated=item.tracking==="quantity"?allocatedInKits(item.id):0;const supplierName=supplierNameForItem(item);const description=[supplierName,item.notes].filter(Boolean).join(" · ");return `<article class="inventory-data-table inventory-data-table-polished"><div class="inventory-name-cell inventory-name-cell-polished">${item.imageData?`<img class="inventory-thumb inventory-thumb-photo" src="${item.imageData}" alt="">`:""}<div class="inventory-item-copy"><strong>${escapeHTML(item.name)}</strong><div class="inventory-item-meta"><span>${escapeHTML(item.materialType||"Other")}</span><span>${escapeHTML(item.craft||"Shared")}</span></div>${(item.linkedProductIds||[]).length?`<div class="inventory-product-pills">${(item.linkedProductIds||[]).map(id=>`<span class="product-link-pill">${escapeHTML(productNameById(id))}</span>`).join("")}</div>`:""}${description?`<small class="inventory-item-description" title="${escapeHTML(description)}">${escapeHTML(description)}</small>`:""}</div></div><div class="inventory-count-cell">${item.tracking==="quantity"?`<strong>${Number(item.quantity||0)}</strong>${allocated?`<small>${allocated} in prepared components · ${totalOwned(item)} total owned</small>`:"<small>Loose stock</small>"}`:`<strong>${escapeHTML(item.condition||"Not set")}</strong><small>Condition tracked</small>`}</div><div class="inventory-reorder-cell">${item.tracking==="quantity"?`<strong>${Number(item.reorderAt||0)}</strong><small>Preferred ${Number(item.preferredStock||0)}</small>`:"<strong>—</strong>"}</div><div><span class="inventory-stock-badge ${inventoryStatus(item).toLowerCase()}">${escapeHTML(inventoryStatus(item))}</span></div><div class="inventory-row-actions inventory-row-actions-polished">${item.tracking==="quantity"?`<div class="inventory-quick-adjust" aria-label="Quick quantity adjustment"><button title="Subtract one" aria-label="Subtract one ${escapeHTML(item.name)}" data-action="adjust-inventory" data-item-id="${item.id}" data-delta="-1">−</button><button title="Add one" aria-label="Add one ${escapeHTML(item.name)}" data-action="adjust-inventory" data-item-id="${item.id}" data-delta="1">+</button></div><button class="button secondary small" data-action="stock-adjustment" data-item-id="${item.id}">Adjust</button>`:""}<button class="button secondary small" data-action="edit-inventory-item" data-item-id="${item.id}">Edit</button></div></article>`}).join(""):`<div class="inventory-empty-filter">No inventory items match these filters.</div>`}</section>`;}
   function renderGroupedInventoryCards(items){if(!items.length)return `<div class="inventory-empty-filter">No inventory items match these filters.</div>`;if(inventoryViewState.group==="none")return `<div class="inventory-catalog-grid">${items.map(renderInventoryCard).join("")}</div>`;const groups=new Map();items.forEach(item=>{const key=inventoryViewState.group==="product"?productDisplayName(item.productId):inventoryViewState.group==="color"?(item.color||"No color"):inventoryStatus(item);if(!groups.has(key))groups.set(key,[]);groups.get(key).push(item);});return [...groups.entries()].map(([label,groupItems])=>`<section class="inventory-card-group"><div class="inventory-card-group-heading"><h4>${escapeHTML(label)}</h4><span>${groupItems.length} item${groupItems.length===1?"":"s"}</span></div><div class="inventory-catalog-grid">${groupItems.map(renderInventoryCard).join("")}</div></section>`).join("");}
   function productDisplayName(productId){return data.products.find(p=>p.id===productId)?.name||"Other";}
   function renderInventoryThumb(item){return item.imageData?`<img class="inventory-thumb" src="${item.imageData}" alt="">`:"";}
@@ -1007,7 +1047,7 @@
     const item=itemId?inventoryItemById(itemId):null;
     const categoryOptions=inventoryCategories().map(category=>`<option value="${category.id}" ${item?.category===category.id?"selected":""}>${escapeHTML(category.name)}</option>`).join("");
     const isCondition=item?.tracking==="condition";
-    showModal(item?"Edit Inventory Item":"Add Inventory Item",`<form id="inventoryItemForm" class="inventory-editor-form"><label>Name<input name="name" value="${escapeHTML(item?.name||"")}" required></label><label>Category<select name="category">${categoryOptions}</select></label><label>Material / Item Type<input name="materialType" value="${escapeHTML(item?.materialType||"")}" placeholder="Wood, Cord/Yarn, Hardware..."></label><label>Craft<select name="craft">${["Macramé","Crochet","Shared","Other"].map(v=>`<option value="${v}" ${item?.craft===v?"selected":""}>${v}</option>`).join("")}</select></label><div class="full-width derived-product-note"><strong>Used by Products</strong><p>Calculated automatically from Product Master material and packaging connections.</p></div><label>Tracking<select name="tracking"><option value="quantity" ${!isCondition?"selected":""}>Quantity</option><option value="condition" ${isCondition?"selected":""}>Condition</option></select></label><label>Restock Type<select name="restockType"><option value="purchase" ${item?.restockType==="purchase"?"selected":""}>Purchase</option><option value="make" ${item?.restockType==="make"?"selected":""}>Make</option><option value="print" ${item?.restockType==="print"?"selected":""}>Print</option></select></label><label>Quantity<input name="quantity" type="number" min="0" value="${Number(item?.quantity||0)}"></label><label>Reorder At<input name="reorderAt" type="number" min="0" value="${Number(item?.reorderAt||0)}"></label><label>Preferred Stock<input name="preferredStock" type="number" min="0" value="${Number(item?.preferredStock||0)}"></label><label>Default Print Quantity<input name="defaultPrintQuantity" type="number" min="1" value="${Number(item?.defaultPrintQuantity||10)}"></label><label>Printable File<input name="printableFile" value="${escapeHTML(item?.printableFile||"")}" placeholder="printables/example.pdf"></label><label>Condition<select name="condition">${["Available","Getting Low","Replace Soon","Out"].map(v=>`<option value="${v}" ${item?.condition===v?"selected":""}>${v}</option>`).join("")}</select></label><label>Supplier<input name="supplier" value="${escapeHTML(item?.supplier||"")}"></label><label>Supplier / Resource URL<input name="purchaseUrl" value="${escapeHTML(item?.purchaseUrl||item?.resourceUrl||"")}" placeholder="https://..."></label><label class="full-width">Item Photo<input id="inventoryImageInput" type="file" accept="image/*"></label><div class="full-width inventory-image-preview" id="inventoryImagePreview">${item?.imageData?`<img src="${item.imageData}" alt="">`:`<span>No photo added</span>`}</div><label class="full-width">Notes<textarea name="notes" rows="3">${escapeHTML(item?.notes||"")}</textarea></label></form>`,[{label:"Cancel"},{label:item?"Save Changes":"Add Item",kind:"primary",onClick:()=>saveInventoryItem(itemId)}]);
+    showModal(item?"Edit Inventory Item":"Add Inventory Item",`<form id="inventoryItemForm" class="inventory-editor-form"><label>Name<input name="name" value="${escapeHTML(item?.name||"")}" required></label><label>Category<select name="category">${categoryOptions}</select></label><label>Material / Item Type<input name="materialType" value="${escapeHTML(item?.materialType||"")}" placeholder="Wood, Cord/Yarn, Hardware..."></label><label>Craft<select name="craft">${["Macramé","Crochet","Shared","Other"].map(v=>`<option value="${v}" ${item?.craft===v?"selected":""}>${v}</option>`).join("")}</select></label><div class="full-width derived-product-note"><strong>Used by Products</strong><p>Calculated automatically from Product Master material and packaging connections.</p></div><label>Tracking<select name="tracking"><option value="quantity" ${!isCondition?"selected":""}>Quantity</option><option value="condition" ${isCondition?"selected":""}>Condition</option></select></label><label>Restock Type<select name="restockType"><option value="purchase" ${item?.restockType==="purchase"?"selected":""}>Purchase</option><option value="make" ${item?.restockType==="make"?"selected":""}>Make</option><option value="print" ${item?.restockType==="print"?"selected":""}>Print</option></select></label><label>Quantity<input name="quantity" type="number" min="0" value="${Number(item?.quantity||0)}"></label><label>Reorder At<input name="reorderAt" type="number" min="0" value="${Number(item?.reorderAt||0)}"></label><label>Preferred Stock<input name="preferredStock" type="number" min="0" value="${Number(item?.preferredStock||0)}"></label><label>Default Print Quantity<input name="defaultPrintQuantity" type="number" min="1" value="${Number(item?.defaultPrintQuantity||10)}"></label><label>Printable File<input name="printableFile" value="${escapeHTML(item?.printableFile||"")}" placeholder="printables/example.pdf"></label><label>Condition<select name="condition">${["Available","Getting Low","Replace Soon","Out"].map(v=>`<option value="${v}" ${item?.condition===v?"selected":""}>${v}</option>`).join("")}</select></label><label>Supplier<select name="supplierId"><option value="">No supplier selected</option>${suppliers().filter(supplier=>supplier.status!=="Inactive" || supplier.id===item?.supplierId).sort((a,b)=>a.name.localeCompare(b.name)).map(supplier=>`<option value="${supplier.id}" ${item?.supplierId===supplier.id?"selected":""}>${escapeHTML(supplier.name)}</option>`).join("")}</select></label><label>Supplier / Resource URL<input name="purchaseUrl" value="${escapeHTML(item?.purchaseUrl||item?.resourceUrl||"")}" placeholder="https://..."></label><label class="full-width">Item Photo<input id="inventoryImageInput" type="file" accept="image/*"></label><div class="full-width inventory-image-preview" id="inventoryImagePreview">${item?.imageData?`<img src="${item.imageData}" alt="">`:`<span>No photo added</span>`}</div><label class="full-width">Notes<textarea name="notes" rows="3">${escapeHTML(item?.notes||"")}</textarea></label></form>`,[{label:"Cancel"},{label:item?"Save Changes":"Add Item",kind:"primary",onClick:()=>saveInventoryItem(itemId)}]);
     const input=document.getElementById("inventoryImageInput"); if(input) input.addEventListener("change",async()=>{const file=input.files?.[0];if(!file)return;const compressed=await compressInventoryImage(file);input.dataset.imageData=compressed;document.getElementById("inventoryImagePreview").innerHTML=`<img src="${compressed}" alt="">`;});
   }
   function compressInventoryImage(file){return new Promise((resolve,reject)=>{const reader=new FileReader();reader.onerror=reject;reader.onload=()=>{const image=new Image();image.onerror=reject;image.onload=()=>{const max=480,scale=Math.min(1,max/Math.max(image.width,image.height)),canvas=document.createElement("canvas");canvas.width=Math.max(1,Math.round(image.width*scale));canvas.height=Math.max(1,Math.round(image.height*scale));canvas.getContext("2d").drawImage(image,0,0,canvas.width,canvas.height);resolve(canvas.toDataURL("image/jpeg",.72));};image.src=reader.result;};reader.readAsDataURL(file);});}
@@ -1074,7 +1114,8 @@
       defaultPrintQuantity: Math.max(1, Number(formData.get("defaultPrintQuantity") || existing?.defaultPrintQuantity || 10)),
       printableFile: formData.get("printableFile").trim(),
       condition: formData.get("condition"),
-      supplier: formData.get("supplier").trim(),
+      supplierId: formData.get("supplierId") || "",
+      supplier: supplierById(formData.get("supplierId"))?.name || "",
       purchaseUrl: formData.get("purchaseUrl").trim(),
       notes: formData.get("notes").trim(),
       imageData: document.getElementById("inventoryImageInput")?.dataset.imageData || existing?.imageData || ""
@@ -1085,6 +1126,45 @@
     data.activity.unshift({text:`${existing ? "Updated" : "Added"} inventory item: ${updated.name}`,time:"Just now"});
     saveData();
     renderInventoryCatalog(inventoryViewState.category || "overview");
+  }
+
+  function renderSuppliersTable() {
+    const rows = suppliers().slice().sort((a,b) => a.name.localeCompare(b.name));
+    return `<section class="inventory-category-heading"><div><p class="eyebrow">Inventory directory</p><h3>Suppliers</h3><p>Maintain one reusable supplier record and link inventory items to it.</p></div><button class="button primary" data-action="add-supplier">+ Add Supplier</button></section>
+      <section class="inventory-table-card supplier-table-card">
+        <div class="supplier-data-table supplier-data-table-head"><span>Supplier</span><span>Contact</span><span>Items</span><span>Status</span><span>Actions</span></div>
+        ${rows.length ? rows.map(supplier => {
+          const linkedItems = itemsForSupplier(supplier.id);
+          return `<article class="supplier-data-table"><div class="supplier-name-cell"><strong>${escapeHTML(supplier.name)}</strong>${supplier.website ? `<a href="${escapeHTML(supplier.website)}" target="_blank" rel="noopener">Visit website</a>` : ""}${supplier.notes ? `<small>${escapeHTML(supplier.notes)}</small>` : ""}</div><div><strong>${escapeHTML(supplier.contactName || "—")}</strong><small>${escapeHTML(supplier.email || supplier.phone || "No contact details")}</small></div><div><strong>${linkedItems.length}</strong><small>${linkedItems.length ? linkedItems.slice(0,3).map(item=>escapeHTML(item.name)).join(", ") : "No linked items"}${linkedItems.length>3?` +${linkedItems.length-3} more`:""}</small></div><div><span class="status-pill ${supplier.status === "Inactive" ? "low" : "good"}">${escapeHTML(supplier.status || "Active")}</span></div><div class="inventory-actions"><button class="button secondary small" data-action="edit-supplier" data-supplier-id="${supplier.id}">Edit</button></div></article>`;
+        }).join("") : `<div class="empty-state"><h4>No suppliers yet</h4><p>Add the shops and vendors you use for workshop inventory.</p></div>`}
+      </section>`;
+  }
+
+  function showSupplierEditor(supplierId = null) {
+    const supplier = supplierId ? supplierById(supplierId) : null;
+    const linkedItems = supplier ? itemsForSupplier(supplier.id) : [];
+    showModal(supplier ? "Edit Supplier" : "Add Supplier", `<form id="supplierForm" class="product-editor-form">
+      <section class="product-form-section"><div class="product-section-heading"><span>Supplier details</span><h4>${supplier ? "Update Supplier" : "New Supplier"}</h4><p>Use this record in inventory dropdowns instead of typing the supplier repeatedly.</p></div><div class="product-form-grid"><label class="product-field"><span class="field-label">Supplier Name</span><input name="name" value="${escapeHTML(supplier?.name || "")}" required></label><label class="product-field"><span class="field-label">Status</span><select name="status">${["Active","Inactive"].map(value=>`<option value="${value}" ${supplier?.status===value?"selected":""}>${value}</option>`).join("")}</select></label><label class="product-field full-width"><span class="field-label">Website</span><input name="website" value="${escapeHTML(supplier?.website || "")}" placeholder="https://..."></label></div></section>
+      <section class="product-form-section"><div class="product-section-heading"><span>Contact</span><h4>Contact Information</h4></div><div class="product-form-grid"><label class="product-field"><span class="field-label">Contact Name</span><input name="contactName" value="${escapeHTML(supplier?.contactName || "")}"></label><label class="product-field"><span class="field-label">Email</span><input type="email" name="email" value="${escapeHTML(supplier?.email || "")}"></label><label class="product-field"><span class="field-label">Phone</span><input name="phone" value="${escapeHTML(supplier?.phone || "")}"></label><label class="product-field"><span class="field-label">Typical Lead Time (days)</span><input type="number" min="0" name="leadTimeDays" value="${escapeHTML(String(supplier?.leadTimeDays ?? ""))}"></label></div></section>
+      <section class="product-form-section"><div class="product-section-heading"><span>Purchasing</span><h4>Ordering Notes</h4></div><div class="product-form-grid"><label class="product-field"><span class="field-label">Minimum Order</span><input name="minimumOrder" value="${escapeHTML(supplier?.minimumOrder || "")}"></label><label class="product-field"><span class="field-label">Free Shipping Threshold</span><input name="freeShippingThreshold" value="${escapeHTML(supplier?.freeShippingThreshold || "")}"></label><label class="product-field full-width"><span class="field-label">Notes</span><textarea name="notes" rows="3">${escapeHTML(supplier?.notes || "")}</textarea></label></div></section>
+      ${supplier ? `<section class="product-form-section"><div class="product-section-heading"><span>Inventory usage</span><h4>Items Supplied</h4><p>${linkedItems.length ? linkedItems.map(item=>escapeHTML(item.name)).join(" · ") : "No inventory items are linked yet."}</p></div></section>` : ""}
+    </form>`, [{label:"Cancel"},{label:supplier?"Save Changes":"Add Supplier",kind:"primary",onClick:()=>saveSupplier(supplierId)}]);
+  }
+
+  function saveSupplier(supplierId = null) {
+    const form = document.getElementById("supplierForm");
+    if (!form) return;
+    const fd = new FormData(form);
+    const name = String(fd.get("name") || "").trim();
+    if (!name) return showToast("Supplier name is required.");
+    const duplicate = suppliers().find(supplier => supplier.id !== supplierId && supplier.name.toLowerCase() === name.toLowerCase());
+    if (duplicate) return showToast("A supplier with that name already exists.");
+    const existing = supplierId ? supplierById(supplierId) : null;
+    const updated = { ...(existing || {}), id: existing?.id || uid("supplier"), name, website:String(fd.get("website")||"").trim(), contactName:String(fd.get("contactName")||"").trim(), email:String(fd.get("email")||"").trim(), phone:String(fd.get("phone")||"").trim(), leadTimeDays:String(fd.get("leadTimeDays")||"").trim(), minimumOrder:String(fd.get("minimumOrder")||"").trim(), freeShippingThreshold:String(fd.get("freeShippingThreshold")||"").trim(), status:String(fd.get("status")||"Active"), notes:String(fd.get("notes")||"").trim() };
+    if (existing) Object.assign(existing, updated); else data.suppliers.push(updated);
+    inventoryItems().forEach(item => { if (item.supplierId === updated.id) item.supplier = updated.name; });
+    data.activity.unshift({text:`${existing ? "Updated" : "Added"} supplier: ${updated.name}`,time:"Just now"});
+    saveData(); renderInventoryCatalog("suppliers"); showToast(existing ? "Supplier updated." : "Supplier added.");
   }
 
   function openInventoryLink(itemId) {
@@ -2806,6 +2886,8 @@
     if (action==="adjust-inventory") adjustInventory(button.dataset.itemId,button.dataset.delta);
     if (action==="edit-inventory-item") showInventoryItemEditor(button.dataset.itemId);
     if (action==="add-inventory-item") showInventoryItemEditor();
+    if (action==="add-supplier") showSupplierEditor();
+    if (action==="edit-supplier") showSupplierEditor(button.dataset.supplierId);
     if (action==="open-inventory-link") openInventoryLink(button.dataset.itemId);
     if (action==="kit-transaction") showKitTransaction(button.dataset.itemId,button.dataset.mode);
     if (action==="prepare-component") showPrepareComponent(button.dataset.itemId);

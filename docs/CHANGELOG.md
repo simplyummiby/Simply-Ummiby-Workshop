@@ -1,3 +1,11 @@
+## 0.6.8.1 — Supplier Management
+
+- Added a reusable Suppliers directory under Inventory.
+- Migrated existing free-text supplier names into stable supplier records.
+- Replaced the inventory supplier text field with a supplier dropdown.
+- Added supplier contact, website, lead-time, purchasing notes, status, and linked-item summaries.
+- Preserved existing inventory quantities, URLs, notes, images, and transaction history.
+
 ## 0.6.8 — Recipe Management and Editing
 
 - Replaced recipe cards with a searchable, filterable table.

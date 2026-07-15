@@ -1,30 +1,25 @@
 # Simply Ummiby Workshop
 
-**Version 0.6.8**
+**Version 0.6.8.1**
 
-Version 0.6.8 turns Recipes into a manageable workshop library. Recipes now have a scan-friendly table, filters and sorting, improved navigation, and a structured Add/Edit Recipe interface that persists changes in local storage and backups.
+Version 0.6.8.1 adds a reusable supplier directory to Inventory. Inventory items now select a supplier from a managed list instead of repeating free-text names.
 
-## Version 0.6.8 highlights
+## Version 0.6.8.1 highlights
 
-- Replaced the recipe cards with a searchable table.
-- Added category, craft, and status filters.
-- Added recipe sorting and direct Open, Edit, and Product actions.
-- Added Back to Recipes and View Catalog navigation from recipe pages.
-- Added a structured recipe editor for basics, methods, references, materials, tools, stages, wisdom, packing, and revision history.
-- Migrated the bundled recipes into editable saved workshop data without breaking active-order recipe stage tracking.
+- Added **Suppliers** under Inventory.
+- Added supplier contact, website, lead-time, ordering notes, and status fields.
+- Replaced the Add/Edit Inventory free-text supplier field with a supplier dropdown.
+- Migrated existing supplier names into stable supplier records.
+- Shows how many inventory items are linked to each supplier.
+- Preserved all inventory quantities, URLs, notes, images, and transaction history.
 
-## Version 0.6.8 highlights
+## Recipe management
 
-- Restores normal Dashboard and app-content rendering.
-- Initializes default product categories before saved-data migration runs.
-- Preserves the v0.6.7.2 Categories & Codes module.
-- Preserves Catalog filtering by category and craft.
-- Preserves Catalog sorting by craft, category, product name, code, and status.
-- Keeps existing products, orders, inventory, recipes, colors, and saved data intact.
+Version 0.6.8 introduced a searchable Recipe table, filters and sorting, improved recipe navigation, and a structured Add/Edit Recipe interface.
 
 ## Product organization
 
-Products includes **Catalog**, **Categories & Codes**, **Colors**, and **Recipes**. The Catalog can be filtered by product category and craft and defaults to sorting by Craft → Category → Product.
+Products includes **Catalog**, **Categories & Codes**, **Colors**, and **Recipes**.
 
 ## Local data
 

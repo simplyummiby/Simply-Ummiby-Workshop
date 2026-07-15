@@ -210,3 +210,11 @@ Inventory table readability pass completed: removed initials, simplified columns
 - Added persistent recipe editing.
 - Added recipe navigation to Recipes and Catalog.
 - Preserved active-order production-stage compatibility.
+
+
+## Version 0.6.8.1 — Completed
+
+- Supplier directory and editor
+- Stable supplier links from inventory
+- Migration of legacy supplier text
+- Supplier dropdown in Add/Edit Inventory
