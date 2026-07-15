@@ -1,4 +1,14 @@
-## 0.6.7.2.1 — Products Startup Fix
+## 0.6.8 — Recipe Management and Editing
+
+- Replaced recipe cards with a searchable, filterable table.
+- Added category, craft, and status filters plus recipe sorting.
+- Added direct Open Recipe, Edit Recipe, and Product actions.
+- Added recipe-index and Catalog navigation from individual recipes.
+- Added a structured Add/Edit Recipe modal.
+- Recipe changes now persist in local workshop data and backups.
+- Preserved recipe IDs and stage IDs so active-order production progress remains compatible.
+
+## 0.6.8 — Products Startup Fix
 
 - Fixed the startup initialization order introduced in v0.6.7.2.
 - Default product categories now initialize before saved-data migration.

@@ -1,10 +1,19 @@
 # Simply Ummiby Workshop
 
-**Version 0.6.7.2.1**
+**Version 0.6.8**
 
-Version 0.6.7.2.1 is a corrective release for the Products category and catalog update. It fixes a startup initialization error that prevented the main app views from rendering in v0.6.7.2.
+Version 0.6.8 turns Recipes into a manageable workshop library. Recipes now have a scan-friendly table, filters and sorting, improved navigation, and a structured Add/Edit Recipe interface that persists changes in local storage and backups.
 
-## Version 0.6.7.2.1 highlights
+## Version 0.6.8 highlights
+
+- Replaced the recipe cards with a searchable table.
+- Added category, craft, and status filters.
+- Added recipe sorting and direct Open, Edit, and Product actions.
+- Added Back to Recipes and View Catalog navigation from recipe pages.
+- Added a structured recipe editor for basics, methods, references, materials, tools, stages, wisdom, packing, and revision history.
+- Migrated the bundled recipes into editable saved workshop data without breaking active-order recipe stage tracking.
+
+## Version 0.6.8 highlights
 
 - Restores normal Dashboard and app-content rendering.
 - Initializes default product categories before saved-data migration runs.

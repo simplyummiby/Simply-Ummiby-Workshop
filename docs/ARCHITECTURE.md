@@ -227,6 +227,11 @@ The Product editor now uses stable Product Master relationships, shared Color ID
 
 Color records now store `family` and `inventoryItemId`. The inventory link is restricted to the `yarn-cord` category and uses a stable inventory item ID. Existing records are migrated by inferring a family from the color name while preserving all prior color/product relationships.
 
-## Version 0.6.7.2.1 — Startup Initialization Correction
+## Version 0.6.8 — Startup Initialization Correction
 
 Default product-category constants are declared before `loadData()` runs. This prevents temporal-dead-zone failures while migrating existing saved products into category records.
+
+
+## Version 0.6.8 — Editable Recipe Data
+
+Bundled recipes are migrated into `data.recipes` during startup. Saved recipe records override bundled defaults by stable recipe ID. Recipe and production-stage IDs remain stable so order travelers can continue storing stage checkoffs safely.

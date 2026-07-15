@@ -221,6 +221,11 @@ Add/Edit Product is organized into Basics, Colors, Recipe & Materials, and Packa
 
 Products → Colors supports family filters, Yarn & Cord inventory links, stock summaries, product-usage summaries, and a sectioned Add/Edit Color modal.
 
-## Version 0.6.7.2.1 — Products Rendering Fix
+## Version 0.6.8 — Products Rendering Fix
 
 The Products category and Catalog organization from v0.6.7.2 remains available. This corrective release restores the Dashboard and all main views by fixing category initialization order.
+
+
+## Version 0.6.8 — Recipes
+
+The Products > Recipes view now provides a table, search, category/craft/status filters, sorting, direct product navigation, and Add/Edit Recipe management. The recipe editor covers master details, methods, quick reference, materials, tools, production stages, workshop notes, packing guidance, and revision history.

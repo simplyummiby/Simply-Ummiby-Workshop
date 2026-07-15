@@ -198,7 +198,15 @@ Inventory table readability pass completed: removed initials, simplified columns
 - Yarn & Cord inventory relationships
 - Redesigned color editor
 
-## Version 0.6.7.2.1 — Completed
+## Version 0.6.8 — Completed
 
 - Corrected product-category startup initialization.
 - Restored all app views without removing the v0.6.7.2 category, filtering, or sorting features.
+
+
+## Version 0.6.8 — Completed
+
+- Added Recipe Library table and management controls.
+- Added persistent recipe editing.
+- Added recipe navigation to Recipes and Catalog.
+- Preserved active-order production-stage compatibility.
