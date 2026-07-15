@@ -126,3 +126,15 @@ A stable local-first workshop management system ready for everyday use.
 - Consume one sheet per order and restore it safely when reversed
 - Record print additions, order consumption, and returns in Inventory History
 
+
+## Version 0.6.3 — Product-Specific Tags and Unified Pack & Ship — Complete
+
+- [x] Store stable product-tag inventory IDs in Product Master
+- [x] Generate product-specific tag tasks from live order items
+- [x] Group identical product/color quantities
+- [x] Consume and restore exact tag quantities safely
+- [x] Handle missing configuration and zero inventory
+- [x] Regenerate tag tasks safely after order edits
+- [x] Merge Pack the Order and Ship the Order into one workspace
+- [x] Remove the duplicate Final Shipping Checklist presentation
+- [x] Show required and available quantities for consumables

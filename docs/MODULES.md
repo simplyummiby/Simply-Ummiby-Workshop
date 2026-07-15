@@ -86,7 +86,7 @@ Working in Version 0.4.1:
 - Raw-material builds include Cord Preparation
 - Checkpoints are saved per order item
 - Master recipe opens with a Return to This Order action
-- Final Shipping Checklist is visible only in Pack & Ship
+- Pack the Order and Ship the Order are unified inside Pack & Ship
 
 
 ## Inventory Catalog
@@ -148,3 +148,15 @@ Working in Version 0.6.0:
 - Unchecking either step restores the exact supply and records the return in Inventory History.
 - Missing or zero inventory blocks completion and prevents negative counts.
 - Product tags and printed care-sheet inventory remain scheduled for later releases.
+
+## Product-specific tags and unified Pack & Ship — Version 0.6.3
+
+- Product Master includes a Product Tag Inventory Item relationship.
+- Tag tasks are generated from order items, not checklist wording.
+- Identical product/color items are grouped and consume the grouped quantity.
+- Different products or colors receive separate tasks.
+- Tag consumption and reversal use the shared Pack & Ship transaction system.
+- Pack the Order contains product tags, care sheet, branding sticker, product insertion, and sealing.
+- Ship the Order contains packing slip, Shippo/label purchase, and label attachment.
+- Inventory-aware rows show required and available quantities plus shortage states.
+- Outstanding earlier work remains visible from Pack & Ship.

@@ -1207,3 +1207,13 @@ textarea { resize: vertical; }
   .care-sheet-task { align-items: stretch; flex-direction: column; }
   .care-sheet-task .button { width: 100%; }
 }
+
+
+/* v0.6.3 unified Pack & Ship */
+.unified-pack-ship { margin-top: 1.25rem; }
+.unified-workflow-group + .unified-workflow-group { margin-top: 1.4rem; padding-top: 1.2rem; border-top: 1px solid var(--border, #eadde3); }
+.unified-workflow-group h4 { margin: 0 0 .75rem; }
+.outstanding-work { margin-bottom: 1rem; }
+.outstanding-work .compact-list > div { display:flex; justify-content:space-between; gap:1rem; padding:.65rem 0; border-bottom:1px solid var(--border, #eadde3); }
+.outstanding-work .compact-list > div:last-child { border-bottom:0; }
+.pack-order-section { margin-bottom: 1rem; }

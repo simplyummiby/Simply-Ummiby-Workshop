@@ -1,5 +1,27 @@
 # Changelog
 
+## 0.6.3 — 2026-07-15
+
+### Added
+- Product-specific tag inventory tasks generated from live order items.
+- Stable Product Master `packaging.productTagInventoryId` relationships.
+- Quantity grouping for identical product/color combinations.
+- Required, available, low-stock, missing-link, and out-of-stock tag states.
+- Pack the Order and Ship the Order groups in one unified workspace.
+- Outstanding Work panel when an order reaches Pack & Ship with earlier work incomplete.
+
+### Changed
+- Product-tag steps are no longer duplicated inside each item checklist.
+- The old Whole Order / Final Shipping Checklist presentation was replaced by the unified Pack & Ship panel.
+- Consumable rows consistently display item name, required quantity, and available quantity.
+
+### Inventory safety
+- Completing a tag task consumes the exact grouped quantity and creates an order-linked transaction.
+- Reversing a tag task restores the exact quantity.
+- Refreshing, reopening, or rerendering cannot deduct tags twice.
+- Editing an order first restores completed tag allocations, then regenerates tasks from the updated order.
+- Missing configuration and insufficient stock prevent completion and negative inventory.
+
 ## 0.6.2.1 — 2026-07-15
 
 ### Fixed

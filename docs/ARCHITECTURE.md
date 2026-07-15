@@ -158,3 +158,13 @@ The `care-sheets` inventory record stores counted quantity, an editable low-stoc
 
 The whole-order `careSheetPrinted` step remains stored for backward compatibility but is presented as **Insert care instruction sheet**. It uses the same idempotent Pack & Ship transaction helpers introduced in v0.6.1, with task key `shipping-care-sheet`. One sheet is consumed per order, a linked transaction ID prevents repeat deduction, and unchecking creates a matching restoration transaction. Low-stock messaging is derived from the inventory item's configured `reorderAt` value.
 
+
+## Version 0.6.3 product-tag tasks and unified Pack & Ship
+
+Product Master stores each product's tag relationship at `packaging.productTagInventoryId`. Pack & Ship never resolves tags by label text. `productTagGroupsForOrder()` derives stable tasks from the current order items, grouping identical product/color combinations and retaining the related order-item IDs.
+
+Each task uses a durable key based on product ID and color. Its inventory transaction ID is stored in the order-level `shipping.inventoryTaskTransactions` map, while completion state is stored in `shipping.productTagChecks`. This provides idempotent consumption and exact reversal across rerenders and reopened orders.
+
+When an existing order is edited, completed tag allocations are restored before its item list is rebuilt. Tasks are then regenerated from the revised products, colors, and quantities, preventing stale tag deductions.
+
+The former order-level Final Shipping Checklist was replaced with a unified Pack & Ship workspace containing Pack the Order and Ship the Order groups. Earlier incomplete production is surfaced in an Outstanding Work panel rather than being hidden by the current workflow stage.
