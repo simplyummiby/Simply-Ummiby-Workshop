@@ -1,18 +1,18 @@
 # Simply Ummiby Workshop
 
-**Version 0.8.1**
+**Version 0.8.2**
 
-Version 0.8.1 reorganizes Inventory into a calm home page plus true internal section pages. Each section keeps reliable navigation back to Inventory and offers filters suited to the stock shown there.
+Version 0.8.2 polishes the Inventory experience with calmer navigation, guided item creation, lighter filters, and the new **Ready Packs** terminology.
 
-## Version 0.8.1 highlights
+## Version 0.8.2 highlights
 
-- Keeps Inventory Home as the stockroom overview with summary cards, compact Quick Actions, Low Stock, and Recent Activity.
-- Moves Yarn & Cord, Accessories, Prepared Components, Packaging, Print & Branding, Finished Inventory, Suppliers, and Restock Center into distinct internal pages.
-- Adds persistent Inventory sub-navigation and a clear Back to Inventory action on every section page.
-- Adds page-level search, craft, material, item-type, supplier, stock, lifecycle, and sorting controls when relevant.
-- Lets Accessories be narrowed to combinations such as Wood + Dowels or Hardware + Keyrings as those item types exist.
-- Keeps all links inside the application except intentional supplier/purchase links.
-- Preserves inventory editing, receiving, adjustments, suppliers, product links, prepared components, archive/delete, and transaction history.
+- Replaces the scrolling Inventory tab strip with a wrapped two-row section navigation.
+- Separates physical stock sections from Inventory Tools such as Suppliers and Restock Center.
+- Adds a guided “What would you like to add?” chooser before opening the Inventory editor.
+- Renames Prepared Components to **Ready Packs** throughout the visible app while preserving the existing internal inventory relationships.
+- Simplifies section summaries to Total Items, Low Stock, and Out of Stock.
+- Reduces filter label and input typography so the table remains the visual focus.
+- Preserves inventory editing, receiving, adjustments, suppliers, product links, archive/delete, stock history, and Restock Center behavior.
 
 ## Project documentation
 

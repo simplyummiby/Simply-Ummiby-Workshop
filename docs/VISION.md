@@ -1,4 +1,4 @@
-## Version 0.8.1 — A Workshop Stockroom with Real Sections
+## Version 0.8.2 — A Workshop Stockroom with Real Sections
 
 Inventory now feels like moving among distinct stations in one workshop. The home page monitors stock health, while focused section pages make detailed inventory easier to find and manage without losing the route back home.
 

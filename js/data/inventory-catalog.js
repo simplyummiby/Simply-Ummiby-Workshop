@@ -12,8 +12,8 @@ window.SUW_INVENTORY_CATALOG = {
     },
     {
       id: "prepared-components",
-      name: "Prepared Components",
-      description: "Precut cord sets, prepared dowels, and product-specific build components made ahead of time."
+      name: "Ready Packs",
+      description: "Precut cord sets, prepared dowels, and product-specific ready packs made ahead of time."
     },
     {
       id: "finished-inventory",
@@ -88,7 +88,7 @@ window.SUW_INVENTORY_CATALOG = {
       linkedProductIds: ["macrame-toilet-paper-holder"],
       category: "prepared-components",
       name: "Prepared Toilet Paper Dowels",
-      materialType: "Prepared Component",
+      materialType: "Ready Pack",
       craft: "Macramé",
       productId: "macrame-toilet-paper-holder",
       tracking: "quantity",
@@ -110,7 +110,7 @@ window.SUW_INVENTORY_CATALOG = {
       linkedProductIds: ["macrame-paper-towel-holder"],
       category: "prepared-components",
       name: "Prepared Paper Towel Dowels",
-      materialType: "Prepared Component",
+      materialType: "Ready Pack",
       craft: "Macramé",
       productId: "macrame-paper-towel-holder",
       tracking: "quantity",
@@ -200,7 +200,7 @@ window.SUW_INVENTORY_CATALOG = {
       id: "prepared-cord-paper-towel-natural",
       category: "prepared-components",
       name: "Prepared Cord Set — Paper Towel Holder — Natural/Beige",
-      materialType: "Prepared Component",
+      materialType: "Ready Pack",
       craft: "Macramé",
       linkedProductIds: ["macrame-paper-towel-holder"],
       productId: "macrame-paper-towel-holder",
@@ -218,7 +218,7 @@ window.SUW_INVENTORY_CATALOG = {
       id: "prepared-cord-toilet-paper-natural",
       category: "prepared-components",
       name: "Prepared Cord Set — Toilet Paper Holder — Natural/Beige",
-      materialType: "Prepared Component",
+      materialType: "Ready Pack",
       craft: "Macramé",
       linkedProductIds: ["macrame-toilet-paper-holder"],
       productId: "macrame-toilet-paper-holder",

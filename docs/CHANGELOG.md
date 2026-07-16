@@ -1,18 +1,12 @@
-## 0.8.1 — Inventory Section Pages
+## 0.8.2 — Inventory Experience Polish
 
-- Reorganized Inventory into a dedicated home page and distinct internal section pages.
-- Added persistent Inventory sub-navigation and a Back to Inventory action.
-- Simplified Inventory Home to summary cards, compact Quick Actions, Low Stock, and Recent Activity.
-- Added page-specific material, item-type, supplier, craft, stock, lifecycle, search, and sort filters.
-- Preserved existing inventory tables, item forms, transactions, product links, suppliers, prepared components, archive/delete, and Restock Center behavior.
-
-## 0.8.0 — Inventory Experience Refresh
-
-- Added a branded Inventory stockroom hero banner.
-- Added live Inventory summary cards and Restock Center access.
-- Added Quick Actions for creating items, receiving stock, adjusting stock, opening Restock Center, and printing.
-- Added a Low Stock panel beside the inventory table.
-- Preserved all existing inventory relationships, lifecycle controls, transactions, and category controls.
+- Added wrapped two-row Inventory section navigation with icons and no horizontal scrolling.
+- Separated Suppliers and Restock Center into an Inventory Tools row.
+- Added a guided new-item chooser for Yarn & Cord, Accessories, Ready Packs, Packaging, Print & Branding, Finished Products, and Other.
+- Renamed Prepared Components to Ready Packs throughout the visible interface.
+- Simplified section metrics to Total Items, Low Stock, and Out of Stock.
+- Reduced search and filter typography and spacing.
+- Preserved all existing Inventory workflows and relationships.
 
 ## 0.7.1 — Order Workspace Refresh
 
@@ -64,7 +58,7 @@
 ## 0.6.8.3 — Safe Inventory Management
 
 - Added Archive, Restore, and safe Delete actions.
-- Added reference checks across products, colors, prepared components, orders, and transaction history.
+- Added reference checks across products, colors, ready packs, orders, and transaction history.
 - Added Active, Archived, and All filters.
 - Redesigned the inventory editor with grouped sections, conditional print/stock fields, and a Where Used panel.
 
@@ -155,9 +149,9 @@
 
 ## 0.6.5.2
 
-- Reorganized Inventory into Yarn & Cord, Accessories, Prepared Components, Finished Inventory, Packaging Supplies, and Print & Branding.
+- Reorganized Inventory into Yarn & Cord, Accessories, Ready Packs, Finished Inventory, Packaging Supplies, and Print & Branding.
 - Split the former Raw Materials category without resetting existing quantities.
-- Moved prepared dowels, precut cord sets, and product-specific kits into Prepared Components.
+- Moved prepared dowels, precut cord sets, and product-specific kits into Ready Packs.
 - Renamed Print & Cricut Supplies to Print & Branding.
 - Added migration rules for custom inventory items saved under legacy category IDs.
 - Updated all current release references to 0.6.5.2.

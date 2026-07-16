@@ -1,6 +1,6 @@
-## Version 0.8.1 — Inventory Pages
+## Version 0.8.2 — Inventory Pages
 
-Inventory now contains a home page plus Yarn & Cord, Accessories, Prepared Components, Packaging, Print & Branding, Finished Inventory, Suppliers, and Restock Center pages. The Inventory section navigation stays visible, and each subpage provides a Back to Inventory action and live filters appropriate to its records.
+Inventory now contains a home page plus Yarn & Cord, Accessories, Ready Packs, Packaging, Print & Branding, Finished Inventory, Suppliers, and Restock Center pages. The Inventory section navigation stays visible, and each subpage provides a Back to Inventory action and live filters appropriate to its records.
 
 # Modules
 
@@ -203,13 +203,13 @@ The Inventory module now uses these browsable categories:
 - Overview
 - Yarn & Cord
 - Accessories
-- Prepared Components
+- Ready Packs
 - Finished Inventory
 - Packaging Supplies
 - Print & Branding
 - Restock Center
 
-Prepared Components replaces the former Fabrication Kits label and also houses prepared dowels and precut cord sets.
+Ready Packs replaces the former Fabrication Kits label and also houses prepared dowels and precut cord sets.
 
 
 ## Version 0.6.6 — Inventory Table Polish

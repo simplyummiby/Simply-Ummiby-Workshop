@@ -1,4 +1,4 @@
-## Version 0.8.1 — Inventory Page Architecture Complete
+## Version 0.8.2 — Inventory Page Architecture Complete
 
 Inventory now has a stable home-and-section-page architecture. Future work may add distinct artwork per section and Smart Stock capacity estimates after recipe usage data is mature.
 
@@ -177,7 +177,7 @@ Paper Towel Holder and Toilet Paper Holder dowels are separate raw and prepared 
 ## Version 0.6.5.2 — Completed
 
 - Split Raw Materials into Yarn & Cord and Accessories.
-- Rename Fabrication Kits to Prepared Components.
+- Rename Fabrication Kits to Ready Packs.
 - Rename Print & Cricut Supplies to Print & Branding.
 - Preserve Packaging Supplies as a dedicated category.
 - Migrate legacy and custom inventory records without resetting stock.
