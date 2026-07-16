@@ -1,6 +1,6 @@
-## Version 0.8.0 — Inventory Refresh Complete
+## Version 0.8.1 — Inventory Page Architecture Complete
 
-The Inventory experience refresh is implemented. Future inventory work may add Smart Restock and recipe-based product-capacity estimates after usage data and recipe relationships are mature.
+Inventory now has a stable home-and-section-page architecture. Future work may add distinct artwork per section and Smart Stock capacity estimates after recipe usage data is mature.
 
 # Roadmap
 
@@ -72,7 +72,7 @@ The Inventory experience refresh is implemented. Future inventory work may add S
 - Final care-instruction printing
 - Etsy, Shippo, Cricut, Canva, and supplier shortcuts
 
-## Version 0.8.0 — Backup & Restore
+## Future — Backup & Restore
 
 - Restore from JSON
 - Google Drive backup exploration

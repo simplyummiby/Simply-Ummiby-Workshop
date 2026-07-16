@@ -1,10 +1,18 @@
+## 0.8.1 — Inventory Section Pages
+
+- Reorganized Inventory into a dedicated home page and distinct internal section pages.
+- Added persistent Inventory sub-navigation and a Back to Inventory action.
+- Simplified Inventory Home to summary cards, compact Quick Actions, Low Stock, and Recent Activity.
+- Added page-specific material, item-type, supplier, craft, stock, lifecycle, search, and sort filters.
+- Preserved existing inventory tables, item forms, transactions, product links, suppliers, prepared components, archive/delete, and Restock Center behavior.
+
 ## 0.8.0 — Inventory Experience Refresh
 
 - Added a branded Inventory stockroom hero banner.
 - Added live Inventory summary cards and Restock Center access.
 - Added Quick Actions for creating items, receiving stock, adjusting stock, opening Restock Center, and printing.
-- Added a persistent Low Stock panel beside the full inventory table.
-- Preserved all existing inventory relationships, lifecycle controls, transactions, and category tabs.
+- Added a Low Stock panel beside the inventory table.
+- Preserved all existing inventory relationships, lifecycle controls, transactions, and category controls.
 
 ## 0.7.1 — Order Workspace Refresh
 

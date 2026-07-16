@@ -1,6 +1,6 @@
-## Version 0.8.0 — Inventory Workspace
+## Version 0.8.1 — Inventory Pages
 
-Inventory now opens as a stockroom dashboard with a hero, live stock summaries, Quick Actions, a Low Stock panel, and the existing detailed table. Category and material-type tabs continue to change the inventory content below. Restock Center and Suppliers remain dedicated Inventory destinations.
+Inventory now contains a home page plus Yarn & Cord, Accessories, Prepared Components, Packaging, Print & Branding, Finished Inventory, Suppliers, and Restock Center pages. The Inventory section navigation stays visible, and each subpage provides a Back to Inventory action and live filters appropriate to its records.
 
 # Modules
 
