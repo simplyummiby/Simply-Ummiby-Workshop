@@ -1,3 +1,7 @@
+## Version 0.8.0 — The Workshop Stockroom
+
+Inventory now expresses the visual identity of a warm, organized Simply Ummiby stockroom while surfacing the actions and shortages that matter most. It remains practical and information-dense without feeling like a generic database.
+
 # Vision
 
 ## Simply Ummiby Workshop

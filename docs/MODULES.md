@@ -1,3 +1,7 @@
+## Version 0.8.0 — Inventory Workspace
+
+Inventory now opens as a stockroom dashboard with a hero, live stock summaries, Quick Actions, a Low Stock panel, and the existing detailed table. Category and material-type tabs continue to change the inventory content below. Restock Center and Suppliers remain dedicated Inventory destinations.
+
 # Modules
 
 ## Dashboard

@@ -1,3 +1,11 @@
+## 0.8.0 — Inventory Experience Refresh
+
+- Added a branded Inventory stockroom hero banner.
+- Added live Inventory summary cards and Restock Center access.
+- Added Quick Actions for creating items, receiving stock, adjusting stock, opening Restock Center, and printing.
+- Added a persistent Low Stock panel beside the full inventory table.
+- Preserved all existing inventory relationships, lifecycle controls, transactions, and category tabs.
+
 ## 0.7.1 — Order Workspace Refresh
 
 - Restored the working New Order and View Order flows that were lost during the 0.7.0 Orders redesign.

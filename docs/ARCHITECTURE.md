@@ -1,3 +1,7 @@
+## Version 0.8.0 — Inventory Experience
+
+Inventory continues to use the existing `inventoryCatalog`, `inventoryTransactions`, suppliers, product links, and dynamic material-type records. The v0.8.0 overview is a presentation layer over those existing sources. `Receive Stock` records a positive inventory transaction; `Adjust Inventory` continues to use the correction workflow. No parallel inventory store was introduced.
+
 # Architecture
 
 ## Version 0.6.2.1

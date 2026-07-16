@@ -1,3 +1,7 @@
+## Version 0.8.0 — Inventory Refresh Complete
+
+The Inventory experience refresh is implemented. Future inventory work may add Smart Restock and recipe-based product-capacity estimates after usage data and recipe relationships are mature.
+
 # Roadmap
 
 ## Version 0.1.0 — Foundation — Complete
