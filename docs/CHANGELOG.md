@@ -1,3 +1,11 @@
+## 0.8.2.2 — Retire Batch Production
+
+- Audited the Batch Production placeholder and confirmed it contained no unique saved workflow.
+- Removed Batch Production from the sidebar and generic placeholder routing.
+- Replaced the Dashboard Batch Production shortcut with Build Ready Packs.
+- Kept Ready Pack building, batch component preparation, print replenishment, stock receipt, and adjustments in Inventory.
+- Preserved existing transaction history, including older `batch-production` source labels.
+
 ## 0.8.2.1 — Inventory Section Tables
 
 - Replaced Ready Packs and Finished Inventory card grids with structured tables.

@@ -1,4 +1,4 @@
-## Version 0.8.2.1 — Inventory Pages
+## Version 0.8.2.2 — Inventory Pages
 
 Inventory now contains a home page plus Yarn & Cord, Accessories, Ready Packs, Packaging, Print & Branding, Finished Inventory, Suppliers, and Restock Center pages. The Inventory section navigation stays visible, and each subpage provides a Back to Inventory action and live filters appropriate to its records.
 
@@ -37,9 +37,9 @@ The active item, active tab, fulfillment choice, checklists, and notes persist l
 
 The order-level checklist appears inside Pack & Ship and covers the shared care sheet, packing slip, Shippo, label, company sticker, and sealed mailer confirmation. The care-sheet row shows live inventory, low-stock status, and a nearby Print More Care Sheets action.
 
-## Batch Production
+## Batch Production (Retired)
 
-Planned for fabrication kits, finished inventory, tags, stickers, and printed resources.
+Batch Production was audited in v0.8.2.2 and removed because it was only a placeholder. Its intended actions already live in Inventory: Ready Pack building/unpacking, batch component preparation, print replenishment, receiving stock, and stock adjustments. Order-specific production remains in Orders.
 
 ## Inventory
 
@@ -256,7 +256,7 @@ The Inventory editor includes a Linked Products multi-select. The table displays
 
 ## Version 0.6.8.3.6 — Sidebar Navigation
 
-All primary modules now have distinct SVG navigation icons: Dashboard, Workshop, Batch Production, Inventory, Products, Resources, and Settings.
+All primary modules now have distinct SVG navigation icons: Dashboard, Orders, Inventory, Products, Resources, and Settings.
 
 
 ## Version 0.7.1 — Orders Experience

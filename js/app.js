@@ -1,6 +1,6 @@
 (() => {
   const STORAGE_KEY = "simplyUmmibyWorkshopData";
-  const VERSION = "0.8.2.1";
+  const VERSION = "0.8.2.2";
   const ITEM_STATUSES = ["New","Preparing","Manufacturing","Waiting on Material","Ready for Packing","Packed","Ready to Mail","Completed"];
   const STATUS_PROGRESS = {
     "New": 5, "Preparing": 20, "Manufacturing": 50, "Waiting on Material": 35,
@@ -39,7 +39,6 @@
   };
 
   const viewContent = {
-    batch: { title: "Batch Production", copy: "Prepare ready packs, make finished inventory, and replenish printed and branding supplies.", card: "Batch-production workflows arrive after the first inventory release." },
     inventory: { title: "Inventory", copy: "Track yarn and cord, accessories, ready packs, finished products, packaging, and branded print supplies.", card: "Purchase to Restock is now working. Full counted inventory and deductions arrive in Version 0.5." },
     products: { title: "Products & Recipes", copy: "Each product now supplies its preparation, manufacturing, and packing checklists.", card: "Recipe editing will be added later. The current recipes are stored in js/data/sample-data.js." },
     resources: { title: "Resources", copy: "Your print-and-link toolbox for Etsy, Shippo, Cricut Design Space, care instructions, packing slips, and supplier links.", card: "The Processing workspace already includes working external shortcuts and a temporary printable care sheet." },
@@ -1349,9 +1348,9 @@
     if(!component||component.tracking!=="quantity"||!(component.components||[]).length)return false;
     const shortages=preparedComponentAvailability(component,count);
     if(shortages.length){showToast(`Not enough materials to prepare ${count} ${component.name}.`);return false;}
-    (component.components||[]).forEach(entry=>{const source=inventoryItemById(entry.itemId);const qty=Number(entry.quantity||0)*count;source.quantity=Number(source.quantity||0)-qty;recordInventoryTransaction({type:"consume",itemId:source.id,quantity:-qty,reason:"Prepared component",details:`Used to prepare ${count} ${component.name}.`,relatedItemId:component.id,source:"batch-production"});});
+    (component.components||[]).forEach(entry=>{const source=inventoryItemById(entry.itemId);const qty=Number(entry.quantity||0)*count;source.quantity=Number(source.quantity||0)-qty;recordInventoryTransaction({type:"consume",itemId:source.id,quantity:-qty,reason:"Prepared component",details:`Used to prepare ${count} ${component.name}.`,relatedItemId:component.id,source:"ready-packs"});});
     component.quantity=Number(component.quantity||0)+count;
-    recordInventoryTransaction({type:"build",itemId:component.id,quantity:count,reason:"Prepared component",details:`Prepared ${count} ${component.name}.`,relatedItemId:component.id,source:"batch-production"});
+    recordInventoryTransaction({type:"build",itemId:component.id,quantity:count,reason:"Prepared component",details:`Prepared ${count} ${component.name}.`,relatedItemId:component.id,source:"ready-packs"});
     saveData(); return true;
   }
   function showPrepareComponent(componentId){
