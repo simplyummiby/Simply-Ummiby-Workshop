@@ -1712,3 +1712,14 @@ textarea { resize: vertical; }
 .inventory-type-choice-icon{width:38px;height:38px;display:grid;place-items:center;border-radius:12px;background:#f8ecee;font-size:1.2rem;flex:0 0 auto}
 .inventory-type-choice span:last-child{display:grid;gap:4px}.inventory-type-choice strong{font-size:.94rem}.inventory-type-choice small{font-size:.75rem;line-height:1.35;color:#806d66;font-weight:500}
 @media(max-width:700px){.inventory-type-chooser{grid-template-columns:1fr}.inventory-section-summary-compact{grid-template-columns:1fr 1fr}.inventory-tools-label{width:100%}}
+
+/* v0.8.2.1 Inventory section tables */
+.inventory-section-table{overflow:hidden}
+.inventory-section-table .inventory-component-summary{display:block;margin-top:6px;color:#7d6861;line-height:1.4;white-space:normal}
+.inventory-section-table .inventory-component-summary strong{font-size:inherit;color:#5e4b45}
+.inventory-table-detail-line{display:flex;flex-wrap:wrap;gap:6px;margin-top:5px}
+.inventory-table-detail-line span{display:inline-flex;align-items:center;min-height:23px;padding:3px 8px;border-radius:999px;background:#f8eeee;color:#7c525b;font-size:.71rem;font-weight:750}
+.inventory-section-table[data-category="prepared-components"] .inventory-data-table-polished{grid-template-columns:minmax(310px,1.45fr) minmax(90px,.42fr) minmax(100px,.48fr) minmax(105px,.48fr) minmax(300px,1fr)}
+.inventory-section-table[data-category="finished-inventory"] .inventory-data-table-polished{grid-template-columns:minmax(310px,1.45fr) minmax(90px,.42fr) minmax(100px,.48fr) minmax(105px,.48fr) minmax(260px,.9fr)}
+.inventory-section-table .inventory-row-actions-polished{align-items:center}
+@media(max-width:1000px){.inventory-section-table[data-category="prepared-components"] .inventory-data-table-polished,.inventory-section-table[data-category="finished-inventory"] .inventory-data-table-polished{grid-template-columns:minmax(260px,1.25fr) 90px 95px 105px minmax(230px,.9fr)}}

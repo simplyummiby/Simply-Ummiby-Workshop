@@ -1,4 +1,11 @@
-## 0.8.2 — Inventory Experience Polish
+## 0.8.2.1 — Inventory Section Tables
+
+- Replaced Ready Packs and Finished Inventory card grids with structured tables.
+- Standardized all detailed Inventory sections around a table-first layout.
+- Added Ready Pack availability and current-material capacity directly in the table.
+- Preserved build, unpack, prepare, adjust, edit, archive, and delete actions.
+
+## 0.8.2.1 — Inventory Experience Polish
 
 - Added wrapped two-row Inventory section navigation with icons and no horizontal scrolling.
 - Separated Suppliers and Restock Center into an Inventory Tools row.

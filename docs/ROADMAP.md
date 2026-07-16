@@ -1,4 +1,4 @@
-## Version 0.8.2 — Inventory Page Architecture Complete
+## Version 0.8.2.1 — Inventory Page Architecture Complete
 
 Inventory now has a stable home-and-section-page architecture. Future work may add distinct artwork per section and Smart Stock capacity estimates after recipe usage data is mature.
 

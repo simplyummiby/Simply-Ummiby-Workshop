@@ -1,6 +1,6 @@
 (() => {
   const STORAGE_KEY = "simplyUmmibyWorkshopData";
-  const VERSION = "0.8.2";
+  const VERSION = "0.8.2.1";
   const ITEM_STATUSES = ["New","Preparing","Manufacturing","Waiting on Material","Ready for Packing","Packed","Ready to Mail","Completed"];
   const STATUS_PROGRESS = {
     "New": 5, "Preparing": 20, "Manufacturing": 50, "Waiting on Material": 35,
@@ -1243,8 +1243,7 @@
   function renderInventorySectionPage(categoryId) {
     const category=inventoryCategories().find(c=>c.id===categoryId);
     const items=filteredInventoryItems(categoryId);
-    const cards=["prepared-components","finished-inventory"].includes(categoryId);
-    return `<section class="inventory-page-toolbar"><div><p class="eyebrow">${escapeHTML(category?.name||"Inventory")}</p><h3>Manage ${escapeHTML((category?.name||"inventory").toLowerCase())}</h3></div><button class="button primary" data-action="add-inventory-item">+ New Item</button></section>${renderInventorySectionSummary(categoryId,inventoryItems().filter(item=>item.category===categoryId))}${renderInventoryControls(categoryId,{allowGroup:cards})}${cards?renderGroupedInventoryCards(items):renderInventoryTable(items)}`;
+    return `<section class="inventory-page-toolbar"><div><p class="eyebrow">${escapeHTML(category?.name||"Inventory")}</p><h3>Manage ${escapeHTML((category?.name||"inventory").toLowerCase())}</h3></div><button class="button primary" data-action="add-inventory-item">+ New Item</button></section>${renderInventorySectionSummary(categoryId,inventoryItems().filter(item=>item.category===categoryId))}${renderInventoryControls(categoryId)}${renderInventoryTable(items,categoryId)}`;
   }
 
   function renderSuppliersPage() {
@@ -1262,16 +1261,48 @@
     return `<section class="inventory-category-heading"><div><p class="eyebrow">Material type</p><h3>${escapeHTML(type.name)}</h3><p>Inventory items assigned to ${escapeHTML(type.name)}.</p></div></section>${renderInventoryControls(categoryId)}${renderInventoryTable(items)}`;
   }
 
-  function renderInventoryCategory(categoryId){const category=inventoryCategories().find(c=>c.id===categoryId);const items=filteredInventoryItems(categoryId);const cards=["prepared-components","finished-inventory"].includes(categoryId);return `<section class="inventory-category-heading"><div><p class="eyebrow">Inventory category</p><h3>${escapeHTML(category?.name||"Inventory")}</h3><p>${escapeHTML(category?.description||"")}</p></div></section>${renderInventoryControls(categoryId,{allowGroup:cards})}${cards?renderGroupedInventoryCards(items):renderInventoryTable(items)}`;}
-  function renderInventoryTable(items){
-    return `<section class="inventory-table-card inventory-table-polished">
-      <div class="inventory-data-table inventory-data-table-head inventory-data-table-polished"><span>Item</span><span>On Hand</span><span>Reorder At</span><span>Status</span><span>Actions</span></div>
+  function renderInventoryCategory(categoryId){const category=inventoryCategories().find(c=>c.id===categoryId);const items=filteredInventoryItems(categoryId);return `<section class="inventory-category-heading"><div><p class="eyebrow">Inventory category</p><h3>${escapeHTML(category?.name||"Inventory")}</h3><p>${escapeHTML(category?.description||"")}</p></div></section>${renderInventoryControls(categoryId)}${renderInventoryTable(items,categoryId)}`;}
+  function readyPackCanMake(item) {
+    if (!(item.components || []).length) return 0;
+    const capacities = item.components.map(component => {
+      const source = inventoryItemById(component.itemId);
+      const required = Number(component.quantity || 0);
+      if (!source || source.tracking !== "quantity" || required <= 0) return 0;
+      return Math.floor(Number(source.quantity || 0) / required);
+    });
+    return capacities.length ? Math.max(0, Math.min(...capacities)) : 0;
+  }
+
+  function inventoryTableLabels(categoryId) {
+    if (categoryId === "prepared-components") return ["Ready Pack", "Available", "Can Make", "Status", "Actions"];
+    if (categoryId === "finished-inventory") return ["Finished Product", "On Hand", "Reorder At", "Status", "Actions"];
+    if (categoryId === "yarn-cord") return ["Yarn or Cord", "On Hand", "Reorder At", "Status", "Actions"];
+    if (categoryId === "accessories") return ["Accessory", "On Hand", "Reorder At", "Status", "Actions"];
+    if (categoryId === "packaging") return ["Packaging", "On Hand", "Reorder At", "Status", "Actions"];
+    if (categoryId === "print-branding") return ["Print or Branding Item", "On Hand", "Reorder At", "Status", "Actions"];
+    return ["Item", "On Hand", "Reorder At", "Status", "Actions"];
+  }
+
+  function renderInventoryTable(items, categoryId = inventoryViewState.category) {
+    const labels = inventoryTableLabels(categoryId);
+    return `<section class="inventory-table-card inventory-table-polished inventory-section-table" data-category="${escapeHTML(categoryId || "inventory")}">
+      <div class="inventory-data-table inventory-data-table-head inventory-data-table-polished">${labels.map(label => `<span>${escapeHTML(label)}</span>`).join("")}</div>
       ${items.length ? items.map(item => {
         const allocated = item.tracking === "quantity" ? allocatedInKits(item.id) : 0;
         const supplierName = supplierNameForItem(item);
         const linkedProducts = productsUsingInventoryItem(item.id);
         const purchaseUrl = normalizeExternalUrl(item.purchaseUrl || item.resourceUrl);
         const archived = item.status === "Archived";
+        const isReadyPack = categoryId === "prepared-components";
+        const canMake = isReadyPack ? readyPackCanMake(item) : null;
+        const productName = item.productId ? productDisplayName(item.productId) : "";
+        const details = [];
+        if (productName && productName !== "Other") details.push(productName);
+        if (item.color) details.push(item.color);
+        const componentSummary = isReadyPack && (item.components || []).length ? (item.components || []).map(component => {
+          const raw = inventoryItemById(component.itemId);
+          return `${Number(component.quantity || 0)} ${raw?.name || component.itemId}`;
+        }).join(" · ") : "";
         return `<article class="inventory-data-table inventory-data-table-polished ${archived ? "is-archived" : ""}">
           <div class="inventory-name-cell inventory-name-cell-polished">
             ${item.imageData ? `<img class="inventory-thumb inventory-thumb-photo" src="${item.imageData}" alt="">` : ""}
@@ -1283,15 +1314,19 @@
                 ${supplierName ? `<span>${escapeHTML(supplierName)}</span>` : ""}
                 ${archived ? `<span class="inventory-archived-label">Archived</span>` : ""}
               </div>
+              ${details.length ? `<div class="inventory-table-detail-line">${details.map(detail => `<span>${escapeHTML(detail)}</span>`).join("")}</div>` : ""}
+              ${componentSummary ? `<small class="inventory-component-summary"><strong>Contains:</strong> ${escapeHTML(componentSummary)}</small>` : ""}
               ${purchaseUrl ? `<button type="button" class="inventory-buy-link" data-action="open-inventory-link" data-item-id="${item.id}">Buy Online</button>` : ""}
               ${linkedProducts.length ? `<div class="inventory-product-pills">${linkedProducts.map(master => `<button type="button" class="product-link-pill" data-action="open-product-master" data-product-id="${master.id}">${escapeHTML(master.name)}</button>`).join("")}</div>` : ""}
               ${item.notes ? `<small class="inventory-item-description" title="${escapeHTML(item.notes)}">${escapeHTML(item.notes)}</small>` : ""}
             </div>
           </div>
-          <div class="inventory-count-cell">${item.tracking === "quantity" ? `<strong>${Number(item.quantity || 0)}</strong>${allocated ? `<small>${allocated} in ready packs · ${totalOwned(item)} total owned</small>` : "<small>Loose stock</small>"}` : `<strong>${escapeHTML(item.condition || "Not set")}</strong><small>Condition tracked</small>`}</div>
-          <div class="inventory-reorder-cell">${item.tracking === "quantity" ? `<strong>${Number(item.reorderAt || 0)}</strong><small>Preferred ${Number(item.preferredStock || 0)}</small>` : "<strong>—</strong>"}</div>
+          <div class="inventory-count-cell">${item.tracking === "quantity" ? `<strong>${Number(item.quantity || 0)}</strong>${allocated ? `<small>${allocated} in ready packs · ${totalOwned(item)} total owned</small>` : `<small>${isReadyPack ? "Ready to use" : "Loose stock"}</small>`}` : `<strong>${escapeHTML(item.condition || "Not set")}</strong><small>Condition tracked</small>`}</div>
+          <div class="inventory-reorder-cell">${isReadyPack ? `<strong>${canMake}</strong><small>From current materials</small>` : item.tracking === "quantity" ? `<strong>${Number(item.reorderAt || 0)}</strong><small>Preferred ${Number(item.preferredStock || 0)}</small>` : "<strong>—</strong>"}</div>
           <div><span class="inventory-stock-badge ${archived ? "archived" : inventoryStatus(item).toLowerCase()}">${archived ? "Archived" : escapeHTML(inventoryStatus(item))}</span></div>
           <div class="inventory-row-actions inventory-row-actions-polished">
+            ${!archived && isReadyPack ? `<button class="button primary small" data-action="kit-transaction" data-mode="build" data-item-id="${item.id}">Build Packs</button><button class="button secondary small" data-action="kit-transaction" data-mode="break" data-item-id="${item.id}">Unpack</button>` : ""}
+            ${!archived && !isReadyPack && item.restockType === "make" && (item.components || []).length ? `<button class="button primary small" data-action="prepare-component" data-item-id="${item.id}">Prepare Batch</button>` : ""}
             ${!archived && item.tracking === "quantity" ? `<div class="inventory-quick-adjust" aria-label="Quick quantity adjustment"><button title="Subtract one" aria-label="Subtract one ${escapeHTML(item.name)}" data-action="adjust-inventory" data-item-id="${item.id}" data-delta="-1">−</button><button title="Add one" aria-label="Add one ${escapeHTML(item.name)}" data-action="adjust-inventory" data-item-id="${item.id}" data-delta="1">+</button></div><button class="button secondary small" data-action="stock-adjustment" data-item-id="${item.id}">Adjust</button>` : ""}
             <button class="button secondary small" data-action="edit-inventory-item" data-item-id="${item.id}">Edit</button>
             ${archived ? `<button class="button secondary small" data-action="restore-inventory-item" data-item-id="${item.id}">Restore</button>` : `<button class="button secondary small" data-action="archive-inventory-item" data-item-id="${item.id}">Archive</button>`}

@@ -1,4 +1,4 @@
-## Version 0.8.2 — Inventory Pages
+## Version 0.8.2.1 — Inventory Pages
 
 Inventory now contains a home page plus Yarn & Cord, Accessories, Ready Packs, Packaging, Print & Branding, Finished Inventory, Suppliers, and Restock Center pages. The Inventory section navigation stays visible, and each subpage provides a Back to Inventory action and live filters appropriate to its records.
 
