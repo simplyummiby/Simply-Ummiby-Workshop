@@ -1,3 +1,12 @@
+# Changelog
+
+## 0.8.2.5 — Inventory Alert Visibility
+
+- Removed the six-item cutoff from the Inventory Overview alert panel so all low and out-of-stock items, including product tags, are visible.
+- Renamed the overview panel to Inventory Alerts and added the total number of items needing attention.
+- Sorted alerts by urgency, then restock method and item name.
+- Corrected Inventory section summary counts for Low Stock and Out of Stock items.
+
 ## 0.8.2.4 — Actual Ship Date
 
 - Changed Mark as Mailed to open a Ship Date confirmation dialog.

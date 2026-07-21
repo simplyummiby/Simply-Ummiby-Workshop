@@ -1,16 +1,16 @@
 # Simply Ummiby Workshop
 
-**Version 0.8.2.4**
+**Version 0.8.2.5**
 
-Version 0.8.2.4 records the actual date an order shipped, even when the order is marked complete later. Completed orders can also have their ship date corrected without changing the rest of the workflow.
+Version 0.8.2.5 makes inventory alerts complete and trustworthy. Product tags and every other low or out-of-stock item now appear on the Inventory Overview instead of being hidden after the first six alerts.
 
-## Version 0.8.2.4 highlights
+## Version 0.8.2.5 highlights
 
-- Mark as Mailed now opens a Ship Date confirmation dialog.
-- Ship Date defaults to today and may be changed to an earlier date.
-- Completed orders include an Edit Ship Date control.
-- The actual ship date is stored separately from the app update timestamp.
-- Existing completed orders inherit a date from their prior mailed timestamp when available.
+- Shows every low and out-of-stock item in Inventory Alerts, including product tags.
+- Sorts alerts by urgency, restock method, and item name.
+- Displays the total number of inventory items needing attention.
+- Corrects Low Stock and Out of Stock totals on inventory section summary cards.
+- Retains the editable actual Ship Date workflow introduced in Version 0.8.2.4.
 
 ## Version 0.8.2.3 highlights
 

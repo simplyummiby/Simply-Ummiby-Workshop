@@ -1,6 +1,6 @@
 (() => {
   const STORAGE_KEY = "simplyUmmibyWorkshopData";
-  const VERSION = "0.8.2.4";
+  const VERSION = "0.8.2.5";
   const ITEM_STATUSES = ["New","Preparing","Manufacturing","Waiting on Material","Ready for Packing","Packed","Ready to Mail","Completed"];
   const STATUS_PROGRESS = {
     "New": 5, "Preparing": 20, "Manufacturing": 50, "Waiting on Material": 35,
@@ -1182,8 +1182,16 @@
   }
 
   function renderInventoryOverview(attentionItems, orderNeeds) {
+    const sortedAttentionItems = [...attentionItems].sort((a,b) => {
+      const statusDifference = statusRank(inventoryStatus(a)) - statusRank(inventoryStatus(b));
+      if (statusDifference) return statusDifference;
+      const restockOrder = {print:0,purchase:1,make:2};
+      const restockDifference = (restockOrder[a.restockType] ?? 9) - (restockOrder[b.restockType] ?? 9);
+      if (restockDifference) return restockDifference;
+      return String(a.name || "").localeCompare(String(b.name || ""));
+    });
     return `${renderInventorySummaryCards(attentionItems)}${renderInventoryQuickActions()}<section class="inventory-home-grid">
-      <article class="panel inventory-home-panel inventory-low-stock-card"><div class="panel-heading"><div><p class="eyebrow">Needs attention</p><h3>Low Stock</h3></div><button class="text-button" data-action="inventory-category" data-category="restock">Open Restock Center</button></div><div class="inventory-alert-stack">${attentionItems.length ? attentionItems.slice(0,6).map(item => renderInventoryAlert(item)).join("") : "<p>Nothing is currently low or out.</p>"}</div></article>
+      <article class="panel inventory-home-panel inventory-low-stock-card"><div class="panel-heading"><div><p class="eyebrow">Needs attention</p><h3>Inventory Alerts</h3><p>${attentionItems.length ? `${attentionItems.length} item${attentionItems.length===1?"":"s"} currently need attention.` : "Low and out-of-stock items appear here."}</p></div><button class="text-button" data-action="inventory-category" data-category="restock">Open Restock Center</button></div><div class="inventory-alert-stack">${sortedAttentionItems.length ? sortedAttentionItems.map(item => renderInventoryAlert(item)).join("") : "<p>Nothing is currently low or out.</p>"}</div></article>
       ${renderInventoryRecentActivity()}
     </section>`;
   }
@@ -1234,8 +1242,8 @@
 
   function renderInventorySectionSummary(categoryId,items) {
     const active=items.filter(item=>item.status!=="Archived");
-    const low=active.filter(item=>inventoryStatus(item)==="Low Stock");
-    const out=active.filter(item=>inventoryStatus(item)==="Out of Stock");
+    const low=active.filter(item=>inventoryStatus(item)==="Low");
+    const out=active.filter(item=>inventoryStatus(item)==="Out");
     const label=categoryId==="prepared-components"?"Ready Packs":(inventoryCategories().find(category=>category.id===categoryId)?.name||"Items");
     return `<section class="inventory-section-summary inventory-section-summary-compact"><article><small>Total ${escapeHTML(label)}</small><strong>${active.length}</strong></article><article><small>Low Stock</small><strong>${low.length}</strong></article><article><small>Out of Stock</small><strong>${out.length}</strong></article></section>`;
   }
