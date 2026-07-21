@@ -1,3 +1,11 @@
+## 0.8.2.4 — Actual Ship Date
+
+- Changed Mark as Mailed to open a Ship Date confirmation dialog.
+- Defaulted Ship Date to today while allowing an earlier actual mailing date.
+- Added Edit Ship Date to completed orders.
+- Stored the actual ship date separately from the record update timestamp.
+- Migrated existing completed orders to use their prior mailed timestamp as a fallback date.
+
 ## 0.8.2.3 — Inline Reference Data in Orders
 
 - Added an **Add or assign a color…** option directly inside every order line item.

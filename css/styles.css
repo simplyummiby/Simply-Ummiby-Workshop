@@ -1755,3 +1755,6 @@ textarea { resize: vertical; }
   color: var(--muted);
   line-height: 1.55;
 }
+
+/* v0.8.2.4 shipping date controls */
+.ready-mail-actions{display:flex;align-items:center;gap:.75rem;flex-wrap:wrap;justify-content:flex-end}

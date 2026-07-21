@@ -1,8 +1,16 @@
 # Simply Ummiby Workshop
 
-**Version 0.8.2.3**
+**Version 0.8.2.4**
 
-Version 0.8.2.3 keeps order entry moving by allowing missing colors to be created or assigned directly from the order form. The new color is attached to the selected product and chosen automatically without navigating away or losing the order draft.
+Version 0.8.2.4 records the actual date an order shipped, even when the order is marked complete later. Completed orders can also have their ship date corrected without changing the rest of the workflow.
+
+## Version 0.8.2.4 highlights
+
+- Mark as Mailed now opens a Ship Date confirmation dialog.
+- Ship Date defaults to today and may be changed to an earlier date.
+- Completed orders include an Edit Ship Date control.
+- The actual ship date is stored separately from the app update timestamp.
+- Existing completed orders inherit a date from their prior mailed timestamp when available.
 
 ## Version 0.8.2.3 highlights
 

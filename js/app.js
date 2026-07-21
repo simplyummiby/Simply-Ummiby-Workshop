@@ -1,6 +1,6 @@
 (() => {
   const STORAGE_KEY = "simplyUmmibyWorkshopData";
-  const VERSION = "0.8.2.3";
+  const VERSION = "0.8.2.4";
   const ITEM_STATUSES = ["New","Preparing","Manufacturing","Waiting on Material","Ready for Packing","Packed","Ready to Mail","Completed"];
   const STATUS_PROGRESS = {
     "New": 5, "Preparing": 20, "Manufacturing": 50, "Waiting on Material": 35,
@@ -107,6 +107,7 @@
         mailerSealed: Boolean(order.shipping?.mailerSealed),
         packedAt: order.shipping?.packedAt || null,
         mailedAt: order.shipping?.mailedAt || null,
+        shipDate: order.shipping?.shipDate || (order.shipping?.mailedAt ? String(order.shipping.mailedAt).slice(0,10) : null),
         productTagChecks: { ...(order.shipping?.productTagChecks || {}) },
         inventoryTaskTransactions: { ...(order.shipping?.inventoryTaskTransactions || {}) }
       },
@@ -2611,7 +2612,7 @@
       const product=data.products.find(p => p.id===spec.productId);
       for (let n=0;n<spec.quantity;n++) items.push(migrateItem({id:uid("item"),productId:product.id,productName:product.name,color:spec.color,status:"New",updatedAt:now},items.length));
     });
-    const order={id:uid("order"),customerName:form.customerName.value.trim(),etsyOrderNumber:form.etsyOrderNumber.value.trim(),shipByDate:form.shipByDate.value,notes:form.notes.value.trim(),status:"New",items,createdAt:now,updatedAt:now,shipping:{careSheetPrinted:false,packingSlipPrinted:false,shippoOpened:false,labelAttached:false,companyStickerAttached:false,mailerSealed:false,packedAt:null,mailedAt:null,productTagChecks:{},inventoryTaskTransactions:{}}};
+    const order={id:uid("order"),customerName:form.customerName.value.trim(),etsyOrderNumber:form.etsyOrderNumber.value.trim(),shipByDate:form.shipByDate.value,notes:form.notes.value.trim(),status:"New",items,createdAt:now,updatedAt:now,shipping:{careSheetPrinted:false,packingSlipPrinted:false,shippoOpened:false,labelAttached:false,companyStickerAttached:false,mailerSealed:false,packedAt:null,mailedAt:null,shipDate:null,productTagChecks:{},inventoryTaskTransactions:{}}};
     data.orders.unshift(order);
     data.activity.unshift({text:`Created order for ${order.customerName}`,time:"Just now"});
     touchOrder(order,items[0]);
@@ -3157,14 +3158,28 @@
     </section>`;
   }
 
+  function formatShipDate(value) {
+    if (!value) return "Date not recorded";
+    const [year,month,day] = String(value).slice(0,10).split("-").map(Number);
+    if (!year || !month || !day) return "Date not recorded";
+    return new Date(year,month-1,day).toLocaleDateString(undefined,{year:"numeric",month:"long",day:"numeric"});
+  }
+
+  function localDateInputValue(date = new Date()) {
+    const year = date.getFullYear();
+    const month = String(date.getMonth()+1).padStart(2,"0");
+    const day = String(date.getDate()).padStart(2,"0");
+    return `${year}-${month}-${day}`;
+  }
+
   function renderReadyToMailSection(order) {
     if (!['Ready to Mail','Completed'].includes(order.status)) return '';
     const packedLabel = order.shipping?.packedAt ? new Date(order.shipping.packedAt).toLocaleString() : 'Packed';
     if (order.status === 'Completed') {
-      const mailedLabel = order.shipping?.mailedAt ? new Date(order.shipping.mailedAt).toLocaleString() : 'Mailed';
-      return `<section class="ready-mail-panel complete"><div><p class="eyebrow">Order complete</p><h3>Mailed</h3><p>This order was marked mailed on ${escapeHTML(mailedLabel)}.</p></div><span class="badge complete">100%</span></section>`;
+      const shipDateLabel = formatShipDate(order.shipping?.shipDate || order.shipping?.mailedAt);
+      return `<section class="ready-mail-panel complete"><div><p class="eyebrow">Order complete</p><h3>Mailed</h3><p>Actual ship date: <strong>${escapeHTML(shipDateLabel)}</strong></p></div><div class="ready-mail-actions"><span class="badge complete">100%</span><button class="button secondary small" type="button" data-action="edit-ship-date" data-order-id="${order.id}">Edit Ship Date</button></div></section>`;
     }
-    return `<section class="ready-mail-panel"><div><p class="eyebrow">Final step</p><h3>Ready to Mail</h3><p>Packed ${escapeHTML(packedLabel)}. Check this off after the package has actually been mailed.</p></div><label class="ready-mail-check"><input type="checkbox" data-action="mark-mailed" data-order-id="${order.id}"><span class="check-box"></span><span>Mark as Mailed</span></label></section>`;
+    return `<section class="ready-mail-panel"><div><p class="eyebrow">Final step</p><h3>Ready to Mail</h3><p>Packed ${escapeHTML(packedLabel)}. Record the date the package was actually mailed.</p></div><button class="button primary" type="button" data-action="mark-mailed" data-order-id="${order.id}">Mark as Mailed</button></section>`;
   }
 
   function workflowPercent(item) {
@@ -3411,16 +3426,38 @@
     touchOrder(order); data.activity.unshift({text:`Packed order for ${order.customerName}; ready to mail`,time:"Just now"}); saveData(); renderOrderWorkspace(order);
   }
 
-  function markOrderMailed(orderId) {
+  function showShipDateModal(orderId,editing = false) {
     const order=data.orders.find(o => o.id===orderId);
     if (!order) return;
-    if (order.status !== "Ready to Mail") return showToast("Mark the order packed before marking it mailed.");
-    order.shipping.mailedAt = new Date().toISOString();
-    order.items.forEach(item => { item.status = "Completed"; item.updatedAt = order.shipping.mailedAt; });
+    if (!editing && order.status !== "Ready to Mail") return showToast("Mark the order packed before marking it mailed.");
+    const currentDate = order.shipping?.shipDate || (order.shipping?.mailedAt ? String(order.shipping.mailedAt).slice(0,10) : localDateInputValue());
+    showModal(
+      editing ? "Edit Ship Date" : "Mark Order as Mailed",
+      `<form id="shipDateForm"><p class="modal-intro">Enter the date the package was actually handed off or mailed. Today is selected automatically.</p><label>Ship Date<input name="shipDate" type="date" value="${escapeHTML(currentDate)}" max="${localDateInputValue()}" required></label></form>`,
+      [
+        {label:"Cancel"},
+        {label:editing ? "Save Ship Date" : "Mark as Mailed",kind:"primary",onClick:() => saveShipDate(orderId,editing)}
+      ]
+    );
+  }
+
+  function saveShipDate(orderId,editing = false) {
+    const order=data.orders.find(o => o.id===orderId);
+    const shipDate=String(new FormData(document.getElementById("shipDateForm")).get("shipDate") || "");
+    if (!order || !shipDate) return showToast("Choose the actual ship date.");
+    if (shipDate > localDateInputValue()) return showToast("Ship Date cannot be in the future.");
+    order.shipping ||= {};
+    order.shipping.shipDate = shipDate;
+    order.shipping.mailedAt ||= new Date().toISOString();
+    if (!editing) {
+      order.items.forEach(item => { item.status = "Completed"; item.updatedAt = new Date().toISOString(); });
+      data.activity.unshift({text:`Mailed order for ${order.customerName} on ${formatShipDate(shipDate)}; order complete`,time:"Just now"});
+    } else {
+      data.activity.unshift({text:`Updated ship date for ${order.customerName} to ${formatShipDate(shipDate)}`,time:"Just now"});
+    }
     touchOrder(order);
-    data.activity.unshift({text:`Mailed order for ${order.customerName}; order complete`,time:"Just now"});
     saveData();
-    showToast("Order marked mailed and completed.");
+    showToast(editing ? "Ship date updated." : "Order marked mailed and completed.");
     renderOrderWorkspace(order);
   }
 
@@ -3621,7 +3658,8 @@
     if (action==="complete-pack") completePack(orderId,itemId);
     if (action==="wait-material") waitOnMaterial(orderId,itemId);
     if (action==="ready-mail") markReadyMail(orderId);
-    if (action==="mark-mailed") markOrderMailed(orderId);
+    if (action==="mark-mailed") showShipDateModal(orderId);
+    if (action==="edit-ship-date") showShipDateModal(orderId,true);
     if (action==="use-prepared-dowel") { const order=data.orders.find(o=>o.id===orderId),item=order?.items.find(i=>i.id===itemId); if(order&&item&&assignPreparedDowelFromStock(order,item)) renderOrderWorkspace(order,item.id); }
     if (action==="prepare-order-dowel") { const order=data.orders.find(o=>o.id===orderId),item=order?.items.find(i=>i.id===itemId); if(order&&item&&prepareDowelForOrder(order,item)) renderOrderWorkspace(order,item.id); }
     if (action==="return-prepared-dowel") { const order=data.orders.find(o=>o.id===orderId),item=order?.items.find(i=>i.id===itemId); if(order&&item){returnPreparedDowel(order,item);touchOrder(order,item);saveData();renderOrderWorkspace(order,item.id);showToast("Dowel assignment returned to inventory.");} }
