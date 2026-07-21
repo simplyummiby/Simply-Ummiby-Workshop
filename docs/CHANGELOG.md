@@ -1,3 +1,15 @@
+## 0.8.2.6 — Inventory Overview Cleanup & Technical Debt Audit
+
+- Rebuilt Inventory Overview as an action dashboard rather than a full alert report.
+- Grouped urgent items into Print, Purchase, and Make sections with compact previews.
+- Kept complete replenishment lists in Restock Center.
+- Separated true Low Stock and Out of Stock alerts from quantities that have not been verified.
+- Added Needs Count tracking and an Inventory Check workflow.
+- Added category-level inventory health summaries.
+- Centralized inventory status summaries and restock bucket generation.
+- Added verified count timestamps when quantities are edited, quick-adjusted, or received.
+- Removed duplicate overview sorting and grouping logic.
+
 # Changelog
 
 ## 0.8.2.5 — Inventory Alert Visibility

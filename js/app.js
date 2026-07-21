@@ -1,6 +1,6 @@
 (() => {
   const STORAGE_KEY = "simplyUmmibyWorkshopData";
-  const VERSION = "0.8.2.5";
+  const VERSION = "0.8.2.6";
   const ITEM_STATUSES = ["New","Preparing","Manufacturing","Waiting on Material","Ready for Packing","Packed","Ready to Mail","Completed"];
   const STATUS_PROGRESS = {
     "New": 5, "Preparing": 20, "Manufacturing": 50, "Waiting on Material": 35,
@@ -321,6 +321,27 @@
 
   function inventoryNeedsAttention(item) {
     return inventoryStatus(item) !== "Good";
+  }
+
+  function inventoryNeedsCount(item) {
+    return item?.status !== "Archived" && item?.tracking === "quantity" && !item.lastCountedAt;
+  }
+
+  function inventoryAttentionSummary(items = activeInventoryItems()) {
+    return items.reduce((summary,item) => {
+      const status = inventoryStatus(item);
+      summary.total += 1;
+      summary[status.toLowerCase()] += 1;
+      if (inventoryNeedsCount(item)) summary.needsCount += 1;
+      return summary;
+    }, {total:0,good:0,low:0,out:0,needsCount:0});
+  }
+
+  function inventoryRestockBuckets(items = activeInventoryItems().filter(inventoryNeedsAttention)) {
+    const buckets = {print:[],purchase:[],make:[]};
+    items.forEach(item => (buckets[item.restockType] || buckets.purchase).push(item));
+    Object.values(buckets).forEach(bucket => bucket.sort((a,b) => statusRank(inventoryStatus(a)) - statusRank(inventoryStatus(b)) || String(a.name||"").localeCompare(String(b.name||""))));
+    return buckets;
   }
 
   function categoryTotal(categoryId) {
@@ -691,7 +712,7 @@
 
   function showReceiveStock() {
     const items = activeInventoryItems().filter(item => item.tracking === "quantity").sort((a,b)=>a.name.localeCompare(b.name));
-    showModal("Receive Stock", `<form id="receiveStockForm" class="stock-adjustment-form"><label>Inventory Item<select name="itemId" required><option value="">Select an item...</option>${items.map(item=>`<option value="${item.id}">${escapeHTML(item.name)} · ${Number(item.quantity||0)} on hand</option>`).join("")}</select></label><label>Quantity Received<input name="quantity" type="number" min="1" value="1" required></label><label>Notes<textarea name="details" rows="3" placeholder="Shipment, purchase, or receiving notes"></textarea></label></form>`, [{label:"Cancel"},{label:"Receive Stock",kind:"primary",onClick:()=>{const fd=new FormData(document.getElementById("receiveStockForm"));const item=inventoryItemById(fd.get("itemId"));const qty=Number(fd.get("quantity")||0);if(!item||qty<1)return showToast("Choose an item and enter a quantity.");item.quantity=Number(item.quantity||0)+qty;recordInventoryTransaction({type:"received-stock",itemId:item.id,quantity:qty,reason:"Received new stock",details:fd.get("details")});data.activity.unshift({text:`Received ${qty} ${item.name}`,time:"Just now"});saveData();renderInventoryCatalog(inventoryViewState.category||"overview");showToast(`${qty} added to ${item.name}.`);}}]);
+    showModal("Receive Stock", `<form id="receiveStockForm" class="stock-adjustment-form"><label>Inventory Item<select name="itemId" required><option value="">Select an item...</option>${items.map(item=>`<option value="${item.id}">${escapeHTML(item.name)} · ${Number(item.quantity||0)} on hand</option>`).join("")}</select></label><label>Quantity Received<input name="quantity" type="number" min="1" value="1" required></label><label>Notes<textarea name="details" rows="3" placeholder="Shipment, purchase, or receiving notes"></textarea></label></form>`, [{label:"Cancel"},{label:"Receive Stock",kind:"primary",onClick:()=>{const fd=new FormData(document.getElementById("receiveStockForm"));const item=inventoryItemById(fd.get("itemId"));const qty=Number(fd.get("quantity")||0);if(!item||qty<1)return showToast("Choose an item and enter a quantity.");item.quantity=Number(item.quantity||0)+qty;item.lastCountedAt=new Date().toISOString();recordInventoryTransaction({type:"received-stock",itemId:item.id,quantity:qty,reason:"Received new stock",details:fd.get("details")});data.activity.unshift({text:`Received ${qty} ${item.name}`,time:"Just now"});saveData();renderInventoryCatalog(inventoryViewState.category||"overview");showToast(`${qty} added to ${item.name}.`);}}]);
   }
 
   function showAdjustStockPicker() {
@@ -1120,13 +1141,12 @@
   }
 
   function renderInventorySummaryCards(attentionItems) {
-    const active = activeInventoryItems();
-    const prepared = active.filter(item => item.category === "prepared-components");
+    const summary = inventoryAttentionSummary();
     return `<section class="inventory-summary-grid inventory-home-summary">
-      <button class="inventory-summary-card" data-action="inventory-category" data-category="yarn-cord"><span class="inventory-summary-icon rose">◇</span><span><small>Total Items</small><strong>${active.length}</strong><em>Across the workshop stockroom</em></span></button>
-      <button class="inventory-summary-card" data-action="inventory-low-stock"><span class="inventory-summary-icon amber">!</span><span><small>Low Stock</small><strong>${attentionItems.length}</strong><em>${attentionItems.length ? "Needs your attention" : "Everything looks good"}</em></span></button>
-      <button class="inventory-summary-card" data-action="inventory-category" data-category="prepared-components"><span class="inventory-summary-icon green">✓</span><span><small>Ready Packs</small><strong>${prepared.reduce((sum,item)=>sum+Number(item.quantity||0),0)}</strong><em>${prepared.length} pack type${prepared.length===1?"":"s"}</em></span></button>
-      <button class="inventory-summary-card" data-action="inventory-category" data-category="restock"><span class="inventory-summary-icon lavender">↗</span><span><small>Restock Center</small><strong>${attentionItems.length}</strong><em>Review replenishment needs</em></span></button>
+      <button class="inventory-summary-card" data-action="inventory-category" data-category="restock"><span class="inventory-summary-icon red">×</span><span><small>Out of Stock</small><strong>${summary.out}</strong><em>${summary.out ? "Needs immediate action" : "Nothing is out"}</em></span></button>
+      <button class="inventory-summary-card" data-action="inventory-category" data-category="restock"><span class="inventory-summary-icon amber">!</span><span><small>Low Stock</small><strong>${summary.low}</strong><em>${summary.low ? "Plan replenishment" : "Nothing is low"}</em></span></button>
+      <button class="inventory-summary-card" data-action="inventory-count-review"><span class="inventory-summary-icon lavender">↻</span><span><small>Needs Count</small><strong>${summary.needsCount}</strong><em>${summary.needsCount ? "Quantity not yet verified" : "Counts are up to date"}</em></span></button>
+      <button class="inventory-summary-card" data-action="inventory-category" data-category="yarn-cord"><span class="inventory-summary-icon green">✓</span><span><small>Healthy</small><strong>${summary.good}</strong><em>${summary.total} active inventory items</em></span></button>
     </section>`;
   }
 
@@ -1181,19 +1201,30 @@
     return `<article class="panel inventory-home-panel"><div class="panel-heading"><div><p class="eyebrow">Latest movements</p><h3>Recent Inventory Activity</h3></div></div><div class="inventory-activity-list">${rows.length?rows.map(tx=>{const item=inventoryItemById(tx.itemId);const quantity=Number(tx.quantity||0);return `<div class="inventory-activity-row"><span class="inventory-activity-quantity ${quantity<0?"negative":"positive"}">${quantity>0?"+":""}${quantity}</span><div><strong>${escapeHTML(item?.name||tx.itemName||"Inventory item")}</strong><small>${escapeHTML(tx.reason||tx.type||"Inventory update")}</small></div><time>${new Date(tx.date||tx.createdAt||Date.now()).toLocaleDateString(undefined,{month:"short",day:"numeric"})}</time></div>`;}).join(""):`<p>No inventory activity has been recorded yet.</p>`}</div></article>`;
   }
 
+  function renderInventoryActionBucket(title,type,items) {
+    const visible = items.slice(0,3);
+    const labels = {print:"Print",purchase:"Purchase",make:"Make"};
+    return `<section class="inventory-action-bucket"><div class="inventory-action-bucket-heading"><div><span class="inventory-action-icon ${type}">${type==="print"?"▤":type==="make"?"◇":"↗"}</span><div><small>${labels[type]}</small><h4>${escapeHTML(title)}</h4></div></div><strong>${items.length}</strong></div><div class="inventory-action-items">${visible.length ? visible.map(renderInventoryAlert).join("") : `<p class="inventory-action-empty">Nothing to ${type} right now.</p>`}</div>${items.length>visible.length?`<button class="text-button" data-action="inventory-category" data-category="restock">View all ${items.length} ${type} needs →</button>`:""}</section>`;
+  }
+
+  function renderInventoryCategorySnapshot() {
+    const categories = inventoryCategories().filter(category => INVENTORY_SECTION_ORDER.includes(category.id) && category.id !== "overview");
+    const rows = categories.map(category => {
+      const items = activeInventoryItems().filter(item => item.category === category.id);
+      const summary = inventoryAttentionSummary(items);
+      return `<button class="inventory-snapshot-row" data-action="inventory-category" data-category="${category.id}"><span><strong>${escapeHTML(category.name)}</strong><small>${summary.total} item${summary.total===1?"":"s"}</small></span><span>${summary.low}</span><span>${summary.out}</span><span>${summary.needsCount}</span></button>`;
+    }).join("");
+    return `<article class="panel inventory-home-panel inventory-snapshot-card"><div class="panel-heading"><div><p class="eyebrow">Workshop snapshot</p><h3>Inventory by Category</h3><p>Open a category when you need the full item table.</p></div></div><div class="inventory-snapshot-table"><div class="inventory-snapshot-head"><span>Category</span><span>Low</span><span>Out</span><span>Count</span></div>${rows}</div></article>`;
+  }
+
+  function renderInventoryCountNotice() {
+    const needsCount = activeInventoryItems().filter(inventoryNeedsCount);
+    return `<article class="inventory-count-notice"><div><span class="inventory-count-notice-icon">↻</span><div><p class="eyebrow">Inventory check</p><h3>${needsCount.length ? `${needsCount.length} item${needsCount.length===1?"":"s"} need a verified count` : "Inventory counts are verified"}</h3><p>${needsCount.length ? "These items are separated from true low-stock alerts until you confirm their quantities." : "Future quantity edits and stock counts will keep this status current."}</p></div></div>${needsCount.length?`<button class="button secondary" data-action="inventory-count-review">Start Inventory Check</button>`:""}</article>`;
+  }
+
   function renderInventoryOverview(attentionItems, orderNeeds) {
-    const sortedAttentionItems = [...attentionItems].sort((a,b) => {
-      const statusDifference = statusRank(inventoryStatus(a)) - statusRank(inventoryStatus(b));
-      if (statusDifference) return statusDifference;
-      const restockOrder = {print:0,purchase:1,make:2};
-      const restockDifference = (restockOrder[a.restockType] ?? 9) - (restockOrder[b.restockType] ?? 9);
-      if (restockDifference) return restockDifference;
-      return String(a.name || "").localeCompare(String(b.name || ""));
-    });
-    return `${renderInventorySummaryCards(attentionItems)}${renderInventoryQuickActions()}<section class="inventory-home-grid">
-      <article class="panel inventory-home-panel inventory-low-stock-card"><div class="panel-heading"><div><p class="eyebrow">Needs attention</p><h3>Inventory Alerts</h3><p>${attentionItems.length ? `${attentionItems.length} item${attentionItems.length===1?"":"s"} currently need attention.` : "Low and out-of-stock items appear here."}</p></div><button class="text-button" data-action="inventory-category" data-category="restock">Open Restock Center</button></div><div class="inventory-alert-stack">${sortedAttentionItems.length ? sortedAttentionItems.map(item => renderInventoryAlert(item)).join("") : "<p>Nothing is currently low or out.</p>"}</div></article>
-      ${renderInventoryRecentActivity()}
-    </section>`;
+    const buckets = inventoryRestockBuckets(attentionItems);
+    return `${renderInventorySummaryCards(attentionItems)}${renderInventoryQuickActions()}${renderInventoryCountNotice()}<section class="panel inventory-attention-panel"><div class="panel-heading"><div><p class="eyebrow">Attention needed</p><h3>What needs to happen next</h3><p>Grouped by the action you need to take—not by catalog order.</p></div><button class="text-button" data-action="inventory-category" data-category="restock">Open full Restock Center</button></div><div class="inventory-action-buckets">${renderInventoryActionBucket("Print supplies", "print", buckets.print)}${renderInventoryActionBucket("Order supplies", "purchase", buckets.purchase)}${renderInventoryActionBucket("Prepare ahead", "make", buckets.make)}</div></section><section class="inventory-home-grid inventory-home-lower">${renderInventoryCategorySnapshot()}${renderInventoryRecentActivity()}</section>`;
   }
 
   function inventoryFilterValues(categoryId) {
@@ -1378,6 +1409,7 @@
     const actualDelta = next - Number(item.quantity || 0);
     if (!actualDelta) return;
     item.quantity = next;
+    item.lastCountedAt = new Date().toISOString();
     recordInventoryTransaction({
       type:"quick-adjustment",
       itemId:item.id,
@@ -1559,7 +1591,8 @@
       purchaseUrl: normalizeExternalUrl(formData.get("purchaseUrl")),
       notes: formData.get("notes").trim(),
       imageData: document.getElementById("inventoryImageInput")?.dataset.imageData || existing?.imageData || "",
-      linkedProductIds: [...new Set(formData.getAll("linkedProductIds"))]
+      linkedProductIds: [...new Set(formData.getAll("linkedProductIds"))],
+      lastCountedAt: tracking === "quantity" ? new Date().toISOString() : existing?.lastCountedAt || null
     };
     if (existing) Object.assign(existing,updated);
     else data.inventoryCatalog.items.push(updated);
@@ -3633,6 +3666,7 @@
     if (action==="adjust-stock-picker") showAdjustStockPicker();
     if (action==="print-inventory-list") printInventoryList();
     if (action==="inventory-low-stock") { inventoryViewState={category:"restock",search:"",craft:"All",materialType:"All",itemType:"All",supplier:"All",stock:"All",lifecycle:"Active",sort:"stock-asc",group:"none"}; renderInventoryCatalog("restock"); }
+    if (action==="inventory-count-review") { const items=activeInventoryItems().filter(inventoryNeedsCount).sort((a,b)=>String(a.name||"").localeCompare(String(b.name||""))); showModal("Inventory Check Needed",`<p>Update each quantity as you count it. Saving the item records the count as verified.</p><div class="inventory-count-review-list">${items.length?items.map(item=>`<button class="inventory-count-review-row" data-action="edit-inventory-item" data-item-id="${item.id}"><span><strong>${escapeHTML(item.name)}</strong><small>${Number(item.quantity||0)} currently recorded · ${escapeHTML(inventoryPageMeta(item.category).title)}</small></span><span>Edit Count →</span></button>`).join(""):"<p>All quantity-tracked items have been counted.</p>"}</div>`,[{label:"Close"}]); }
     if (action==="add-supplier") showSupplierEditor();
     if (action==="add-supplier-from-inventory") { const draft=collectInventoryItemDraft(); if(draft) showSupplierEditor(null,{returnToInventory:{itemId:button.dataset.itemId||null,draft}}); }
     if (action==="edit-supplier") showSupplierEditor(button.dataset.supplierId);

@@ -1,8 +1,18 @@
 # Simply Ummiby Workshop
 
-**Version 0.8.2.5**
+**Version 0.8.2.6**
 
-Version 0.8.2.5 makes inventory alerts complete and trustworthy. Product tags and every other low or out-of-stock item now appear on the Inventory Overview instead of being hidden after the first six alerts.
+Version 0.8.2.6 reorganizes the Inventory Overview into a calmer action dashboard and removes technical debt from inventory status calculations. Low stock, out of stock, and unverified counts are now distinct signals instead of one mixed alert list.
+
+## Version 0.8.2.6 highlights
+
+- Replaced the long Inventory Alerts list with Print, Purchase, and Make action groups.
+- Limited overview groups to the three most urgent items while keeping complete lists in Restock Center.
+- Added separate Out of Stock, Low Stock, Needs Count, and Healthy summary cards.
+- Added an Inventory Check panel for quantities that have not yet been verified.
+- Added a category snapshot with low, out, and needs-count totals.
+- Centralized inventory summaries and restock grouping to reduce duplicate status logic.
+- Quantity edits, quick adjustments, and received stock now record a verified-count timestamp.
 
 ## Version 0.8.2.5 highlights
 
