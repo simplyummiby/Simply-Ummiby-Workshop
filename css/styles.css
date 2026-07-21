@@ -1723,3 +1723,35 @@ textarea { resize: vertical; }
 .inventory-section-table[data-category="finished-inventory"] .inventory-data-table-polished{grid-template-columns:minmax(310px,1.45fr) minmax(90px,.42fr) minmax(100px,.48fr) minmax(105px,.48fr) minmax(260px,.9fr)}
 .inventory-section-table .inventory-row-actions-polished{align-items:center}
 @media(max-width:1000px){.inventory-section-table[data-category="prepared-components"] .inventory-data-table-polished,.inventory-section-table[data-category="finished-inventory"] .inventory-data-table-polished{grid-template-columns:minmax(260px,1.25fr) 90px 95px 105px minmax(230px,.9fr)}}
+
+/* v0.8.2.3 — inline reference-data maintenance */
+.inline-reference-help {
+  display: block;
+  margin-top: 0.35rem;
+  color: var(--muted);
+  font-size: 0.76rem;
+  line-height: 1.35;
+}
+.inline-reference-divider {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin: 0.2rem 0;
+  color: var(--muted);
+  font-size: 0.78rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+.inline-reference-divider::before,
+.inline-reference-divider::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background: var(--border);
+}
+.modal-intro {
+  margin: 0 0 1rem;
+  color: var(--muted);
+  line-height: 1.55;
+}

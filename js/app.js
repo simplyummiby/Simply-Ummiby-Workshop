@@ -1,6 +1,6 @@
 (() => {
   const STORAGE_KEY = "simplyUmmibyWorkshopData";
-  const VERSION = "0.8.2.2";
+  const VERSION = "0.8.2.3";
   const ITEM_STATUSES = ["New","Preparing","Manufacturing","Waiting on Material","Ready for Packing","Packed","Ready to Mail","Completed"];
   const STATUS_PROGRESS = {
     "New": 5, "Preparing": 20, "Manufacturing": 50, "Waiting on Material": 35,
@@ -2480,23 +2480,92 @@
     const lineItems = document.getElementById("lineItems");
     const row = document.createElement("div");
     row.className = "line-item-row";
-    row.innerHTML = `<label>Product<select class="line-product"></select></label><label>Color<select class="line-color"></select></label><label>Quantity<input class="line-quantity" type="number" min="1" value="${values.quantity || 1}" /></label><button type="button" class="remove-line" title="Remove product">×</button>`;
+    row.innerHTML = `<label>Product<select class="line-product"></select></label><label>Color<select class="line-color"></select><small class="inline-reference-help">Missing a color? Add or assign it here without leaving the order.</small></label><label>Quantity<input class="line-quantity" type="number" min="1" value="${values.quantity || 1}" /></label><button type="button" class="remove-line" title="Remove product">×</button>`;
     const productSelect = row.querySelector(".line-product");
+    const colorSelect = row.querySelector(".line-color");
     productSelect.innerHTML = data.products.map(p => `<option value="${p.id}">${escapeHTML(p.name)}</option>`).join("");
     productSelect.value = values.productId || data.products[0].id;
-    const refreshColors = () => {
+
+    const refreshColors = (preferredColor = null) => {
       const product = data.products.find(p => p.id === productSelect.value);
-      const colorSelect = row.querySelector(".line-color");
-      colorSelect.innerHTML = product.colors.map(c => `<option value="${escapeHTML(c)}">${escapeHTML(c)}</option>`).join("");
-      if (values.color && product.colors.includes(values.color)) colorSelect.value = values.color;
+      const colors = product?.colors || [];
+      colorSelect.innerHTML = `${colors.map(c => `<option value="${escapeHTML(c)}">${escapeHTML(c)}</option>`).join("")}<option value="__manage_color__">＋ Add or assign a color…</option>`;
+      const requested = preferredColor || values.color;
+      if (requested && colors.includes(requested)) colorSelect.value = requested;
+      else if (colors.length) colorSelect.value = colors[0];
+      else colorSelect.value = "__manage_color__";
     };
-    productSelect.addEventListener("change", () => { values.color = null; refreshColors(); });
+
+    productSelect.addEventListener("change", () => {
+      values.color = null;
+      refreshColors();
+      if (colorSelect.value === "__manage_color__") showInlineOrderColorEditor(row);
+    });
+    colorSelect.addEventListener("change", () => {
+      if (colorSelect.value === "__manage_color__") showInlineOrderColorEditor(row);
+    });
+    row.refreshColors = refreshColors;
     refreshColors();
     row.querySelector(".remove-line").addEventListener("click", () => {
       if (lineItems.children.length === 1) return showToast("An order needs at least one product.");
       row.remove();
     });
     lineItems.appendChild(row);
+  }
+
+  function showInlineOrderColorEditor(row) {
+    const productId = row.querySelector(".line-product")?.value;
+    const master = productMasterById(productId);
+    if (!master) return showToast("Choose a product first.");
+    const assignedIds = new Set(master.colorIds || []);
+    const availableColors = colorsCatalog().filter(color => color.active !== false && !assignedIds.has(color.id));
+    showModal("Add or assign a color", `<form id="inlineOrderColorForm" class="color-editor-form">
+      <p class="modal-intro">Keep entering this order. Choose an existing color to make it available for <strong>${escapeHTML(master.name)}</strong>, or create a new color below.</p>
+      <section class="product-form-section"><div class="product-section-heading"><span>Existing reference data</span><h4>Assign an Existing Color</h4></div>
+        <label class="product-field"><span class="field-label">Color</span><select name="existingColorId"><option value="">Choose an existing color</option>${availableColors.map(color => `<option value="${color.id}">${escapeHTML(color.name)}</option>`).join("")}</select></label>
+      </section>
+      <div class="inline-reference-divider"><span>or</span></div>
+      <section class="product-form-section"><div class="product-section-heading"><span>New reference data</span><h4>Create a New Color</h4><p>Only the name is required now. You can add inventory links or notes later.</p></div><div class="product-form-grid">
+        <label class="product-field"><span class="field-label">Color Name</span><input name="newColorName" placeholder="Example: Sage Green"></label>
+        <label class="product-field"><span class="field-label">Color Family</span><select name="family">${COLOR_FAMILIES.map(value => `<option value="${value}">${value}</option>`).join("")}</select></label>
+      </div></section>
+    </form>`,[
+      {label:"Cancel",onClick:() => row.refreshColors?.()},
+      {label:"Add & Continue",kind:"primary",keepOpen:true,onClick:() => saveInlineOrderColor(row,master)}
+    ]);
+    document.querySelector('#inlineOrderColorForm input[name="newColorName"]')?.addEventListener("input",event => {
+      const family = document.querySelector('#inlineOrderColorForm select[name="family"]');
+      if (family) family.value = inferColorFamily(event.target.value);
+    });
+  }
+
+  function saveInlineOrderColor(row,master) {
+    const form = document.getElementById("inlineOrderColorForm");
+    if (!form) return;
+    const fd = new FormData(form);
+    const existingId = fd.get("existingColorId");
+    const newName = String(fd.get("newColorName") || "").trim();
+    if (!existingId && !newName) return showToast("Choose an existing color or enter a new color name.");
+    if (existingId && newName) return showToast("Choose an existing color or create a new one, not both.");
+
+    let color = existingId ? colorById(existingId) : colorByNameFrom(colorsCatalog(),newName);
+    if (!color && newName) {
+      let id = colorSlug(newName), base = id, n = 2;
+      while (colorsCatalog().some(existing => existing.id === id)) id = `${base}-${n++}`;
+      color = {id,name:newName,family:fd.get("family") || inferColorFamily(newName),craft:master.craft || "Shared",active:true,notes:"",swatch:"",inventoryItemId:""};
+      data.colorCatalog.push(color);
+      data.activity.unshift({text:`Added color while entering an order: ${newName}`,time:"Just now"});
+    }
+    if (!color) return showToast("Color not found.");
+
+    master.colorIds ||= [];
+    if (!master.colorIds.includes(color.id)) master.colorIds.push(color.id);
+    master.colors = master.colorIds.map(id => colorById(id)?.name).filter(Boolean);
+    data.products = data.productMasters.map(product => ({id:product.id,name:product.name,colors:product.colors || []}));
+    saveData();
+    hideModal();
+    row.refreshColors?.(color.name);
+    showToast(`${color.name} is now available for ${master.shortName || master.name}.`);
   }
 
   function saveOrderForm(event) {
@@ -2508,6 +2577,7 @@
       quantity:Number(row.querySelector(".line-quantity").value)
     }));
     if (specs.some(s => !s.quantity || s.quantity < 1)) return showToast("Please enter a valid quantity.");
+    if (specs.some(s => !s.color || s.color === "__manage_color__")) return showToast("Choose a color for every product. Use “Add or assign a color…” when needed.");
 
     const now = new Date().toISOString();
     if (editingOrderId) {

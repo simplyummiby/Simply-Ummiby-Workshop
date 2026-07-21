@@ -1,3 +1,11 @@
+## 0.8.2.3 — Inline Reference Data in Orders
+
+- Added an **Add or assign a color…** option directly inside every order line item.
+- Existing active colors can be associated with the selected product without leaving the order form.
+- New colors can be created with only a name and family, automatically associated with the product, selected in the order, and saved to the shared Colors catalog.
+- The order draft remains intact while the inline modal is open.
+- Established the UX rule that reference data should be maintained in context instead of interrupting active work.
+
 ## 0.8.2.2 — Retire Batch Production
 
 - Audited the Batch Production placeholder and confirmed it contained no unique saved workflow.

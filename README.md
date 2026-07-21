@@ -1,8 +1,15 @@
 # Simply Ummiby Workshop
 
-**Version 0.8.2.2**
+**Version 0.8.2.3**
 
-Version 0.8.2.2 retires the redundant Batch Production placeholder after auditing its intended workflows. Working batch actions remain in Inventory, where they already belong.
+Version 0.8.2.3 keeps order entry moving by allowing missing colors to be created or assigned directly from the order form. The new color is attached to the selected product and chosen automatically without navigating away or losing the order draft.
+
+## Version 0.8.2.3 highlights
+
+- Add or assign colors inline from any order line.
+- Create a color with minimal required information.
+- Automatically associate and preselect the color.
+- Preserve the in-progress order and all other line items.
 
 ## Version 0.8.2.2 highlights
 

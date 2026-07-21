@@ -1,5 +1,5 @@
 window.SUW_SAMPLE_DATA = {
-  version: "0.8.2.2",
+  version: "0.8.2.3",
   products: [
     {
       id: "macrame-paper-towel-holder",
@@ -127,7 +127,7 @@ window.SUW_SAMPLE_DATA = {
   ],
   orders: [],
   activity: [
-    { text: "Simply Ummiby Workshop v0.8.2.2 removes the redundant Batch Production module", time: "Today" }
+    { text: "Simply Ummiby Workshop v0.8.2.3 adds inline color creation and assignment during order entry", time: "Today" }
   ],
   settings: {
     lastOpenedOrderId: null,
