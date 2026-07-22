@@ -1,19 +1,20 @@
 # Simply Ummiby Workshop
 
-**Version 0.8.4.0**
+**Version 0.8.4.1**
 
 
-Version 0.8.4.0 adds measurement conversion to Record Use. Cord can remain stored in yards while day-to-day usage is entered in centimeters; Workshop converts and subtracts the equivalent yardage automatically.
+Version 0.8.4.1 replaces free-text recipe materials with inventory-linked recipe components. Each material now has its own inventory selection, usage type, quantity or cut-length details, and optional description, so automatic production deductions do not depend on matching typed names.
 
-## Version 0.8.4.0 highlights
+## Version 0.8.4.1 highlights
 
-- Choose Simple, Approximate, or Precise tracking for yarn and cord.
-- Record the amount just used and automatically calculate the remaining yardage or meterage.
-- Recalibrate the current remaining amount at any time without deleting prior usage history.
-- Switch to an approximate level such as Low when precise tracking falls behind.
-- See supplier names and a clickable Open Listing link directly in inventory rows.
-- Keep product relationships in pill form and remove the duplicate plain-text Products summary.
-- Includes focused inventory refactoring, shared yarn helpers, migration defaults, and responsive styling cleanup.
+- Add recipe materials as separate component rows instead of one free-text box.
+- Select the exact inventory record each component should consume.
+- Use either a counted quantity or pieces × cut length for cord and yarn.
+- Use the special order-color yarn or cord option when the exact roll depends on the order color.
+- See recorded availability while editing the recipe.
+- Add a missing inventory item without discarding the recipe form.
+- Block unlinked components from becoming executable production deductions.
+- Keep recipe displays and printable cut sheets synchronized with structured components.
 
 ## Version 0.8.2.5 highlights
 

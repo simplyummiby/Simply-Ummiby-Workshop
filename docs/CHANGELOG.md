@@ -1,5 +1,18 @@
 # Changelog
 
+## v0.8.4.1 — Inventory-Linked Recipe Components
+
+- Replaced the free-text recipe materials box with individual recipe component rows.
+- Each component links to a permanent inventory record instead of relying on typed terminology.
+- Added counted-item and cut-length usage types, including pieces × length calculations.
+- Added a special order-color yarn/cord link for recipes that should use the inventory roll matching the order color.
+- Added availability feedback, component descriptions, add/remove controls, and inline quick creation of a missing inventory item.
+- Recipe saving now generates the executable inventory-consumption plan from the linked components.
+- Unlinked components are blocked from saving so production deductions cannot silently fail.
+- Legacy recipe material lines are presented for matching rather than silently trusted by name.
+- Updated recipe display, summaries, and printable cut sheets for structured components.
+- Added focused recipe-editor cleanup and centralized component formatting/conversion logic.
+
 ## v0.8.4.0 — Executable Recipes & Automatic Inventory Consumption
 
 - Recipes can now define structured inventory-consumption values instead of serving only as written instructions.

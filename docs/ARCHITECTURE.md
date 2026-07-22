@@ -41,3 +41,8 @@ Precise yarn inventory keeps one canonical balance in the record's selected inve
 
 ## Executable Recipe Inventory (v0.8.4.0)
 Recipes may include an `inventoryConsumption` array. Each row identifies either a counted inventory item or a color-matched yarn/cord source, the required quantity, and the unit. Production Planning resolves the plan, validates stock, previews deductions, and sends all changes through shared consume/restore helpers. Order items retain transaction IDs so reset, cancellation, or a fulfillment-method change can reverse only the inventory that item consumed.
+
+
+## Inventory-Linked Recipe Components (v0.8.4.1)
+
+Recipe materials are stored as structured component records. Each component references an inventory item ID (or the special order-color yarn resolver), carries a usage type, and stores either a counted quantity or pieces × cut length. The recipe editor derives `inventoryConsumption` from these components, so display names may be renamed without breaking production deductions. Unlinked legacy text rows must be explicitly matched before a recipe can be saved as executable.
