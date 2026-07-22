@@ -1,18 +1,19 @@
 # Simply Ummiby Workshop
 
-**Version 0.8.2.6**
+**Version 0.8.3.0**
 
-Version 0.8.2.6 reorganizes the Inventory Overview into a calmer action dashboard and removes technical debt from inventory status calculations. Low stock, out of stock, and unverified counts are now distinct signals instead of one mixed alert list.
 
-## Version 0.8.2.6 highlights
+Version 0.8.3.0 adds flexible yarn and cord inventory tracking while keeping everyday inventory maintenance lightweight. Yarn records can remain simple, use an approximate fullness level, or track precise remaining length with automatic usage subtraction and manual recalibration.
 
-- Replaced the long Inventory Alerts list with Print, Purchase, and Make action groups.
-- Limited overview groups to the three most urgent items while keeping complete lists in Restock Center.
-- Added separate Out of Stock, Low Stock, Needs Count, and Healthy summary cards.
-- Added an Inventory Check panel for quantities that have not yet been verified.
-- Added a category snapshot with low, out, and needs-count totals.
-- Centralized inventory summaries and restock grouping to reduce duplicate status logic.
-- Quantity edits, quick adjustments, and received stock now record a verified-count timestamp.
+## Version 0.8.3.0 highlights
+
+- Choose Simple, Approximate, or Precise tracking for yarn and cord.
+- Record the amount just used and automatically calculate the remaining yardage or meterage.
+- Recalibrate the current remaining amount at any time without deleting prior usage history.
+- Switch to an approximate level such as Low when precise tracking falls behind.
+- See supplier names and a clickable Open Listing link directly in inventory rows.
+- Keep product relationships in pill form and remove the duplicate plain-text Products summary.
+- Includes focused inventory refactoring, shared yarn helpers, migration defaults, and responsive styling cleanup.
 
 ## Version 0.8.2.5 highlights
 

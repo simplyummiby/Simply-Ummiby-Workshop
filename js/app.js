@@ -1,6 +1,6 @@
 (() => {
   const STORAGE_KEY = "simplyUmmibyWorkshopData";
-  const VERSION = "0.8.2.6";
+  const VERSION = "0.8.3.0";
   const ITEM_STATUSES = ["New","Preparing","Manufacturing","Waiting on Material","Ready for Packing","Packed","Ready to Mail","Completed"];
   const STATUS_PROGRESS = {
     "New": 5, "Preparing": 20, "Manufacturing": 50, "Waiting on Material": 35,
@@ -68,6 +68,7 @@
 
     initial.inventoryCatalog = migrateInventoryCatalog(initial.inventoryCatalog, initial.inventory);
     initial.inventoryMaterialTypes = migrateInventoryMaterialTypes(initial.inventoryMaterialTypes, initial.inventoryCatalog.items);
+    initial.inventoryCatalog.items.forEach(item => migrateYarnTracking(item));
     initial.suppliers = migrateSuppliers(initial.suppliers, initial.inventoryCatalog.items);
     initial.inventoryTransactions ||= [];
     initial.productMasters = migrateProductMasters(initial.productMasters);
@@ -289,6 +290,33 @@
   function supplierById(id) { return suppliers().find(supplier => supplier.id === id); }
   function supplierNameForItem(item) { return supplierById(item?.supplierId)?.name || item?.supplier || ""; }
   function itemsForSupplier(supplierId) { return inventoryItems().filter(item => item.supplierId === supplierId); }
+
+  const YARN_LEVELS = ["Full","¾ Full","½ Full","¼ Full","Low","Scrap"];
+  function isYarnOrCord(item) {
+    const type = String(item?.materialType || "").toLowerCase();
+    return type.includes("yarn") || type.includes("cord") || item?.category === "yarn-cord";
+  }
+  function migrateYarnTracking(item) {
+    if (!isYarnOrCord(item)) return item;
+    item.yarnTrackingMode ||= "simple";
+    item.yarnApproximateLevel ||= item.condition === "Getting Low" ? "Low" : "Full";
+    item.yarnLengthUnit ||= "yd";
+    item.yarnOriginalLength = Number(item.yarnOriginalLength || 0);
+    item.yarnRemainingLength = Number(item.yarnRemainingLength || 0);
+    item.yarnUsageHistory = Array.isArray(item.yarnUsageHistory) ? item.yarnUsageHistory : [];
+    return item;
+  }
+  function yarnTrackingLabel(item) {
+    if (!isYarnOrCord(item)) return "";
+    const mode = item.yarnTrackingMode || "simple";
+    if (mode === "precise") return `${formatInventoryNumber(item.yarnRemainingLength)} ${item.yarnLengthUnit || "yd"} remaining`;
+    if (mode === "approximate") return `Approximate: ${item.yarnApproximateLevel || "Not set"}`;
+    return item.tracking === "quantity" ? `${Number(item.quantity || 0)} roll${Number(item.quantity || 0) === 1 ? "" : "s"}` : (item.condition || "Available");
+  }
+  function formatInventoryNumber(value) {
+    const number = Number(value || 0);
+    return Number.isInteger(number) ? String(number) : number.toFixed(2).replace(/0+$/, "").replace(/\.$/, "");
+  }
 
   function inventoryItems() {
     return data.inventoryCatalog?.items || [];
@@ -1355,18 +1383,19 @@
               </div>
               ${details.length ? `<div class="inventory-table-detail-line">${details.map(detail => `<span>${escapeHTML(detail)}</span>`).join("")}</div>` : ""}
               ${componentSummary ? `<small class="inventory-component-summary"><strong>Contains:</strong> ${escapeHTML(componentSummary)}</small>` : ""}
-              ${purchaseUrl ? `<button type="button" class="inventory-buy-link" data-action="open-inventory-link" data-item-id="${item.id}">Buy Online</button>` : ""}
+              ${purchaseUrl ? `<button type="button" class="inventory-buy-link" data-action="open-inventory-link" data-item-id="${item.id}">Open Listing ↗</button>` : ""}
               ${linkedProducts.length ? `<div class="inventory-product-pills">${linkedProducts.map(master => `<button type="button" class="product-link-pill" data-action="open-product-master" data-product-id="${master.id}">${escapeHTML(master.name)}</button>`).join("")}</div>` : ""}
               ${item.notes ? `<small class="inventory-item-description" title="${escapeHTML(item.notes)}">${escapeHTML(item.notes)}</small>` : ""}
             </div>
           </div>
-          <div class="inventory-count-cell">${item.tracking === "quantity" ? `<strong>${Number(item.quantity || 0)}</strong>${allocated ? `<small>${allocated} in ready packs · ${totalOwned(item)} total owned</small>` : `<small>${isReadyPack ? "Ready to use" : "Loose stock"}</small>`}` : `<strong>${escapeHTML(item.condition || "Not set")}</strong><small>Condition tracked</small>`}</div>
+          <div class="inventory-count-cell">${isYarnOrCord(item) ? `<strong>${escapeHTML(yarnTrackingLabel(item))}</strong><small>${item.yarnTrackingMode === "precise" ? "Precise length tracking" : item.yarnTrackingMode === "approximate" ? "Flexible estimate" : "Simple tracking"}</small>` : item.tracking === "quantity" ? `<strong>${Number(item.quantity || 0)}</strong>${allocated ? `<small>${allocated} in ready packs · ${totalOwned(item)} total owned</small>` : `<small>${isReadyPack ? "Ready to use" : "Loose stock"}</small>`}` : `<strong>${escapeHTML(item.condition || "Not set")}</strong><small>Condition tracked</small>`}</div>
           <div class="inventory-reorder-cell">${isReadyPack ? `<strong>${canMake}</strong><small>From current materials</small>` : item.tracking === "quantity" ? `<strong>${Number(item.reorderAt || 0)}</strong><small>Preferred ${Number(item.preferredStock || 0)}</small>` : "<strong>—</strong>"}</div>
           <div><span class="inventory-stock-badge ${archived ? "archived" : inventoryStatus(item).toLowerCase()}">${archived ? "Archived" : escapeHTML(inventoryStatus(item))}</span></div>
           <div class="inventory-row-actions inventory-row-actions-polished">
             ${!archived && isReadyPack ? `<button class="button primary small" data-action="kit-transaction" data-mode="build" data-item-id="${item.id}">Build Packs</button><button class="button secondary small" data-action="kit-transaction" data-mode="break" data-item-id="${item.id}">Unpack</button>` : ""}
             ${!archived && !isReadyPack && item.restockType === "make" && (item.components || []).length ? `<button class="button primary small" data-action="prepare-component" data-item-id="${item.id}">Prepare Batch</button>` : ""}
             ${!archived && item.tracking === "quantity" ? `<div class="inventory-quick-adjust" aria-label="Quick quantity adjustment"><button title="Subtract one" aria-label="Subtract one ${escapeHTML(item.name)}" data-action="adjust-inventory" data-item-id="${item.id}" data-delta="-1">−</button><button title="Add one" aria-label="Add one ${escapeHTML(item.name)}" data-action="adjust-inventory" data-item-id="${item.id}" data-delta="1">+</button></div><button class="button secondary small" data-action="stock-adjustment" data-item-id="${item.id}">Adjust</button>` : ""}
+            ${!archived && isYarnOrCord(item) && item.yarnTrackingMode === "precise" ? `<button class="button primary small" data-action="record-yarn-use" data-item-id="${item.id}">Record Use</button>` : ""}
             <button class="button secondary small" data-action="edit-inventory-item" data-item-id="${item.id}">Edit</button>
             ${archived ? `<button class="button secondary small" data-action="restore-inventory-item" data-item-id="${item.id}">Restore</button>` : `<button class="button secondary small" data-action="archive-inventory-item" data-item-id="${item.id}">Archive</button>`}
             <button class="button secondary small danger-outline" data-action="delete-inventory-item" data-item-id="${item.id}">Delete</button>
@@ -1431,6 +1460,31 @@
   }
 
 
+  function showRecordYarnUse(itemId) {
+    const item=inventoryItemById(itemId);
+    if (!item || !isYarnOrCord(item) || item.yarnTrackingMode !== "precise") return;
+    const unit=item.yarnLengthUnit || "yd";
+    const history=(item.yarnUsageHistory || []).slice(0,8);
+    showModal("Record Yarn or Cord Use", `<form id="recordYarnUseForm" class="stock-adjustment-form"><p>Currently recorded: <strong>${formatInventoryNumber(item.yarnRemainingLength)} ${escapeHTML(unit)}</strong></p><label>Amount Just Used<input name="amountUsed" type="number" min="0.01" step="0.01" required></label><label>Note (optional)<input name="note" placeholder="Example: Paper towel holder order"></label><details class="yarn-recalibrate"><summary>Recorded amount is no longer accurate</summary><label>Set current remaining amount<input name="recalibratedRemaining" type="number" min="0" step="0.01"></label><small>Use this to restart from what is actually left. Earlier history stays saved.</small></details></form>${history.length?`<div class="yarn-usage-history"><h4>Recent History</h4>${history.map(entry=>`<div><span>${escapeHTML(new Date(entry.date).toLocaleDateString())}</span><strong>${entry.type==="recalibration"?"Adjusted":`−${formatInventoryNumber(entry.amount)} ${escapeHTML(unit)}`}</strong><small>${escapeHTML(entry.note||"")}</small></div>`).join("")}</div>`:""}`, [{label:"Cancel"},{label:"Save",kind:"primary",keepOpen:true,onClick:()=>saveYarnUse(itemId)}]);
+  }
+
+  function saveYarnUse(itemId) {
+    const item=inventoryItemById(itemId); const form=document.getElementById("recordYarnUseForm");
+    if (!item || !form) return;
+    const fd=new FormData(form); const recalibrated=String(fd.get("recalibratedRemaining")||"").trim(); const used=Number(fd.get("amountUsed")||0); const note=String(fd.get("note")||"").trim();
+    item.yarnUsageHistory ||= [];
+    if (recalibrated !== "") {
+      const next=Math.max(0,Number(recalibrated)); const previous=Number(item.yarnRemainingLength||0); item.yarnRemainingLength=next;
+      item.yarnUsageHistory.unshift({id:uid("yarn-use"),date:new Date().toISOString(),type:"recalibration",previous,remaining:next,note:note||"Manual recalibration"});
+    } else {
+      if (!(used > 0)) return showToast("Enter the amount used.");
+      if (used > Number(item.yarnRemainingLength||0)) return showToast("Usage cannot be more than the recorded amount remaining. Recalibrate instead.");
+      item.yarnRemainingLength=Number(item.yarnRemainingLength||0)-used;
+      item.yarnUsageHistory.unshift({id:uid("yarn-use"),date:new Date().toISOString(),type:"usage",amount:used,remaining:item.yarnRemainingLength,note});
+    }
+    data.activity.unshift({text:`Updated yarn remaining for ${item.name}`,time:"Just now"}); saveData(); hideModal(); renderInventoryCatalog(inventoryViewState.category||"overview"); showToast("Yarn inventory updated.");
+  }
+
   function setupRelationshipMultiselect(root) {
     if (!root) return;
     const update = () => {
@@ -1471,6 +1525,7 @@
     showModal(existingItem?"Edit Inventory Item":"Add Inventory Item",`<form id="inventoryItemForm" class="inventory-editor-form inventory-editor-redesign">
       <section class="inventory-form-section inventory-basics-section"><div class="inventory-form-heading"><span>Inventory basics</span><h4>Item Details</h4><p>Name the item and decide where it belongs in your workshop inventory.</p></div><div class="inventory-form-grid"><label class="inventory-field"><span>Item Name <em>*</em></span><input name="name" value="${escapeHTML(item?.name||"")}" required></label><label class="inventory-field"><span>Material / Item Type <em>*</em></span><select name="materialType" required><option value="">Select a material type</option>${typeOptions}<option value="__new__">+ Add a new material type…</option></select><small>The selected type controls its Inventory tab.</small></label><label class="inventory-field full-width inventory-new-type-field"><span>New Material Type</span><input name="newMaterialType" value="${escapeHTML(item?.newMaterialType||"")}" placeholder="Example: Beads, Fabric, Ribbon"><small>New raw-material types appear as Inventory tabs.</small></label><label class="inventory-field"><span>Craft</span><select name="craft">${["Macramé","Crochet","Shared","Other"].map(v=>`<option value="${v}" ${item?.craft===v?"selected":""}>${v}</option>`).join("")}</select></label><label class="inventory-field"><span>Status</span><select name="status"><option value="Active" ${item?.status!=="Archived"?"selected":""}>Active</option><option value="Archived" ${item?.status==="Archived"?"selected":""}>Archived</option></select></label></div></section>
       <section class="inventory-form-section inventory-stock-section"><div class="inventory-form-heading"><span>Stock & reordering</span><h4>Inventory Levels</h4><p>Track counted stock or the condition of reusable workshop items.</p></div><div class="inventory-form-grid"><label class="inventory-field"><span>Tracking</span><select name="tracking"><option value="quantity" ${!isCondition?"selected":""}>Quantity</option><option value="condition" ${isCondition?"selected":""}>Condition</option></select></label><label class="inventory-field"><span>Restock Method</span><select name="restockType"><option value="purchase" ${item?.restockType==="purchase"?"selected":""}>Purchase</option><option value="make" ${item?.restockType==="make"?"selected":""}>Make</option><option value="print" ${item?.restockType==="print"?"selected":""}>Print</option></select></label><label class="inventory-field quantity-field"><span>Current Quantity</span><input name="quantity" type="number" min="0" value="${Number(item?.quantity||0)}"></label><label class="inventory-field quantity-field"><span>Reorder At</span><input name="reorderAt" type="number" min="0" value="${Number(item?.reorderAt||0)}"></label><label class="inventory-field quantity-field"><span>Preferred Stock</span><input name="preferredStock" type="number" min="0" value="${Number(item?.preferredStock||0)}"></label><label class="inventory-field condition-field"><span>Condition</span><select name="condition">${["Available","Getting Low","Replace Soon","Out"].map(v=>`<option value="${v}" ${item?.condition===v?"selected":""}>${v}</option>`).join("")}</select></label></div></section>
+      <section class="inventory-form-section inventory-yarn-section" ${isYarnOrCord(item) ? "" : "hidden"}><div class="inventory-form-heading"><span>Yarn & cord tracking</span><h4>Choose Your Detail Level</h4><p>Use simple inventory, a quick visual estimate, or precise length. You can switch modes later without deleting prior history.</p></div><div class="inventory-form-grid"><label class="inventory-field"><span>Inventory Tracking</span><select name="yarnTrackingMode"><option value="simple" ${(item?.yarnTrackingMode||"simple")==="simple"?"selected":""}>Simple</option><option value="approximate" ${item?.yarnTrackingMode==="approximate"?"selected":""}>Approximate</option><option value="precise" ${item?.yarnTrackingMode==="precise"?"selected":""}>Precise</option></select></label><label class="inventory-field yarn-approximate-field"><span>Current Level</span><select name="yarnApproximateLevel">${YARN_LEVELS.map(level=>`<option value="${level}" ${item?.yarnApproximateLevel===level?"selected":""}>${level}</option>`).join("")}</select></label><label class="inventory-field yarn-precise-field"><span>Original Length</span><input name="yarnOriginalLength" type="number" min="0" step="0.01" value="${Number(item?.yarnOriginalLength||0)}"></label><label class="inventory-field yarn-precise-field"><span>Remaining Length</span><input name="yarnRemainingLength" type="number" min="0" step="0.01" value="${Number(item?.yarnRemainingLength||0)}"></label><label class="inventory-field yarn-precise-field"><span>Unit</span><select name="yarnLengthUnit"><option value="yd" ${item?.yarnLengthUnit!=="m"?"selected":""}>Yards</option><option value="m" ${item?.yarnLengthUnit==="m"?"selected":""}>Meters</option></select></label></div></section>
       <section class="inventory-form-section inventory-purchasing-section"><div class="inventory-form-heading"><span>Supplier & purchasing</span><h4>Where It Comes From</h4><p>Keep the supplier directory separate from the exact product purchase link.</p></div><div class="inventory-form-grid"><div class="inventory-field supplier-picker-field"><span>Supplier</span><div class="supplier-picker-row"><select name="supplierId"><option value="">No supplier selected</option>${suppliers().filter(supplier=>supplier.status!=="Inactive" || supplier.id===item?.supplierId).sort((a,b)=>a.name.localeCompare(b.name)).map(supplier=>`<option value="${supplier.id}" ${item?.supplierId===supplier.id?"selected":""}>${escapeHTML(supplier.name)}</option>`).join("")}</select><button type="button" class="button secondary small supplier-inline-add" data-action="add-supplier-from-inventory" data-item-id="${itemId||""}">+ Add New Supplier</button></div><small>Create a supplier without losing this inventory form.</small></div><label class="inventory-field"><span>Purchase URL</span><input name="purchaseUrl" value="${escapeHTML(item?.purchaseUrl||item?.resourceUrl||"")}" placeholder="Exact item listing"></label></div></section>
       <section class="inventory-form-section inventory-print-section"><div class="inventory-form-heading"><span>Print settings</span><h4>Printable Inventory</h4><p>These fields appear for care sheets, product tags, stickers, and other printed supplies.</p></div><div class="inventory-form-grid"><label class="inventory-field"><span>Default Print Quantity</span><input name="defaultPrintQuantity" type="number" min="1" value="${Number(item?.defaultPrintQuantity||10)}"></label><label class="inventory-field"><span>Printable File</span><input name="printableFile" value="${escapeHTML(item?.printableFile||"")}" placeholder="printables/example.pdf"></label></div></section>
       <section class="inventory-form-section inventory-photo-section"><div class="inventory-form-heading"><span>Photo</span><h4>Item Image</h4><p>Add a workshop reference photo when it helps distinguish similar supplies.</p></div><div class="inventory-photo-layout"><label class="inventory-photo-control"><span>Choose Photo</span><input id="inventoryImageInput" type="file" accept="image/*"></label><div class="inventory-image-preview" id="inventoryImagePreview">${item?.imageData?`<img src="${item.imageData}" alt="">`:`<span>No photo added</span>`}</div></div></section>
@@ -1485,7 +1540,7 @@
       if(!target) return;
       const selected=[...form.querySelectorAll('input[name="linkedProductIds"]:checked, input[type="hidden"][name="linkedProductIds"]')].map(input=>productMasterById(input.value)).filter(Boolean);
       const unique=[...new Map(selected.map(product=>[product.id,product])).values()];
-      const savedOther=existingItem?inventoryReferenceSummary(existingItem.id):"";
+      const savedOther=existingItem?inventoryReferenceSummary(existingItem.id,{excludeProducts:true}):"";
       target.innerHTML=`${unique.length?`<div class="connection-summary-group"><strong>Products</strong><div class="connection-pill-list">${unique.map(product=>`<span class="connection-pill">${escapeHTML(product.name)}</span>`).join("")}</div></div>`:`<p class="where-used-empty">No products selected yet.</p>`}${savedOther?`<div class="saved-connection-details">${savedOther}</div>`:""}`;
     };
     form?.querySelectorAll('input[name="linkedProductIds"]').forEach(input=>input.addEventListener("change",updateInventoryConnectsSummary));
@@ -1494,8 +1549,8 @@
     const newTypeField=form?.querySelector(".inventory-new-type-field");
     const trackingSelect=form?.querySelector('select[name="tracking"]');
     const restockSelect=form?.querySelector('select[name="restockType"]');
-    const sync=()=>{if(newTypeField)newTypeField.hidden=typeSelect?.value!=="__new__";const condition=trackingSelect?.value==="condition";form?.querySelectorAll(".quantity-field").forEach(el=>el.hidden=condition);form?.querySelectorAll(".condition-field").forEach(el=>el.hidden=!condition);const printable=restockSelect?.value==="print" || ["Care Sheet","Product Tag","Sticker"].includes(typeSelect?.value);form?.querySelector(".inventory-print-section")?.toggleAttribute("hidden",!printable);};
-    typeSelect?.addEventListener("change",sync); trackingSelect?.addEventListener("change",sync); restockSelect?.addEventListener("change",sync); sync();
+    const sync=()=>{if(newTypeField)newTypeField.hidden=typeSelect?.value!=="__new__";const condition=trackingSelect?.value==="condition";form?.querySelectorAll(".quantity-field").forEach(el=>el.hidden=condition);form?.querySelectorAll(".condition-field").forEach(el=>el.hidden=!condition);const printable=restockSelect?.value==="print" || ["Care Sheet","Product Tag","Sticker"].includes(typeSelect?.value);form?.querySelector(".inventory-print-section")?.toggleAttribute("hidden",!printable);const yarn=/yarn|cord/i.test(typeSelect?.value||"");form?.querySelector(".inventory-yarn-section")?.toggleAttribute("hidden",!yarn);const yarnMode=form?.querySelector('[name="yarnTrackingMode"]')?.value||"simple";form?.querySelectorAll(".yarn-approximate-field").forEach(el=>el.hidden=yarnMode!=="approximate");form?.querySelectorAll(".yarn-precise-field").forEach(el=>el.hidden=yarnMode!=="precise");};
+    typeSelect?.addEventListener("change",sync); trackingSelect?.addEventListener("change",sync); restockSelect?.addEventListener("change",sync); form?.querySelector('[name="yarnTrackingMode"]')?.addEventListener("change",sync); sync();
     const input=document.getElementById("inventoryImageInput"); if(input)input.addEventListener("change",async()=>{const file=input.files?.[0];if(!file)return;const compressed=await compressInventoryImage(file);input.dataset.imageData=compressed;document.getElementById("inventoryImagePreview").innerHTML=`<img src="${compressed}" alt="">`;});
   }
   function compressInventoryImage(file){return new Promise((resolve,reject)=>{const reader=new FileReader();reader.onerror=reject;reader.onload=()=>{const image=new Image();image.onerror=reject;image.onload=()=>{const max=480,scale=Math.min(1,max/Math.max(image.width,image.height)),canvas=document.createElement("canvas");canvas.width=Math.max(1,Math.round(image.width*scale));canvas.height=Math.max(1,Math.round(image.height*scale));canvas.getContext("2d").drawImage(image,0,0,canvas.width,canvas.height);resolve(canvas.toDataURL("image/jpeg",.72));};image.src=reader.result;};reader.readAsDataURL(file);});}
@@ -1511,10 +1566,10 @@
     return {products,components,colors,transactions,orders};
   }
 
-  function inventoryReferenceSummary(itemId) {
+  function inventoryReferenceSummary(itemId, options = {}) {
     const refs=inventoryItemReferences(itemId);
     const groups=[];
-    if(refs.products.length) groups.push(`<div><strong>Products</strong><span>${refs.products.map(product=>escapeHTML(product.name)).join(", ")}</span></div>`);
+    if(!options.excludeProducts && refs.products.length) groups.push(`<div><strong>Products</strong><span>${refs.products.map(product=>escapeHTML(product.name)).join(", ")}</span></div>`);
     if(refs.components.length) groups.push(`<div><strong>Ready packs</strong><span>${refs.components.map(item=>escapeHTML(item.name)).join(", ")}</span></div>`);
     if(refs.colors.length) groups.push(`<div><strong>Colors</strong><span>${refs.colors.map(color=>escapeHTML(color.name)).join(", ")}</span></div>`);
     if(refs.orders.length) groups.push(`<div><strong>Orders</strong><span>${refs.orders.length} linked order${refs.orders.length===1?"":"s"}</span></div>`);
@@ -1592,7 +1647,13 @@
       notes: formData.get("notes").trim(),
       imageData: document.getElementById("inventoryImageInput")?.dataset.imageData || existing?.imageData || "",
       linkedProductIds: [...new Set(formData.getAll("linkedProductIds"))],
-      lastCountedAt: tracking === "quantity" ? new Date().toISOString() : existing?.lastCountedAt || null
+      lastCountedAt: tracking === "quantity" ? new Date().toISOString() : existing?.lastCountedAt || null,
+      yarnTrackingMode: isYarnOrCord({materialType,category}) ? (formData.get("yarnTrackingMode") || existing?.yarnTrackingMode || "simple") : undefined,
+      yarnApproximateLevel: formData.get("yarnApproximateLevel") || existing?.yarnApproximateLevel || "Full",
+      yarnOriginalLength: Math.max(0, Number(formData.get("yarnOriginalLength") || existing?.yarnOriginalLength || 0)),
+      yarnRemainingLength: Math.max(0, Number(formData.get("yarnRemainingLength") || existing?.yarnRemainingLength || 0)),
+      yarnLengthUnit: formData.get("yarnLengthUnit") || existing?.yarnLengthUnit || "yd",
+      yarnUsageHistory: existing?.yarnUsageHistory || []
     };
     if (existing) Object.assign(existing,updated);
     else data.inventoryCatalog.items.push(updated);
@@ -3674,6 +3735,7 @@
     if (action==="kit-transaction") showKitTransaction(button.dataset.itemId,button.dataset.mode);
     if (action==="prepare-component") showPrepareComponent(button.dataset.itemId);
     if (action==="stock-adjustment") showStockAdjustment(button.dataset.itemId);
+    if (action==="record-yarn-use") showRecordYarnUse(button.dataset.itemId);
     if (action==="clear-inventory-filters") { inventoryViewState.search="";inventoryViewState.craft="All";inventoryViewState.materialType="All";inventoryViewState.itemType="All";inventoryViewState.supplier="All";inventoryViewState.stock="All";inventoryViewState.lifecycle="Active";inventoryViewState.sort="name-asc";inventoryViewState.group="none";renderInventoryCatalog(inventoryViewState.category); }
     if (action==="open-recipe") openRecipe(button.dataset.recipeId);
     if (action==="add-recipe") showRecipeEditor();

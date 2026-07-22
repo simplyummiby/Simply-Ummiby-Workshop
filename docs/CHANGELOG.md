@@ -1,3 +1,17 @@
+## 0.8.3.0 — Flexible Yarn Tracking & Inventory Refinement
+
+- Added Simple, Approximate, and Precise inventory modes for yarn and cord records.
+- Added approximate levels: Full, ¾ Full, ½ Full, ¼ Full, Low, and Scrap.
+- Added precise original/remaining length fields with yards or meters.
+- Added a Record Use workflow that subtracts usage automatically and prevents negative remaining amounts.
+- Added manual recalibration so tracking can resume from the amount actually left without reconstructing missed usage.
+- Preserved yarn usage and recalibration history when switching tracking modes.
+- Surfaced supplier names and clickable Open Listing links directly in inventory tables.
+- Improved yarn-specific inventory row hierarchy and added a direct Record Use action.
+- Kept linked products in pill form and removed the duplicate Products section from the Connections summary.
+- Refactored yarn detection, migration, display formatting, and usage calculations into shared helpers to limit technical debt.
+- Added responsive styles and isolated yarn-only form fields from non-yarn categories.
+
 ## 0.8.2.6 — Inventory Overview Cleanup & Technical Debt Audit
 
 - Rebuilt Inventory Overview as an action dashboard rather than a full alert report.

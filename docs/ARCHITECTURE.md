@@ -19,3 +19,8 @@ Simply Ummiby Workshop remains a static, local-first web application.
 - Vanilla JavaScript
 - Browser `localStorage`
 - JSON backup download
+
+
+## Yarn and cord inventory tracking (v0.8.3.0)
+
+Yarn-specific behavior is additive to the general inventory record. `yarnTrackingMode` may be `simple`, `approximate`, or `precise`. Approximate records use `yarnApproximateLevel`; precise records use `yarnOriginalLength`, `yarnRemainingLength`, `yarnLengthUnit`, and append-only `yarnUsageHistory`. The shared migration helper initializes these fields only for yarn/cord material types, keeping other categories free of irrelevant data and controls. Switching modes does not delete history.
