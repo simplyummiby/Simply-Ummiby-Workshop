@@ -1,3 +1,17 @@
+# Changelog
+
+## v0.8.4.0 — Executable Recipes & Automatic Inventory Consumption
+
+- Recipes can now define structured inventory-consumption values instead of serving only as written instructions.
+- Production Planning previews exactly what Finished Inventory, a Fabrication Kit, or Raw Materials will consume.
+- Continuing from Production Planning deducts inventory once and records order-linked transactions.
+- Resetting or cancelling safely restores production inventory, including precise yarn length.
+- The Paper Towel Holder recipe now consumes 4 × 340 cm main cord, a conservative 70 cm wrap cord, one ring, one raw dowel, and two end caps.
+- Fabrication Kit and Finished Inventory paths consume the matching product/color record automatically.
+- Incomplete recipes do not guess yarn measurements; they clearly report that executable inventory values still need to be added.
+- Manual Record Use now supports either one total amount or multiple equal pieces (for example, 4 × 320 cm).
+- Refactored production deductions and reversals into shared planning, consumption, and restoration helpers to avoid duplicate inventory logic.
+
 ## 0.8.3.3 — Yarn Usage Converter
 
 - Added a measurement-unit selector to the Record Use modal.

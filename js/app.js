@@ -1,6 +1,6 @@
 (() => {
   const STORAGE_KEY = "simplyUmmibyWorkshopData";
-  const VERSION = "0.8.3.3";
+  const VERSION = "0.8.4.0";
   const ITEM_STATUSES = ["New","Preparing","Manufacturing","Waiting on Material","Ready for Packing","Packed","Ready to Mail","Completed"];
   const STATUS_PROGRESS = {
     "New": 5, "Preparing": 20, "Manufacturing": 50, "Waiting on Material": 35,
@@ -971,6 +971,7 @@
       workflow: {
         activeTab: workflow.activeTab || tabForStatus(item.status || "New"),
         fulfillmentMethod: workflow.fulfillmentMethod || "",
+        productionInventoryTransactions: workflow.productionInventoryTransactions || [],
         materialStatuses: normalizeMaterialStatuses(workflow.materialStatuses, product.materials),
         manufacturingChecks: normalizeManufacturingChecks(workflow.manufacturingChecks, workflow.manufacturingChecks, product.manufacturingSections),
         packingChecks: normalizeChecks(workflow.packingChecks, product.packingChecklist),
@@ -1509,26 +1510,36 @@
       const convertedLabel=entry.type!=="recalibration" && enteredUnit!==inventoryUnit?`<small>${formatInventoryNumber(entry.amount)} ${escapeHTML(inventoryUnit)} deducted${entry.note?` · ${escapeHTML(entry.note)}`:""}</small>`:`<small>${escapeHTML(entry.note||"")}</small>`;
       return `<div><span>${escapeHTML(new Date(entry.date).toLocaleDateString())}</span><strong>${usageLabel}</strong><span>${formatInventoryNumber(entry.remaining)} ${escapeHTML(inventoryUnit)} left</span>${convertedLabel}</div>`;
     }).join("")}</div>`:"";
-    showModal("Record Yarn or Cord Use", `<form id="recordYarnUseForm" class="stock-adjustment-form yarn-use-form"><div class="yarn-current-balance"><span>Current remaining</span><strong>${formatInventoryNumber(item.yarnRemainingLength)} ${escapeHTML(inventoryUnit)}</strong></div><div class="yarn-use-entry-grid"><label><span>Amount Just Used</span><input name="amountUsed" type="number" min="0.01" step="0.01" inputmode="decimal" autofocus></label><label><span>Measured In</span><select name="amountUnit"><option value="cm" ${preferredEntryUnit==="cm"?"selected":""}>Centimeters</option><option value="yd" ${preferredEntryUnit==="yd"?"selected":""}>Yards</option><option value="m" ${preferredEntryUnit==="m"?"selected":""}>Meters</option></select></label></div><div class="yarn-conversion-preview" aria-live="polite"><span>Converted amount</span><strong data-yarn-conversion-preview>Enter an amount to convert</strong><small>Workshop converts your measurement to ${escapeHTML(inventoryUnit)} before subtracting it.</small></div><label><span>Note (optional)</span><input name="note" placeholder="Example: Paper towel holder order"></label><details class="yarn-recalibrate"><summary>Recorded amount is no longer accurate</summary><label><span>Set current remaining amount (${escapeHTML(inventoryUnit)})</span><input name="recalibratedRemaining" type="number" min="0" step="0.01" inputmode="decimal"></label><small>Use this to restart from what is actually left. Earlier history stays saved.</small></details></form>${historyMarkup}`, [{label:"Cancel"},{label:"Record Usage",kind:"primary",keepOpen:true,onClick:()=>saveYarnUse(itemId)}]);
+    showModal("Record Yarn or Cord Use", `<form id="recordYarnUseForm" class="stock-adjustment-form yarn-use-form"><div class="yarn-current-balance"><span>Current remaining</span><strong>${formatInventoryNumber(item.yarnRemainingLength)} ${escapeHTML(inventoryUnit)}</strong></div><fieldset class="yarn-entry-method"><legend>How are you entering this use?</legend><label><input type="radio" name="entryMethod" value="total" checked> One total amount</label><label><input type="radio" name="entryMethod" value="pieces"> Multiple equal pieces</label></fieldset><div class="yarn-use-entry-grid"><label data-yarn-total-field><span>Amount Just Used</span><input name="amountUsed" type="number" min="0.01" step="0.01" inputmode="decimal" autofocus></label><label data-yarn-pieces-field hidden><span>Number of Pieces</span><input name="pieceCount" type="number" min="1" step="1" inputmode="numeric"></label><label data-yarn-pieces-field hidden><span>Length Per Piece</span><input name="pieceLength" type="number" min="0.01" step="0.01" inputmode="decimal"></label><label><span>Measured In</span><select name="amountUnit"><option value="cm" ${preferredEntryUnit==="cm"?"selected":""}>Centimeters</option><option value="yd" ${preferredEntryUnit==="yd"?"selected":""}>Yards</option><option value="m" ${preferredEntryUnit==="m"?"selected":""}>Meters</option></select></label></div><div class="yarn-conversion-preview" aria-live="polite"><span>Total to record</span><strong data-yarn-conversion-preview>Enter an amount to convert</strong><small data-yarn-calculation-detail>Workshop converts your measurement to ${escapeHTML(inventoryUnit)} before subtracting it.</small></div><label><span>Note (optional)</span><input name="note" placeholder="Example: Paper towel holder order"></label><details class="yarn-recalibrate"><summary>Recorded amount is no longer accurate</summary><label><span>Set current remaining amount (${escapeHTML(inventoryUnit)})</span><input name="recalibratedRemaining" type="number" min="0" step="0.01" inputmode="decimal"></label><small>Use this to restart from what is actually left. Earlier history stays saved.</small></details></form>${historyMarkup}`, [{label:"Cancel"},{label:"Record Usage",kind:"primary",keepOpen:true,onClick:()=>saveYarnUse(itemId)}]);
     setupYarnUsageConverter(item);
+  }
+
+  function yarnUseEntry(form) {
+    const method=form.elements.entryMethod?.value || "total";
+    const unit=String(form.elements.amountUnit?.value || "cm");
+    const pieceCount=Math.max(0,Number(form.elements.pieceCount?.value || 0));
+    const pieceLength=Math.max(0,Number(form.elements.pieceLength?.value || 0));
+    const total=method === "pieces" ? pieceCount * pieceLength : Math.max(0,Number(form.elements.amountUsed?.value || 0));
+    return {method,unit,pieceCount,pieceLength,total};
   }
 
   function setupYarnUsageConverter(item) {
     const form=document.getElementById("recordYarnUseForm");
     if (!form) return;
-    const amountInput=form.elements.amountUsed;
-    const unitSelect=form.elements.amountUnit;
     const preview=form.querySelector("[data-yarn-conversion-preview]");
+    const detail=form.querySelector("[data-yarn-calculation-detail]");
     const updatePreview=()=>{
-      const amount=Number(amountInput.value);
-      const fromUnit=unitSelect.value;
+      const entry=yarnUseEntry(form);
+      form.querySelectorAll("[data-yarn-total-field]").forEach(field=>field.hidden=entry.method!=="total");
+      form.querySelectorAll("[data-yarn-pieces-field]").forEach(field=>field.hidden=entry.method!=="pieces");
       const inventoryUnit=item.yarnLengthUnit || "yd";
-      if (!(amount > 0)) { preview.textContent="Enter an amount to convert"; return; }
-      const converted=convertLength(amount,fromUnit,inventoryUnit);
-      preview.textContent=`${formatInventoryNumber(roundInventoryLength(converted))} ${inventoryUnit}`;
+      if (!(entry.total > 0)) { preview.textContent="Enter an amount to convert"; detail.textContent=`Workshop converts your measurement to ${inventoryUnit} before subtracting it.`; return; }
+      const converted=roundInventoryLength(convertLength(entry.total,entry.unit,inventoryUnit));
+      preview.textContent=`${formatInventoryNumber(entry.total)} ${lengthUnitLabel(entry.unit)} = ${formatInventoryNumber(converted)} ${inventoryUnit}`;
+      detail.textContent=entry.method==="pieces" ? `${formatInventoryNumber(entry.pieceCount)} pieces × ${formatInventoryNumber(entry.pieceLength)} ${lengthUnitLabel(entry.unit)}` : `One total measurement entered in ${lengthUnitLabel(entry.unit)}.`;
     };
-    amountInput.addEventListener("input",updatePreview);
-    unitSelect.addEventListener("change",updatePreview);
+    form.addEventListener("input",updatePreview);
+    form.addEventListener("change",updatePreview);
     updatePreview();
   }
 
@@ -1537,22 +1548,21 @@
     if (!item || !form) return;
     const fd=new FormData(form);
     const recalibrated=String(fd.get("recalibratedRemaining")||"").trim();
-    const enteredAmount=Number(fd.get("amountUsed")||0);
-    const enteredUnit=String(fd.get("amountUnit")||"cm");
+    const entry=yarnUseEntry(form);
     const inventoryUnit=item.yarnLengthUnit || "yd";
-    const used=roundInventoryLength(convertLength(enteredAmount,enteredUnit,inventoryUnit));
+    const used=roundInventoryLength(convertLength(entry.total,entry.unit,inventoryUnit));
     const note=String(fd.get("note")||"").trim();
     item.yarnUsageHistory ||= [];
-    item.yarnUsageEntryUnit=enteredUnit;
+    item.yarnUsageEntryUnit=entry.unit;
     if (recalibrated !== "") {
       const next=Math.max(0,Number(recalibrated)); const previous=Number(item.yarnRemainingLength||0); item.yarnRemainingLength=next;
       item.yarnUsageHistory.unshift({id:uid("yarn-use"),date:new Date().toISOString(),type:"recalibration",previous,remaining:next,note:note||"Manual recalibration"});
     } else {
-      if (!(enteredAmount > 0)) return showToast("Enter the amount used.");
+      if (!(entry.total > 0)) return showToast(entry.method==="pieces" ? "Enter the number and length of the pieces." : "Enter the amount used.");
       if (!(used > 0)) return showToast("That measurement could not be converted.");
       if (used > Number(item.yarnRemainingLength||0)) return showToast("Usage cannot be more than the recorded amount remaining. Recalibrate instead.");
       item.yarnRemainingLength=roundInventoryLength(Number(item.yarnRemainingLength||0)-used);
-      item.yarnUsageHistory.unshift({id:uid("yarn-use"),date:new Date().toISOString(),type:"usage",amount:used,enteredAmount,enteredUnit,remaining:item.yarnRemainingLength,note});
+      item.yarnUsageHistory.unshift({id:uid("yarn-use"),date:new Date().toISOString(),type:"usage",amount:used,enteredAmount:entry.total,enteredUnit:entry.unit,entryMethod:entry.method,pieceCount:entry.pieceCount||null,pieceLength:entry.pieceLength||null,remaining:item.yarnRemainingLength,note});
     }
     data.activity.unshift({text:`Updated yarn remaining for ${item.name}`,time:"Just now"}); saveData(); hideModal(); renderInventoryCatalog(inventoryViewState.category||"overview"); showToast("Yarn inventory updated.");
   }
@@ -2937,6 +2947,120 @@
     return rows;
   }
 
+  function normalizedColor(value) {
+    return String(value || "").toLowerCase().replace(/[^a-z0-9]+/g," ").trim();
+  }
+
+  function matchingYarnInventory(item) {
+    const color=normalizedColor(item.color);
+    const candidates=activeInventoryItems().filter(entry => isYarnOrCord(entry) && (entry.linkedProductIds || []).includes(item.productId));
+    return candidates.find(entry => normalizedColor(entry.color)===color)
+      || candidates.find(entry => normalizedColor(entry.name).includes(color))
+      || (candidates.length===1 ? candidates[0] : null);
+  }
+
+  function recipeConsumptionDefinitions(item) {
+    const recipe=recipeByProductId(item.productId);
+    return Array.isArray(recipe?.inventoryConsumption) ? recipe.inventoryConsumption : [];
+  }
+
+  function resolveConsumptionInventory(item,definition) {
+    if (definition.source === "yarn-color") return matchingYarnInventory(item);
+    return inventoryItemById(definition.inventoryItemId);
+  }
+
+  function inventoryAvailableForConsumption(inventoryItem,definition) {
+    if (!inventoryItem) return null;
+    if (definition.kind === "length") {
+      if (!isYarnOrCord(inventoryItem) || inventoryItem.yarnTrackingMode !== "precise") return null;
+      return convertLength(Number(inventoryItem.yarnRemainingLength || 0),inventoryItem.yarnLengthUnit || "yd",definition.unit || "cm");
+    }
+    return inventoryItem.tracking === "quantity" ? Number(inventoryItem.quantity || 0) : null;
+  }
+
+  function productionConsumptionPlan(item) {
+    const method=item.workflow.fulfillmentMethod;
+    if (method === "finished") {
+      const inventoryItem=activeInventoryItems().find(entry => entry.category==="finished-inventory" && entry.productId===item.productId && normalizedColor(entry.color)===normalizedColor(item.color));
+      return [{key:"finished-product",label:`Finished ${item.productName} — ${item.color}`,kind:"quantity",quantity:1,inventoryItem}];
+    }
+    if (method === "kit") {
+      const kit=activeInventoryItems().find(entry => entry.category==="prepared-components" && String(entry.materialType||"").toLowerCase()==="kit" && entry.productId===item.productId && normalizedColor(entry.color)===normalizedColor(item.color));
+      const definitions=[{key:"fabrication-kit",label:`${item.productName} fabrication kit — ${item.color}`,kind:"quantity",quantity:1,inventoryItem:kit}];
+      const dowel=dowelConfigForProduct(item.productId);
+      if (dowel) definitions.push({key:"prepared-dowel",label:dowel.preparedLabel,kind:"quantity",quantity:1,inventoryItem:inventoryItemById(dowel.preparedId)});
+      return definitions;
+    }
+    return recipeConsumptionDefinitions(item).map(definition => ({...definition,inventoryItem:resolveConsumptionInventory(item,definition)}));
+  }
+
+  function productionPlanIssue(row) {
+    if (!row.inventoryItem) return "Inventory link missing";
+    const available=inventoryAvailableForConsumption(row.inventoryItem,row);
+    if (available === null) return row.kind === "length" ? "Precise length tracking required" : "Quantity tracking required";
+    return available + 1e-9 < Number(row.quantity || 0) ? "Not enough recorded" : "Ready";
+  }
+
+  function productionPlanSummary(item) {
+    const rows=productionConsumptionPlan(item);
+    if (!rows.length) return {rows,ready:false,message:"This recipe does not yet have executable inventory values."};
+    const issues=rows.filter(row => productionPlanIssue(row)!=="Ready");
+    return {rows,ready:issues.length===0,message:issues.length ? "Resolve the inventory links or shortages before continuing." : "Inventory is ready to consume."};
+  }
+
+  function renderProductionConsumptionPreview(item) {
+    if (!item.workflow.fulfillmentMethod) return "";
+    const plan=productionPlanSummary(item);
+    const methodLabel=item.workflow.fulfillmentMethod==="raw"?"Recipe materials":item.workflow.fulfillmentMethod==="kit"?"Fabrication kit path":"Finished inventory path";
+    return `<section class="production-consumption-preview"><div class="checklist-heading"><div><h5>Inventory That Will Be Used</h5><span>${escapeHTML(methodLabel)} · deducted when you continue</span></div><span class="badge ${plan.ready?"good":"attention"}">${plan.ready?"Ready":"Needs attention"}</span></div>${plan.rows.length?`<div class="inventory-table"><div class="inventory-table-head"><span>Material</span><span>Needed</span><span>Recorded</span><span>Status</span></div>${plan.rows.map(row=>{const available=inventoryAvailableForConsumption(row.inventoryItem,row);const unit=row.kind==="length"?(row.unit||"cm"):"";return `<div class="inventory-table-row"><strong>${escapeHTML(row.label)}</strong><span>${formatInventoryNumber(row.quantity)} ${escapeHTML(unit)}</span><span>${available===null?"Not compatible":`${formatInventoryNumber(available)} ${escapeHTML(unit)}`}</span><span class="inventory-state ${productionPlanIssue(row)==="Ready"?"available":"need-to-buy"}">${escapeHTML(productionPlanIssue(row))}</span></div>`;}).join("")}</div>`:`<div class="path-detail-card"><p>${escapeHTML(plan.message)}</p><button class="text-button" data-action="open-item-recipe" data-recipe-id="${item.productId}">Open the recipe to review its materials →</button></div>`}<p class="production-consumption-note">Workshop records each deduction against this order so resetting or cancelling can return it safely.</p></section>`;
+  }
+
+  function consumeProductionInventory(order,item) {
+    item.workflow.productionInventoryTransactions ||= [];
+    if (item.workflow.productionInventoryTransactions.length) return true;
+    const plan=productionPlanSummary(item);
+    if (!plan.ready) { showToast(plan.message); return false; }
+    const created=[];
+    for (const row of plan.rows) {
+      const inventoryItem=row.inventoryItem;
+      if (row.kind === "length") {
+        const inventoryUnit=inventoryItem.yarnLengthUnit || "yd";
+        const amountInInventoryUnit=roundInventoryLength(convertLength(Number(row.quantity),row.unit||"cm",inventoryUnit));
+        inventoryItem.yarnRemainingLength=roundInventoryLength(Number(inventoryItem.yarnRemainingLength||0)-amountInInventoryUnit);
+        inventoryItem.yarnUsageHistory ||= [];
+        inventoryItem.yarnUsageHistory.unshift({id:uid("yarn-use"),date:new Date().toISOString(),type:"usage",amount:amountInInventoryUnit,enteredAmount:Number(row.quantity),enteredUnit:row.unit||"cm",entryMethod:"recipe",remaining:inventoryItem.yarnRemainingLength,note:`Recipe use · Etsy order ${order.etsyOrderNumber||order.id}`});
+        const tx=recordInventoryTransaction({type:"consume",itemId:inventoryItem.id,quantity:-amountInInventoryUnit,reason:"Order production",details:`Used ${row.quantity} ${row.unit||"cm"} for ${item.productName}.`,relatedItemId:item.id,orderId:order.id,etsyOrderNumber:order.etsyOrderNumber||"",orderItemId:item.id,source:"recipe-production",measurement:{amount:Number(row.quantity),unit:row.unit||"cm",inventoryAmount:amountInInventoryUnit,inventoryUnit}});
+        created.push(tx.id);
+      } else {
+        inventoryItem.quantity=Number(inventoryItem.quantity||0)-Number(row.quantity||0);
+        const tx=recordInventoryTransaction({type:"consume",itemId:inventoryItem.id,quantity:-Number(row.quantity||0),reason:"Order production",details:`Used ${row.quantity} ${inventoryItem.name} for ${item.productName}.`,relatedItemId:item.id,orderId:order.id,etsyOrderNumber:order.etsyOrderNumber||"",orderItemId:item.id,source:"recipe-production"});
+        created.push(tx.id);
+      }
+    }
+    item.workflow.productionInventoryTransactions=created;
+    if (dowelConfigForProduct(item.productId)) { item.workflow.preparedDowelReady=true; item.workflow.preparedDowelMode="production-consumed"; }
+    return true;
+  }
+
+  function restoreProductionInventory(order,item) {
+    const ids=item.workflow?.productionInventoryTransactions || [];
+    ids.forEach(transactionId=>{
+      const original=data.inventoryTransactions.find(tx=>tx.id===transactionId);
+      if (!original || original.quantity>=0) return;
+      const inventoryItem=inventoryItemById(original.itemId);
+      if (!inventoryItem) return;
+      const amount=Math.abs(Number(original.quantity||0));
+      if (original.measurement && isYarnOrCord(inventoryItem)) {
+        inventoryItem.yarnRemainingLength=roundInventoryLength(Number(inventoryItem.yarnRemainingLength||0)+amount);
+        inventoryItem.yarnUsageHistory ||= [];
+        inventoryItem.yarnUsageHistory.unshift({id:uid("yarn-use"),date:new Date().toISOString(),type:"recalibration",previous:roundInventoryLength(Number(inventoryItem.yarnRemainingLength||0)-amount),remaining:inventoryItem.yarnRemainingLength,note:`Returned from reset/cancel · Etsy order ${order.etsyOrderNumber||order.id}`});
+      } else if (inventoryItem.tracking==="quantity") inventoryItem.quantity=Number(inventoryItem.quantity||0)+amount;
+      recordInventoryTransaction({type:"restore",itemId:inventoryItem.id,quantity:amount,reason:"Order production reversal",details:`Returned inventory from ${item.productName}.`,relatedItemId:item.id,orderId:order.id,etsyOrderNumber:order.etsyOrderNumber||"",orderItemId:item.id,source:"recipe-production-reversal",reversesTransactionId:original.id});
+    });
+    item.workflow.productionInventoryTransactions=[];
+    if (item.workflow.preparedDowelMode==="production-consumed") { item.workflow.preparedDowelReady=false; item.workflow.preparedDowelMode=""; }
+  }
+
   function renderAvailabilityValue(value) {
     if (value === null || value === undefined) return "Not counted";
     return String(value);
@@ -3030,6 +3154,7 @@
       </div>
 
       ${renderInventorySnapshot(item)}
+      ${renderProductionConsumptionPreview(item)}
 
       <div class="materials-card">
         <div class="checklist-heading">
@@ -3436,6 +3561,7 @@
     const order=data.orders.find(o => o.id===orderId);
     const item=order?.items.find(i => i.id===itemId);
     if (!item) return;
+    if ((item.workflow.productionInventoryTransactions || []).length && item.workflow.fulfillmentMethod !== value) restoreProductionInventory(order,item);
     item.workflow.fulfillmentMethod=value;
     item.status="Preparing";
     touchOrder(order,item);
@@ -3458,6 +3584,7 @@
     const order = data.orders.find(o => o.id === orderId);
     const item = order?.items.find(i => i.id === itemId);
     if (!item.workflow.fulfillmentMethod) return showToast("Choose a fulfillment method first.");
+    if (!consumeProductionInventory(order,item)) return;
     if (item.workflow.fulfillmentMethod === "finished") {
       item.status = "Ready for Packing";
       item.workflow.activeTab = "pack";
@@ -3737,6 +3864,7 @@
       {label:"Keep Progress"},
       {label:"Reset Item",kind:"danger",onClick:() => {
         restoreAllInventoryTasksForItem(order,item);
+        restoreProductionInventory(order,item);
         const reset=migrateItem({id:item.id,productId:item.productId,productName:item.productName,color:item.color,status:"New"},item.unitNumber-1);
         Object.assign(item,reset); touchOrder(order,item); data.activity.unshift({text:`Reset ${item.productName}`,time:"Just now"}); saveData(); renderOrderWorkspace(order,item.id);
       }}
@@ -3749,6 +3877,7 @@
       {label:"Keep Progress"},
       {label:"Reset Order",kind:"danger",onClick:() => {
         restoreAllInventoryTasksForOrder(order);
+        order.items.forEach(item=>restoreProductionInventory(order,item));
         order.items=order.items.map((item,index) => migrateItem({id:item.id,productId:item.productId,productName:item.productName,color:item.color,status:"New"},index));
         order.shipping={careSheetPrinted:false,packingSlipPrinted:false,shippoOpened:false,labelAttached:false,companyStickerAttached:false,mailerSealed:false,productTagChecks:{},inventoryTaskTransactions:{}};
         touchOrder(order); data.activity.unshift({text:`Reset order for ${order.customerName}`,time:"Just now"}); saveData(); renderOrderWorkspace(order);
@@ -3760,7 +3889,7 @@
     const order=data.orders.find(o => o.id===orderId);
     showModal("Cancel this order?",`<p>This removes <strong>${escapeHTML(order.customerName)} · Etsy #${escapeHTML(order.etsyOrderNumber)}</strong> from Orders.</p>`,[
       {label:"Keep Order"},
-      {label:"Cancel Order",kind:"danger",onClick:() => { restoreAllInventoryTasksForOrder(order); data.orders=data.orders.filter(o => o.id!==orderId); data.activity.unshift({text:`Cancelled order for ${order.customerName}`,time:"Just now"}); saveData(); showView("workshop"); showToast("Order cancelled."); }}
+      {label:"Cancel Order",kind:"danger",onClick:() => { restoreAllInventoryTasksForOrder(order); order.items.forEach(item=>restoreProductionInventory(order,item)); data.orders=data.orders.filter(o => o.id!==orderId); data.activity.unshift({text:`Cancelled order for ${order.customerName}`,time:"Just now"}); saveData(); showView("workshop"); showToast("Order cancelled."); }}
     ]);
   }
 

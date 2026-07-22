@@ -24,6 +24,13 @@ window.SUW_RECIPES = [
         "description": "Cut the cord, complete both arms, align, assemble, and finish the holder."
       }
     ],
+    "inventoryConsumption": [
+      { "key": "main-cord", "source": "yarn-color", "kind": "length", "label": "3 mm macramé cord", "quantity": 1360, "unit": "cm" },
+      { "key": "wrap-cord", "source": "yarn-color", "kind": "length", "label": "Wrap-knot cord", "quantity": 70, "unit": "cm" },
+      { "key": "wood-ring", "inventoryItemId": "wood-rings", "kind": "quantity", "label": "Wooden ring", "quantity": 1 },
+      { "key": "paper-towel-dowel", "inventoryItemId": "paper-towel-dowels", "kind": "quantity", "label": "Paper towel dowel", "quantity": 1 },
+      { "key": "end-caps", "inventoryItemId": "end-caps", "kind": "quantity", "label": "End caps", "quantity": 2 }
+    ],
     "materials": [
       {
         "name": "3 mm macramé cord",

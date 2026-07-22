@@ -1,11 +1,11 @@
 # Simply Ummiby Workshop
 
-**Version 0.8.3.3**
+**Version 0.8.4.0**
 
 
-Version 0.8.3.3 adds measurement conversion to Record Use. Cord can remain stored in yards while day-to-day usage is entered in centimeters; Workshop converts and subtracts the equivalent yardage automatically.
+Version 0.8.4.0 adds measurement conversion to Record Use. Cord can remain stored in yards while day-to-day usage is entered in centimeters; Workshop converts and subtracts the equivalent yardage automatically.
 
-## Version 0.8.3.3 highlights
+## Version 0.8.4.0 highlights
 
 - Choose Simple, Approximate, or Precise tracking for yarn and cord.
 - Record the amount just used and automatically calculate the remaining yardage or meterage.

@@ -35,6 +35,9 @@ Routine precise usage is handled through one dedicated Record Use workflow. The 
 Precise-length initialization is handled in the inventory save boundary. A blank remaining-length value on a new precise record inherits the original length, while edits preserve the stored remaining balance unless the user explicitly changes it. Inventory status for precise and approximate yarn is derived from yarn tracking data rather than the generic quantity/condition branch.
 
 
-## Yarn usage unit conversion (v0.8.3.3)
+## Yarn usage unit conversion (v0.8.4.0)
 
 Precise yarn inventory keeps one canonical balance in the record's selected inventory unit (`yd` or `m`). Record Use accepts centimeters, yards, or meters and converts the entered value through centralized meter-based conversion helpers before subtraction. Usage history stores the original entered amount/unit and the normalized deducted amount, preserving both the maker-facing measurement and the inventory calculation.
+
+## Executable Recipe Inventory (v0.8.4.0)
+Recipes may include an `inventoryConsumption` array. Each row identifies either a counted inventory item or a color-matched yarn/cord source, the required quantity, and the unit. Production Planning resolves the plan, validates stock, previews deductions, and sends all changes through shared consume/restore helpers. Order items retain transaction IDs so reset, cancellation, or a fulfillment-method change can reverse only the inventory that item consumed.
