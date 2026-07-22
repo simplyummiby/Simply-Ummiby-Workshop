@@ -29,3 +29,7 @@ Yarn-specific behavior is additive to the general inventory record. `yarnTrackin
 ## Yarn usage workflow refinement (v0.8.3.1)
 
 Routine precise usage is handled through one dedicated Record Use workflow. The inventory editor owns configuration and recalibration values; the usage modal owns subtraction and history entries. This separation prevents duplicate calculation paths and keeps the remaining-length field from becoming an everyday manual counter.
+
+## Precise yarn balance normalization (v0.8.3.2)
+
+Precise-length initialization is handled in the inventory save boundary. A blank remaining-length value on a new precise record inherits the original length, while edits preserve the stored remaining balance unless the user explicitly changes it. Inventory status for precise and approximate yarn is derived from yarn tracking data rather than the generic quantity/condition branch.

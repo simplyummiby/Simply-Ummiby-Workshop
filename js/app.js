@@ -1,6 +1,6 @@
 (() => {
   const STORAGE_KEY = "simplyUmmibyWorkshopData";
-  const VERSION = "0.8.3.1";
+  const VERSION = "0.8.3.2";
   const ITEM_STATUSES = ["New","Preparing","Manufacturing","Waiting on Material","Ready for Packing","Packed","Ready to Mail","Completed"];
   const STATUS_PROGRESS = {
     "New": 5, "Preparing": 20, "Manufacturing": 50, "Waiting on Material": 35,
@@ -304,6 +304,12 @@
     item.yarnOriginalLength = Number(item.yarnOriginalLength || 0);
     item.yarnRemainingLength = Number(item.yarnRemainingLength || 0);
     item.yarnUsageHistory = Array.isArray(item.yarnUsageHistory) ? item.yarnUsageHistory : [];
+    // v0.8.3.2 repair: precise records created with an original length but a blank
+    // remaining field were previously saved as zero. Only repair untouched records
+    // so a genuinely depleted roll with usage history is never replenished.
+    if (item.yarnTrackingMode === "precise" && item.yarnOriginalLength > 0 && item.yarnRemainingLength === 0 && item.yarnUsageHistory.length === 0) {
+      item.yarnRemainingLength = item.yarnOriginalLength;
+    }
     return item;
   }
   function yarnTrackingLabel(item) {
@@ -335,6 +341,21 @@
   }
 
   function inventoryStatus(item) {
+    if (isYarnOrCord(item)) {
+      const mode = item.yarnTrackingMode || "simple";
+      if (mode === "precise") {
+        const remaining = Number(item.yarnRemainingLength || 0);
+        const original = Number(item.yarnOriginalLength || 0);
+        if (remaining <= 0) return "Out";
+        if (original > 0 && remaining / original <= 0.25) return "Low";
+        return "Good";
+      }
+      if (mode === "approximate") {
+        const level = item.yarnApproximateLevel || "Full";
+        if (["¼ Full","Low","Scrap"].includes(level)) return "Low";
+        return "Good";
+      }
+    }
     if (item.tracking === "condition") {
       if (item.condition === "Out") return "Out";
       if (["Replace Soon","Getting Low"].includes(item.condition)) return "Low";
@@ -1625,6 +1646,12 @@
     if (!materialType) { showToast("Material Type is required."); return; }
     const typeRecord = inventoryMaterialTypeByName(materialType);
     const category = typeRecord?.categoryId || "accessories";
+    const yarnMode = isYarnOrCord({materialType,category}) ? (formData.get("yarnTrackingMode") || existing?.yarnTrackingMode || "simple") : undefined;
+    const originalLength = Math.max(0, Number(formData.get("yarnOriginalLength") || existing?.yarnOriginalLength || 0));
+    const remainingLengthInput = String(formData.get("yarnRemainingLength") ?? "").trim();
+    const remainingLength = remainingLengthInput === ""
+      ? (existing ? Math.max(0, Number(existing.yarnRemainingLength || 0)) : (yarnMode === "precise" ? originalLength : 0))
+      : Math.max(0, Number(remainingLengthInput));
     const updated = {
       ...(existing || {}),
       id: existing?.id || uid("inventory"),
@@ -1648,10 +1675,10 @@
       imageData: document.getElementById("inventoryImageInput")?.dataset.imageData || existing?.imageData || "",
       linkedProductIds: [...new Set(formData.getAll("linkedProductIds"))],
       lastCountedAt: tracking === "quantity" ? new Date().toISOString() : existing?.lastCountedAt || null,
-      yarnTrackingMode: isYarnOrCord({materialType,category}) ? (formData.get("yarnTrackingMode") || existing?.yarnTrackingMode || "simple") : undefined,
+      yarnTrackingMode: yarnMode,
       yarnApproximateLevel: formData.get("yarnApproximateLevel") || existing?.yarnApproximateLevel || "Full",
-      yarnOriginalLength: Math.max(0, Number(formData.get("yarnOriginalLength") || existing?.yarnOriginalLength || 0)),
-      yarnRemainingLength: Math.max(0, Number(formData.get("yarnRemainingLength") || existing?.yarnRemainingLength || 0)),
+      yarnOriginalLength: originalLength,
+      yarnRemainingLength: remainingLength,
       yarnLengthUnit: formData.get("yarnLengthUnit") || existing?.yarnLengthUnit || "yd",
       yarnUsageHistory: existing?.yarnUsageHistory || []
     };
@@ -2248,6 +2275,12 @@
     if (duplicateName) return showToast("A product with that name already exists.");
     let id = existing?.id || name.toLowerCase().replace(/[^a-z0-9]+/g,"-").replace(/^-|-$/g,"") || uid("product");
     if (!existing && productMasterById(id)) id = `${id}-${Date.now().toString(36)}`;
+    const yarnMode = isYarnOrCord({materialType,category}) ? (formData.get("yarnTrackingMode") || existing?.yarnTrackingMode || "simple") : undefined;
+    const originalLength = Math.max(0, Number(formData.get("yarnOriginalLength") || existing?.yarnOriginalLength || 0));
+    const remainingLengthInput = String(formData.get("yarnRemainingLength") ?? "").trim();
+    const remainingLength = remainingLengthInput === ""
+      ? (existing ? Math.max(0, Number(existing.yarnRemainingLength || 0)) : (yarnMode === "precise" ? originalLength : 0))
+      : Math.max(0, Number(remainingLengthInput));
     const updated = {
       ...(existing || {}),
       id,

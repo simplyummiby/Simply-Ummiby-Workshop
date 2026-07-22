@@ -1,3 +1,12 @@
+## 0.8.3.2 — Precise Yarn Balance Fix
+
+- Fixed new precise yarn/cord records saving `0` remaining when Original Length was entered and Remaining Length was left blank.
+- Remaining Length now initializes from Original Length for new precise records.
+- Added a safe repair for untouched precise records affected by the earlier bug.
+- Precise yarn stock status now derives from remaining length: zero is Out and 25% or less is Low.
+- Approximate yarn levels at ¼ Full, Low, or Scrap now report Low instead of an unrelated condition status.
+- Refactored yarn save calculations so original and remaining length are normalized once before record construction.
+
 ## 0.8.3.1 — Yarn Usage Workflow Polish
 
 - Made **Record Use** easier to discover from both precise yarn inventory rows and the yarn editor.
