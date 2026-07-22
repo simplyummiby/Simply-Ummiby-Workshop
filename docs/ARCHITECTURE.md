@@ -24,3 +24,8 @@ Simply Ummiby Workshop remains a static, local-first web application.
 ## Yarn and cord inventory tracking (v0.8.3.0)
 
 Yarn-specific behavior is additive to the general inventory record. `yarnTrackingMode` may be `simple`, `approximate`, or `precise`. Approximate records use `yarnApproximateLevel`; precise records use `yarnOriginalLength`, `yarnRemainingLength`, `yarnLengthUnit`, and append-only `yarnUsageHistory`. The shared migration helper initializes these fields only for yarn/cord material types, keeping other categories free of irrelevant data and controls. Switching modes does not delete history.
+
+
+## Yarn usage workflow refinement (v0.8.3.1)
+
+Routine precise usage is handled through one dedicated Record Use workflow. The inventory editor owns configuration and recalibration values; the usage modal owns subtraction and history entries. This separation prevents duplicate calculation paths and keeps the remaining-length field from becoming an everyday manual counter.

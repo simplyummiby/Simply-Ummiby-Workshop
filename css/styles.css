@@ -1779,3 +1779,11 @@ textarea { resize: vertical; }
 .yarn-recalibrate label{margin-top:12px}.yarn-recalibrate small{display:block;color:var(--muted);margin-top:5px}
 .yarn-usage-history{margin-top:18px;border-top:1px solid var(--line);padding-top:14px}.yarn-usage-history h4{margin:0 0 8px}.yarn-usage-history>div{display:grid;grid-template-columns:90px 100px 1fr;gap:10px;padding:8px 0;border-bottom:1px solid var(--line);font-size:.82rem}.yarn-usage-history small{color:var(--muted)}
 @media(max-width:620px){.yarn-usage-history>div{grid-template-columns:1fr 1fr}.yarn-usage-history small{grid-column:1/-1}}
+
+/* Version 0.8.3.1 — discoverable yarn usage workflow and focused cleanup */
+.yarn-record-use-callout{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-top:14px;padding:14px 16px;border:1px solid var(--rose-200);border-radius:14px;background:var(--rose-50)}
+.yarn-record-use-callout strong,.yarn-record-use-callout p{display:block;margin:0}.yarn-record-use-callout p{margin-top:3px;color:var(--muted);font-size:.86rem}.yarn-record-use-callout>small{color:var(--muted)}
+.yarn-use-form{display:grid;gap:15px}.yarn-use-form label{display:grid;gap:6px}.yarn-use-form label>span{font-size:.78rem;font-weight:750;color:var(--muted)}.yarn-use-form label small{color:var(--muted)}
+.yarn-current-balance{display:flex;align-items:center;justify-content:space-between;gap:18px;padding:14px 16px;border-radius:14px;background:var(--rose-50);border:1px solid var(--rose-200)}.yarn-current-balance span{color:var(--muted);font-size:.84rem}.yarn-current-balance strong{font-size:1.15rem}
+.yarn-usage-history>div{grid-template-columns:90px 100px 110px 1fr}
+@media(max-width:700px){.yarn-record-use-callout{align-items:stretch;flex-direction:column}.yarn-record-use-callout .button{width:100%}.yarn-usage-history>div{grid-template-columns:1fr 1fr}.yarn-usage-history>div span:nth-child(3),.yarn-usage-history>div small{grid-column:1/-1}}

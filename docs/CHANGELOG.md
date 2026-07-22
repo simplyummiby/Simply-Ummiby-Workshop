@@ -1,3 +1,11 @@
+## 0.8.3.1 — Yarn Usage Workflow Polish
+
+- Made **Record Use** easier to discover from both precise yarn inventory rows and the yarn editor.
+- Clarified that **Remaining Length** is for initial setup or recalibration, not routine usage entry.
+- Refined the Record Yarn or Cord Use modal with a prominent current balance, clearer amount-used guidance, and a direct **Record Usage** action.
+- Expanded recent usage history to show the remaining balance after every usage or recalibration entry.
+- Added responsive styling and consolidated the new yarn workflow UI to reduce inventory-form clutter and technical debt.
+
 ## 0.8.3.0 — Flexible Yarn Tracking & Inventory Refinement
 
 - Added Simple, Approximate, and Precise inventory modes for yarn and cord records.

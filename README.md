@@ -1,11 +1,11 @@
 # Simply Ummiby Workshop
 
-**Version 0.8.3.0**
+**Version 0.8.3.1**
 
 
-Version 0.8.3.0 adds flexible yarn and cord inventory tracking while keeping everyday inventory maintenance lightweight. Yarn records can remain simple, use an approximate fullness level, or track precise remaining length with automatic usage subtraction and manual recalibration.
+Version 0.8.3.1 makes precise yarn usage easier to find and use. A dedicated Record Use workflow subtracts the amount just used, shows the new balance, preserves usage history, and keeps manual remaining-length edits reserved for setup or recalibration.
 
-## Version 0.8.3.0 highlights
+## Version 0.8.3.1 highlights
 
 - Choose Simple, Approximate, or Precise tracking for yarn and cord.
 - Record the amount just used and automatically calculate the remaining yardage or meterage.
