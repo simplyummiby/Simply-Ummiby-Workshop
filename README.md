@@ -1,11 +1,11 @@
 # Simply Ummiby Workshop
 
-**Version 0.8.4.1**
+**Version 0.8.4.2**
 
 
-Version 0.8.4.1 replaces free-text recipe materials with inventory-linked recipe components. Each material now has its own inventory selection, usage type, quantity or cut-length details, and optional description, so automatic production deductions do not depend on matching typed names.
+Version 0.8.4.2 makes recipe inventory selection easier to use. Inventory choices are grouped by material type, can be filtered by name, type, or craft, and a full inline Add Inventory Item modal creates and selects missing supplies without leaving the recipe.
 
-## Version 0.8.4.1 highlights
+## Version 0.8.4.2 highlights
 
 - Add recipe materials as separate component rows instead of one free-text box.
 - Select the exact inventory record each component should consume.

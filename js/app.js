@@ -1,6 +1,6 @@
 (() => {
   const STORAGE_KEY = "simplyUmmibyWorkshopData";
-  const VERSION = "0.8.4.1";
+  const VERSION = "0.8.4.2";
   const ITEM_STATUSES = ["New","Preparing","Manufacturing","Waiting on Material","Ready for Packing","Packed","Ready to Mail","Completed"];
   const STATUS_PROGRESS = {
     "New": 5, "Preparing": 20, "Manufacturing": 50, "Waiting on Material": 35,
@@ -2441,8 +2441,43 @@
     });
   }
 
-  function recipeInventoryOptions(selectedId="") {
-    return `<option value="">Choose inventory item</option><option value="__order_color_yarn__" ${selectedId==="__order_color_yarn__"?"selected":""}>Order-color yarn or cord — matches product color</option>${activeInventoryItems().filter(item => !["finished-inventory","prepared-components"].includes(item.category)).map(item => `<option value="${item.id}" ${selectedId===item.id?"selected":""}>${escapeHTML(item.name)} — ${escapeHTML(item.materialType||"Other")}</option>`).join("")}`;
+  function recipeInventoryOptions(selectedId="", query="") {
+    const normalized=String(query||"").trim().toLowerCase();
+    const items=activeInventoryItems().filter(item => !["finished-inventory","prepared-components"].includes(item.category)).filter(item => !normalized || [item.name,item.materialType,item.craft,item.category].some(value=>String(value||"").toLowerCase().includes(normalized))).sort((a,b)=>(a.materialType||"Other").localeCompare(b.materialType||"Other") || a.name.localeCompare(b.name));
+    const groups=[...new Set(items.map(item=>item.materialType||"Other"))];
+    return `<option value="">Choose inventory item</option><option value="__order_color_yarn__" ${selectedId==="__order_color_yarn__"?"selected":""}>Order-color yarn or cord — matches product color</option>${groups.map(group=>`<optgroup label="${escapeHTML(group)}">${items.filter(item=>(item.materialType||"Other")===group).map(item=>`<option value="${item.id}" ${selectedId===item.id?"selected":""}>${escapeHTML(item.name)}${item.craft?` · ${escapeHTML(item.craft)}`:""}</option>`).join("")}</optgroup>`).join("")}`;
+  }
+
+  function refreshRecipeInventorySelect(row, query="") {
+    const select=row?.querySelector('[data-field="inventoryItemId"]'); if(!select) return;
+    const selected=select.value;
+    select.innerHTML=recipeInventoryOptions(selected,query);
+    if([...select.options].some(option=>option.value===selected)) select.value=selected;
+    syncRecipeComponentRow(row);
+  }
+
+  function openRecipeQuickInventoryModal(row) {
+    document.querySelector('.recipe-inline-inventory-overlay')?.remove();
+    const types=inventoryMaterialTypes().filter(type=>type.status!=="Inactive").sort((a,b)=>a.name.localeCompare(b.name));
+    const overlay=document.createElement('div'); overlay.className='recipe-inline-inventory-overlay';
+    overlay.innerHTML=`<div class="recipe-inline-inventory-modal" role="dialog" aria-modal="true" aria-labelledby="recipeQuickInventoryTitle"><div class="recipe-inline-modal-heading"><div><p class="eyebrow">Without leaving the recipe</p><h3 id="recipeQuickInventoryTitle">Add Inventory Item</h3><p>Create the inventory record now, then Workshop will select it in this recipe component.</p></div><button type="button" class="icon-button" data-action="close-recipe-inventory-modal" aria-label="Close">×</button></div><form id="recipeQuickInventoryForm" class="inventory-form-grid"><label class="inventory-field full-width"><span>Item Name <em>*</em></span><input name="name" required autofocus placeholder="Example: Wooden Dowel End Caps"></label><label class="inventory-field"><span>Material / Item Type <em>*</em></span><select name="materialType" required><option value="">Choose type</option>${types.map(type=>`<option value="${escapeHTML(type.name)}">${escapeHTML(type.name)}</option>`).join("")}<option value="__new__">+ Add a new type…</option></select></label><label class="inventory-field recipe-quick-new-type" hidden><span>New Material Type</span><input name="newMaterialType" placeholder="Example: Hardware"></label><label class="inventory-field"><span>Craft</span><select name="craft">${["Macramé","Crochet","Shared","Other"].map(value=>`<option value="${value}" ${value==="Shared"?"selected":""}>${value}</option>`).join("")}</select></label><label class="inventory-field"><span>Tracking</span><select name="tracking"><option value="quantity">Quantity</option><option value="condition">Condition</option></select></label><label class="inventory-field recipe-quick-quantity"><span>Current Quantity</span><input name="quantity" type="number" min="0" value="0"></label><label class="inventory-field"><span>Restock Method</span><select name="restockType"><option value="purchase">Purchase</option><option value="make">Make</option><option value="print">Print</option></select></label></form><div class="recipe-inline-modal-actions"><button type="button" class="button secondary" data-action="close-recipe-inventory-modal">Cancel</button><button type="button" class="button primary" data-action="save-recipe-inventory-item">Add & Select Item</button></div></div>`;
+    document.body.append(overlay);
+    const form=overlay.querySelector('#recipeQuickInventoryForm');
+    const sync=()=>{const isNew=form.materialType.value==='__new__';overlay.querySelector('.recipe-quick-new-type').hidden=!isNew;overlay.querySelector('.recipe-quick-quantity').hidden=form.tracking.value==='condition';};
+    form.materialType.addEventListener('change',sync); form.tracking.addEventListener('change',sync); sync();
+    overlay.addEventListener('click',event=>{
+      if(event.target===overlay || event.target.closest('[data-action="close-recipe-inventory-modal"]')) { overlay.remove(); return; }
+      if(event.target.closest('[data-action="save-recipe-inventory-item"]')) {
+        if(!form.reportValidity()) return;
+        const fd=new FormData(form); let materialType=String(fd.get('materialType')||'').trim();
+        if(materialType==='__new__') { const newType=String(fd.get('newMaterialType')||'').trim(); if(!newType) return showToast('Enter the new material type.'); const duplicate=inventoryMaterialTypes().find(type=>type.name.toLowerCase()===newType.toLowerCase()); if(duplicate) materialType=duplicate.name; else { data.inventoryMaterialTypes.push({id:slugifyMaterialType(newType),name:newType,categoryId:'accessories',showAsTab:true,status:'Active'}); materialType=newType; } }
+        const item={id:uid('inventory'),name:String(fd.get('name')||'').trim(),category:'accessories',materialType,craft:fd.get('craft')||'Shared',tracking:fd.get('tracking')||'quantity',quantity:Number(fd.get('quantity')||0),condition:'Available',reorderAt:0,preferredStock:0,status:'Active',restockType:fd.get('restockType')||'purchase',linkedProductIds:[]};
+        if(/yarn|cord/i.test(materialType)) Object.assign(item,{yarnTrackingMode:'simple',yarnApproximateLevel:'Full',yarnOriginalLength:0,yarnRemainingLength:0,yarnLengthUnit:'yd',yarnUsageHistory:[]});
+        data.inventoryCatalog.items.push(item); saveData();
+        document.querySelectorAll('#recipeComponentsList .recipe-component-row').forEach(componentRow=>refreshRecipeInventorySelect(componentRow,''));
+        const select=row.querySelector('[data-field="inventoryItemId"]'); if(select){select.value=item.id;syncRecipeComponentRow(row);} overlay.remove(); showToast(`${item.name} added to inventory and selected.`);
+      }
+    });
   }
 
   function recipeComponentRow(component={}) {
@@ -2451,7 +2486,7 @@
     const item=inventoryItemById(component.inventoryItemId);
     const available=dynamicYarn ? "Matched to the order color during production" : item ? (isYarnOrCord(item) && item.yarnTrackingMode==="precise" ? `${formatInventoryNumber(item.yarnRemainingLength)} ${item.yarnLengthUnit||"yd"} available` : item.tracking==="quantity" ? `${formatInventoryNumber(item.quantity)} available` : item.condition||"Condition tracked") : "Not linked to inventory";
     return `<div class="recipe-component-row" data-component-id="${component.id||uid("recipe-component")}">
-      <div class="recipe-component-main"><label><span>Inventory Item</span><select data-field="inventoryItemId">${recipeInventoryOptions(component.inventoryItemId||"")}</select></label><button type="button" class="button secondary small" data-action="recipe-quick-add-inventory">+ Add Inventory Item</button></div>
+      <div class="recipe-component-main"><div class="recipe-inventory-picker"><label><span>Find Inventory Item</span><input type="search" data-role="inventory-search" placeholder="Search by name, type, or craft"></label><label><span>Inventory Item</span><select data-field="inventoryItemId">${recipeInventoryOptions(component.inventoryItemId||"")}</select></label></div><button type="button" class="button secondary small" data-action="recipe-quick-add-inventory">+ Add New Inventory Item</button></div>
       <div class="recipe-component-meta"><span class="recipe-link-state ${component.inventoryItemId?"linked":"unlinked"}">${component.inventoryItemId?"Linked":"Inventory link needed"}</span><small data-role="availability">${escapeHTML(available)}</small></div>
       <div class="recipe-component-fields">
         <label><span>Usage Type</span><select data-field="usageType"><option value="count" ${usageType==="count"?"selected":""}>Counted item</option><option value="cut" ${usageType==="cut"?"selected":""}>Cut length</option></select></label>
@@ -2488,16 +2523,12 @@
   function bindRecipeComponentEditor() {
     const list=document.getElementById("recipeComponentsList"); if(!list) return;
     list.querySelectorAll('.recipe-component-row').forEach(syncRecipeComponentRow);
-    list.addEventListener("input",event=>{const row=event.target.closest('.recipe-component-row');if(row)syncRecipeComponentRow(row);});
+    list.addEventListener("input",event=>{const row=event.target.closest('.recipe-component-row');if(!row)return; if(event.target.matches('[data-role="inventory-search"]')) refreshRecipeInventorySelect(row,event.target.value); else syncRecipeComponentRow(row);});
     list.addEventListener("change",event=>{const row=event.target.closest('.recipe-component-row');if(row)syncRecipeComponentRow(row);});
     list.addEventListener("click",event=>{
       const remove=event.target.closest('[data-action="remove-recipe-component"]'); if(remove){remove.closest('.recipe-component-row')?.remove();return;}
       const quick=event.target.closest('[data-action="recipe-quick-add-inventory"]'); if(quick){
-        const row=quick.closest('.recipe-component-row'); const name=prompt("Name the new inventory item:"); if(!name?.trim()) return;
-        const item={id:uid("inventory"),name:name.trim(),category:"accessories",materialType:"Other",craft:"Shared",tracking:"quantity",quantity:0,reorderAt:0,preferredStock:0,status:"Active",restockType:"purchase",linkedProductIds:[]};
-        data.inventoryCatalog.items.push(item); saveData();
-        list.querySelectorAll('[data-field="inventoryItemId"]').forEach(select=>{const option=document.createElement("option");option.value=item.id;option.textContent=`${item.name} — ${item.materialType}`;select.append(option);});
-        const select=row.querySelector('[data-field="inventoryItemId"]');select.value=item.id;syncRecipeComponentRow(row);showToast("Inventory item added and linked. Edit its details later from Inventory.");
+        const row=quick.closest('.recipe-component-row'); openRecipeQuickInventoryModal(row);
       }
     });
     document.getElementById("addRecipeComponent")?.addEventListener("click",()=>{list.insertAdjacentHTML("beforeend",recipeComponentRow({id:uid("recipe-component"),usageType:"count",quantity:1,pieces:1,lengthEach:0,lengthUnit:"cm"}));syncRecipeComponentRow(list.lastElementChild);});

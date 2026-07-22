@@ -1,5 +1,15 @@
 # Changelog
 
+## v0.8.4.2 — Organized Recipe Inventory Picker
+
+- Added a search field to each recipe component so inventory can be filtered by item name, material type, or craft.
+- Grouped recipe inventory dropdown options by material type and sorted items alphabetically.
+- Replaced the one-field prompt with a proper inline Add Inventory Item modal.
+- New inventory items can be named, categorized, assigned to a craft, given a tracking method, starting quantity, and restock method without leaving the recipe.
+- Newly created items are immediately selected in the recipe component.
+- Preserved permanent inventory-ID linking for safe production deductions.
+- Added responsive styling and centralized picker refresh logic.
+
 ## v0.8.4.1 — Inventory-Linked Recipe Components
 
 - Replaced the free-text recipe materials box with individual recipe component rows.
