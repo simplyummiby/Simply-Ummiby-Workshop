@@ -1,20 +1,20 @@
 # Simply Ummiby Workshop
 
-**Version 0.8.4.2**
+**Version 0.8.5.0**
 
 
-Version 0.8.4.2 makes recipe inventory selection easier to use. Inventory choices are grouped by material type, can be filtered by name, type, or craft, and a full inline Add Inventory Item modal creates and selects missing supplies without leaving the recipe.
+Version 0.8.5.0 reorganizes recipes around the two real workshop phases: making the product and packing it. The wider, more compact editor keeps manufacturing and packaging supplies distinct while linking both directly to inventory.
 
-## Version 0.8.4.2 highlights
+## Version 0.8.5.0 highlights
 
-- Add recipe materials as separate component rows instead of one free-text box.
-- Select the exact inventory record each component should consume.
-- Use either a counted quantity or pieces × cut length for cord and yarn.
-- Use the special order-color yarn or cord option when the exact roll depends on the order color.
-- See recorded availability while editing the recipe.
-- Add a missing inventory item without discarding the recipe form.
-- Block unlinked components from becoming executable production deductions.
-- Keep recipe displays and printable cut sheets synchronized with structured components.
+- Use a wider Recipe Editor with a compact worktable layout.
+- Maintain separate Manufacturing Components and Packaging Components.
+- Add individual inventory-linked rows for cord, hardware, mailers, wrapping string, labels, stickers, care sheets, and other supplies.
+- Deduct manufacturing components only during production.
+- Deduct recipe packaging components when the order is marked packed, while avoiding duplicate deductions already handled by packing checklist tasks.
+- Return recipe-linked packaging inventory when an item or order is reset.
+- View manufacturing and packaging sections separately on the recipe page and printed cut sheet.
+- Preserve older recipe materials as manufacturing components during migration.
 
 ## Version 0.8.2.5 highlights
 

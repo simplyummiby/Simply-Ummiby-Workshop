@@ -92,3 +92,13 @@ Paper towel dowels now have two inventory states: raw Paper Towel Dowels and Pre
 
 Paper Towel Holder and Toilet Paper Holder dowels are separate raw and prepared inventory items. Preparing a Paper Towel Holder dowel consumes one raw PTH dowel and two end caps. Preparing a Toilet Paper Holder dowel consumes one raw TPH dowel and no end caps. Both may be prepared in batches or directly for an order, and Pack Mailer remains blocked until the correct prepared dowel is assigned.
 
+
+
+## Manufacturing vs. Packaging
+
+Each recipe has two component groups:
+
+- **Manufacturing Components**: cord, yarn, rings, dowels, end caps, and other supplies used to make the item.
+- **Packaging Components**: mailers, labels, wrapping string, stickers, care sheets, and other supplies used after production.
+
+Every row links to a permanent inventory ID. Counted rows store a quantity per product. Cut-length rows store pieces, length per piece, and the measurement unit. Manufacturing inventory is consumed when production begins. Packaging inventory is consumed when the completed order is marked packed.

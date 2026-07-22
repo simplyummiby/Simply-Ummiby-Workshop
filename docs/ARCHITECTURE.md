@@ -50,3 +50,10 @@ Recipe materials are stored as structured component records. Each component refe
 
 ### Recipe inventory picker
 Recipe component selectors are grouped by material type and may be filtered locally by item name, type, or craft. Inline inventory creation writes a normal inventory record, refreshes all open component selectors, and links the new record by permanent ID.
+
+
+## Two-Phase Recipe Components (v0.8.5.0)
+
+Recipe components now include a `phase` value of `manufacturing` or `packaging`. Legacy components default safely to manufacturing. Both phases retain permanent inventory IDs and the same counted-item or cut-length structure.
+
+Production planning reads only manufacturing definitions. Packaging definitions are validated and consumed when the order is marked packed. Packaging transactions are stored per order item and restored during reset/cancellation. Existing Pack & Ship transactions for the same inventory item are detected to prevent duplicate deductions during migration from the older packaging workflow.

@@ -1,6 +1,6 @@
 (() => {
   const STORAGE_KEY = "simplyUmmibyWorkshopData";
-  const VERSION = "0.8.4.2";
+  const VERSION = "0.8.5.0";
   const ITEM_STATUSES = ["New","Preparing","Manufacturing","Waiting on Material","Ready for Packing","Packed","Ready to Mail","Completed"];
   const STATUS_PROGRESS = {
     "New": 5, "Preparing": 20, "Manufacturing": 50, "Waiting on Material": 35,
@@ -602,6 +602,7 @@
   }
   function restoreAllInventoryTasksForItem(order,item) {
     if (item?.workflow?.preparedDowelReady) returnPreparedDowel(order,item);
+    restoreRecipePackagingInventory(order,item);
     const keys = Object.keys(item?.workflow?.inventoryTaskTransactions || {});
     keys.forEach(taskKey => restoreInventoryForTask({order,item,taskKey,label:"Packing supply"}));
   }
@@ -2425,7 +2426,8 @@
       lengthEach: Number(row.lengthEach || 0) || 0,
       lengthUnit: row.lengthUnit || "cm",
       description: row.description || "",
-      linked: Boolean(row.inventoryItemId)
+      linked: Boolean(row.inventoryItemId),
+      phase: row.phase || "manufacturing"
     }));
     const definitions=Array.isArray(recipe?.inventoryConsumption)?recipe.inventoryConsumption:[];
     return existing.map((row,index) => {
@@ -2437,7 +2439,7 @@
       const total=Number(definition.quantity||0);
       const lengthEach=isCut ? Number(piecesMatch?.[2]||total/pieces||0) : 0;
       const inventoryItemId=definition.source==="yarn-color"?"__order_color_yarn__":definition.inventoryItemId||"";
-      return {id:definition.key||uid("recipe-component"),inventoryItemId,name:row.name||definition.label||"",usageType:isCut?"cut":"count",quantity:isCut?total:Number(definition.quantity||quantityText.match(/[\d.]+/)?.[0]||1),pieces,lengthEach,lengthUnit:definition.unit||"cm",description:isCut && /wrap/i.test(row.name||"")?"Wrap cord":"",linked:Boolean(inventoryItemId)};
+      return {id:definition.key||uid("recipe-component"),inventoryItemId,name:row.name||definition.label||"",usageType:isCut?"cut":"count",quantity:isCut?total:Number(definition.quantity||quantityText.match(/[\d.]+/)?.[0]||1),pieces,lengthEach,lengthUnit:definition.unit||"cm",description:isCut && /wrap/i.test(row.name||"")?"Wrap cord":"",linked:Boolean(inventoryItemId),phase:definition.phase||"manufacturing"};
     });
   }
 
@@ -2474,18 +2476,19 @@
         const item={id:uid('inventory'),name:String(fd.get('name')||'').trim(),category:'accessories',materialType,craft:fd.get('craft')||'Shared',tracking:fd.get('tracking')||'quantity',quantity:Number(fd.get('quantity')||0),condition:'Available',reorderAt:0,preferredStock:0,status:'Active',restockType:fd.get('restockType')||'purchase',linkedProductIds:[]};
         if(/yarn|cord/i.test(materialType)) Object.assign(item,{yarnTrackingMode:'simple',yarnApproximateLevel:'Full',yarnOriginalLength:0,yarnRemainingLength:0,yarnLengthUnit:'yd',yarnUsageHistory:[]});
         data.inventoryCatalog.items.push(item); saveData();
-        document.querySelectorAll('#recipeComponentsList .recipe-component-row').forEach(componentRow=>refreshRecipeInventorySelect(componentRow,''));
+        document.querySelectorAll('.recipe-component-row[data-component-phase]').forEach(componentRow=>refreshRecipeInventorySelect(componentRow,''));
         const select=row.querySelector('[data-field="inventoryItemId"]'); if(select){select.value=item.id;syncRecipeComponentRow(row);} overlay.remove(); showToast(`${item.name} added to inventory and selected.`);
       }
     });
   }
 
-  function recipeComponentRow(component={}) {
+  function recipeComponentRow(component={}, phase="manufacturing") {
     const usageType=component.usageType||"count";
+    const componentPhase=component.phase||phase||"manufacturing";
     const dynamicYarn=component.inventoryItemId==="__order_color_yarn__";
     const item=inventoryItemById(component.inventoryItemId);
     const available=dynamicYarn ? "Matched to the order color during production" : item ? (isYarnOrCord(item) && item.yarnTrackingMode==="precise" ? `${formatInventoryNumber(item.yarnRemainingLength)} ${item.yarnLengthUnit||"yd"} available` : item.tracking==="quantity" ? `${formatInventoryNumber(item.quantity)} available` : item.condition||"Condition tracked") : "Not linked to inventory";
-    return `<div class="recipe-component-row" data-component-id="${component.id||uid("recipe-component")}">
+    return `<div class="recipe-component-row" data-component-id="${component.id||uid("recipe-component")}" data-component-phase="${componentPhase}">
       <div class="recipe-component-main"><div class="recipe-inventory-picker"><label><span>Find Inventory Item</span><input type="search" data-role="inventory-search" placeholder="Search by name, type, or craft"></label><label><span>Inventory Item</span><select data-field="inventoryItemId">${recipeInventoryOptions(component.inventoryItemId||"")}</select></label></div><button type="button" class="button secondary small" data-action="recipe-quick-add-inventory">+ Add New Inventory Item</button></div>
       <div class="recipe-component-meta"><span class="recipe-link-state ${component.inventoryItemId?"linked":"unlinked"}">${component.inventoryItemId?"Linked":"Inventory link needed"}</span><small data-role="availability">${escapeHTML(available)}</small></div>
       <div class="recipe-component-fields">
@@ -2494,7 +2497,7 @@
         <label class="component-cut-field"><span>Pieces</span><input data-field="pieces" type="number" min="1" step="1" value="${Number(component.pieces||1)}"></label>
         <label class="component-cut-field"><span>Length Each</span><input data-field="lengthEach" type="number" min="0.01" step="0.01" value="${Number(component.lengthEach||0)}"></label>
         <label class="component-cut-field"><span>Unit</span><select data-field="lengthUnit"><option value="cm" ${component.lengthUnit!=="m"&&component.lengthUnit!=="yd"?"selected":""}>Centimeters</option><option value="m" ${component.lengthUnit==="m"?"selected":""}>Meters</option><option value="yd" ${component.lengthUnit==="yd"?"selected":""}>Yards</option></select></label>
-        <label class="recipe-component-description"><span>Description / Role</span><input data-field="description" value="${escapeHTML(component.description||"")}" placeholder="Example: wrap cord or dowel finishing"></label>
+        <label class="recipe-component-description"><span>${componentPhase==="packaging"?"Purpose / Packing Note":"Description / Role"}</span><input data-field="description" value="${escapeHTML(component.description||"")}" placeholder="Example: wrap cord or dowel finishing"></label>
       </div>
       <div class="recipe-component-summary" data-role="summary"></div>
       <button type="button" class="text-button danger-text" data-action="remove-recipe-component">Remove item</button>
@@ -2521,31 +2524,33 @@
   }
 
   function bindRecipeComponentEditor() {
-    const list=document.getElementById("recipeComponentsList"); if(!list) return;
-    list.querySelectorAll('.recipe-component-row').forEach(syncRecipeComponentRow);
-    list.addEventListener("input",event=>{const row=event.target.closest('.recipe-component-row');if(!row)return; if(event.target.matches('[data-role="inventory-search"]')) refreshRecipeInventorySelect(row,event.target.value); else syncRecipeComponentRow(row);});
-    list.addEventListener("change",event=>{const row=event.target.closest('.recipe-component-row');if(row)syncRecipeComponentRow(row);});
-    list.addEventListener("click",event=>{
-      const remove=event.target.closest('[data-action="remove-recipe-component"]'); if(remove){remove.closest('.recipe-component-row')?.remove();return;}
-      const quick=event.target.closest('[data-action="recipe-quick-add-inventory"]'); if(quick){
-        const row=quick.closest('.recipe-component-row'); openRecipeQuickInventoryModal(row);
-      }
-    });
-    document.getElementById("addRecipeComponent")?.addEventListener("click",()=>{list.insertAdjacentHTML("beforeend",recipeComponentRow({id:uid("recipe-component"),usageType:"count",quantity:1,pieces:1,lengthEach:0,lengthUnit:"cm"}));syncRecipeComponentRow(list.lastElementChild);});
+    const bindList=(list,phase) => {
+      if(!list) return;
+      list.querySelectorAll('.recipe-component-row').forEach(syncRecipeComponentRow);
+      list.addEventListener("input",event=>{const row=event.target.closest('.recipe-component-row');if(!row)return; if(event.target.matches('[data-role="inventory-search"]')) refreshRecipeInventorySelect(row,event.target.value); else syncRecipeComponentRow(row);});
+      list.addEventListener("change",event=>{const row=event.target.closest('.recipe-component-row');if(row)syncRecipeComponentRow(row);});
+      list.addEventListener("click",event=>{
+        const remove=event.target.closest('[data-action="remove-recipe-component"]'); if(remove){remove.closest('.recipe-component-row')?.remove();return;}
+        const quick=event.target.closest('[data-action="recipe-quick-add-inventory"]'); if(quick) openRecipeQuickInventoryModal(quick.closest('.recipe-component-row'));
+      });
+      document.getElementById(phase==="packaging"?"addPackagingComponent":"addManufacturingComponent")?.addEventListener("click",()=>{list.insertAdjacentHTML("beforeend",recipeComponentRow({id:uid("recipe-component"),usageType:"count",quantity:1,pieces:1,lengthEach:0,lengthUnit:"cm",phase},phase));syncRecipeComponentRow(list.lastElementChild);});
+    };
+    bindList(document.getElementById("manufacturingComponentsList"),"manufacturing");
+    bindList(document.getElementById("packagingComponentsList"),"packaging");
   }
 
   function collectRecipeComponents() {
-    return [...document.querySelectorAll('#recipeComponentsList .recipe-component-row')].map(row=>{
+    return [...document.querySelectorAll('.recipe-component-row[data-component-phase]')].map(row=>{
       const inventoryItemId=row.querySelector('[data-field="inventoryItemId"]')?.value||"";
       const dynamicYarn=inventoryItemId==="__order_color_yarn__";
       const item=inventoryItemById(inventoryItemId); const usageType=row.querySelector('[data-field="usageType"]')?.value||"count";
       const quantity=Number(row.querySelector('[data-field="quantity"]')?.value||0); const pieces=Number(row.querySelector('[data-field="pieces"]')?.value||0); const lengthEach=Number(row.querySelector('[data-field="lengthEach"]')?.value||0); const lengthUnit=row.querySelector('[data-field="lengthUnit"]')?.value||"cm";
-      return {id:row.dataset.componentId||uid("recipe-component"),inventoryItemId,name:dynamicYarn?"Order-color yarn or cord":item?.name||"Unlinked material",usageType,quantity:usageType==="count"?quantity:pieces*lengthEach,quantityValue:quantity,pieces,lengthEach,lengthUnit,description:row.querySelector('[data-field="description"]')?.value.trim()||"",linked:dynamicYarn||Boolean(item)};
+      return {id:row.dataset.componentId||uid("recipe-component"),inventoryItemId,name:dynamicYarn?"Order-color yarn or cord":item?.name||"Unlinked material",usageType,quantity:usageType==="count"?quantity:pieces*lengthEach,quantityValue:quantity,pieces,lengthEach,lengthUnit,description:row.querySelector('[data-field="description"]')?.value.trim()||"",linked:dynamicYarn||Boolean(item),phase:row.dataset.componentPhase||"manufacturing"};
     });
   }
 
   function componentsToInventoryConsumption(components) {
-    return components.filter(component=>component.inventoryItemId).map(component=>({key:component.id,...(component.inventoryItemId==="__order_color_yarn__"?{source:"yarn-color"}:{inventoryItemId:component.inventoryItemId}),kind:component.usageType==="cut"?"length":"quantity",label:component.inventoryItemId==="__order_color_yarn__"?"Order-color yarn or cord":inventoryItemById(component.inventoryItemId)?.name||component.name,quantity:component.usageType==="cut"?component.pieces*component.lengthEach:component.quantityValue,unit:component.usageType==="cut"?component.lengthUnit:undefined,description:component.description}));
+    return components.filter(component=>component.inventoryItemId).map(component=>({key:component.id,...(component.inventoryItemId==="__order_color_yarn__"?{source:"yarn-color"}:{inventoryItemId:component.inventoryItemId}),kind:component.usageType==="cut"?"length":"quantity",label:component.inventoryItemId==="__order_color_yarn__"?"Order-color yarn or cord":inventoryItemById(component.inventoryItemId)?.name||component.name,quantity:component.usageType==="cut"?component.pieces*component.lengthEach:component.quantityValue,unit:component.usageType==="cut"?component.lengthUnit:undefined,description:component.description,phase:component.phase||"manufacturing"}));
   }
 
   function recipeComponentDisplay(component) {
@@ -2558,10 +2563,15 @@
     const recipe=recipeById(recipeId); const masters=productMasters();
     const stageJson=JSON.stringify(recipe?.stages||[],null,2);
     const components=normalizeRecipeComponents(recipe);
+    const manufacturingComponents=components.filter(component=>(component.phase||"manufacturing")==="manufacturing");
+    const packagingComponents=components.filter(component=>component.phase==="packaging");
     showModal(recipe?"Edit Recipe":"Add Recipe",`<form id="recipeEditorForm" class="recipe-editor-form">
       <section class="product-form-section"><div class="product-section-heading"><span>Recipe identity</span><h4>Basics</h4><p>Connect the recipe to its sellable product and keep the master details current.</p></div><div class="product-form-grid"><label class="product-field"><span class="field-label">Recipe Title</span><input name="title" value="${escapeHTML(recipe?.title||"")}" required></label><label class="product-field"><span class="field-label">Linked Product</span><select name="productId" required><option value="">Choose product</option>${masters.map(master=>`<option value="${master.id}" ${recipe?.productId===master.id?"selected":""}>${escapeHTML(master.name)}</option>`).join("")}</select></label><label class="product-field"><span class="field-label">Version</span><input name="version" value="${escapeHTML(recipe?.version||"0.1")}"></label><label class="product-field"><span class="field-label">Status</span><select name="status">${["Draft","Starter","Active","Archived"].map(status=>`<option ${recipe?.status===status?"selected":""}>${status}</option>`).join("")}</select></label><label class="product-field"><span class="field-label">Estimated Time</span><input name="estimatedTime" value="${escapeHTML(recipe?.estimatedTime||"")}"></label><label class="product-field"><span class="field-label">Difficulty</span><input name="difficulty" value="${escapeHTML(recipe?.difficulty||"")}"></label><label class="product-field"><span class="field-label">Last Revised</span><input name="lastRevised" value="${escapeHTML(recipe?.lastRevised||new Date().toLocaleDateString(undefined,{month:"long",year:"numeric"}))}"></label></div><label class="product-field product-field-full"><span class="field-label">Summary</span><textarea name="summary" rows="3">${escapeHTML(recipe?.summary||"")}</textarea></label></section>
       <section class="product-form-section"><div class="product-section-heading"><span>At a glance</span><h4>Methods & Quick Reference</h4><p>Enter one row per line. Separate columns with a vertical bar.</p></div><label class="product-field"><span class="field-label">Production Methods — Title | Description</span><textarea name="methods" rows="5">${escapeHTML(objectsToLines(recipe?.methods,["title","description"]))}</textarea></label><label class="product-field"><span class="field-label">Quick Reference — Label | Value | Note</span><textarea name="quickReference" rows="6">${escapeHTML(objectsToLines(recipe?.quickReference,["label","value","note"]))}</textarea></label></section>
-      <section class="product-form-section"><div class="product-section-heading"><span>Worktable</span><h4>Recipe Components</h4><p>Add each material as its own inventory-linked component. Workshop uses these links—not typed names—when deducting stock.</p></div><div id="recipeComponentsList" class="recipe-components-list">${components.map(recipeComponentRow).join("")}</div><button type="button" id="addRecipeComponent" class="button secondary">+ Add Recipe Component</button><div class="recipe-tools-editor"><label class="product-field"><span class="field-label">Tools — one per line</span><textarea name="tools" rows="7">${escapeHTML((recipe?.tools||[]).join("\n"))}</textarea></label></div></section>
+      <section class="product-form-section recipe-worktable-section"><div class="product-section-heading"><span>Worktable</span><h4>Build & Pack Components</h4><p>Keep production materials separate from the supplies used at the packing table.</p></div>
+        <div class="recipe-phase-section"><div class="recipe-phase-heading"><div><span>Phase 1</span><h5>Manufacturing Components</h5><p>Cord, rings, dowels, end caps, and anything consumed while making the product.</p></div><button type="button" id="addManufacturingComponent" class="button secondary small">+ Add Manufacturing Item</button></div><div id="manufacturingComponentsList" class="recipe-components-list compact">${manufacturingComponents.map(component=>recipeComponentRow(component,"manufacturing")).join("")}</div></div>
+        <div class="recipe-phase-section packaging"><div class="recipe-phase-heading"><div><span>Phase 2</span><h5>Packaging Components</h5><p>Mailers, wrapping string, labels, stickers, care sheets, and other packing supplies.</p></div><button type="button" id="addPackagingComponent" class="button secondary small">+ Add Packaging Item</button></div><div id="packagingComponentsList" class="recipe-components-list compact">${packagingComponents.map(component=>recipeComponentRow(component,"packaging")).join("")}</div></div>
+        <div class="recipe-tools-editor"><label class="product-field"><span class="field-label">Tools — one per line</span><textarea name="tools" rows="5">${escapeHTML((recipe?.tools||[]).join("\n"))}</textarea></label></div></section>
       <section class="product-form-section"><div class="product-section-heading"><span>Build sequence</span><h4>Production Stages</h4><p>Edit the structured stage data. Keep each stage ID stable once active orders use it.</p></div><label class="product-field"><span class="field-label">Stages JSON</span><textarea name="stages" rows="18" class="code-textarea">${escapeHTML(stageJson)}</textarea></label></section>
       <section class="product-form-section"><div class="product-section-heading"><span>Finishing details</span><h4>Workshop Notes, Packing & History</h4><p>Use one entry per line. History uses Version | Date | Changes.</p></div><label class="product-field"><span class="field-label">Workshop Wisdom</span><textarea name="wisdom" rows="5">${escapeHTML((recipe?.wisdom||[]).join("\n"))}</textarea></label><label class="product-field"><span class="field-label">Packing Guidance</span><textarea name="packing" rows="5">${escapeHTML((recipe?.packing||[]).join("\n"))}</textarea></label><label class="product-field"><span class="field-label">Revision History</span><textarea name="history" rows="5">${escapeHTML(objectsToLines(recipe?.history,["version","date","changes"]))}</textarea></label></section>
     </form>`,[{label:"Cancel"},{label:recipe?"Save Recipe":"Add Recipe",kind:"primary",onClick:()=>saveRecipeEditor(recipeId),keepOpen:true}]);
@@ -2575,7 +2585,7 @@
     const master=productMasters().find(product=>product.id===fd.get("productId"));
     const existing=recipeById(recipeId);
     const components=collectRecipeComponents();
-    if (!components.length) { showToast("Add at least one recipe component."); return; }
+    if (!components.some(component=>(component.phase||"manufacturing")==="manufacturing")) { showToast("Add at least one manufacturing component."); return; }
     const unlinked=components.filter(component=>!component.inventoryItemId);
     if (unlinked.length) { showToast("Link every recipe component to inventory before saving."); return; }
     if (components.some(component=>component.usageType==="cut" && (!component.pieces || !component.lengthEach))) { showToast("Each cut-length component needs pieces and a length."); return; }
@@ -2589,14 +2599,14 @@
     const r=recipeById(recipeId); if(!r)return showToast("Recipe not found.");
     pageTitle.textContent="Workshop Recipe"; setActiveNav("products");
     const order=orderId?data.orders.find(o=>o.id===orderId):null; const item=order?.items.find(i=>i.id===itemId);
-    viewContainer.innerHTML=`<section class="page-section wide">${orderId ? `<div class="recipe-navigation"><button class="back-button" data-action="return-to-order" data-order-id="${orderId}" data-item-id="${itemId}">← Return to This Order</button><button class="text-button" data-action="products-subview" data-subview="recipes">Recipe Index</button><button class="text-button" data-action="products-subview" data-subview="catalog">Product Catalog</button></div>` : `<div class="recipe-navigation"><button class="back-button" data-action="products-subview" data-subview="recipes">← Back to Recipes</button><button class="text-button" data-action="products-subview" data-subview="catalog">View Catalog</button></div>`}<section class="recipe-view-hero"><div><p class="eyebrow">${escapeHTML(r.craft || r.category)} · Master Recipe v${escapeHTML(r.version)}</p><h3>${escapeHTML(r.title)}</h3><p>${escapeHTML(r.summary)}</p>${item?'<div class="recipe-order-context">Opened for an active production traveler.</div>':''}</div><div class="recipe-hero-actions"><button class="button secondary" data-action="edit-recipe" data-recipe-id="${r.id}">Edit Recipe</button><button class="button secondary" data-action="recipe-focus" data-recipe-id="${r.id}">Focus View</button><button class="button primary" data-action="print-recipe" data-recipe-id="${r.id}">Print Cut Sheet</button></div></section><section class="recipe-overview-grid">${[['Estimated Time',r.estimatedTime],['Difficulty',r.difficulty],['Last Revised',r.lastRevised],['Recipe Status',r.status]].map(([a,b])=>`<article class="summary-card"><strong>${escapeHTML(b)}</strong><span>${escapeHTML(a)}</span></article>`).join('')}</section><section class="recipe-section panel"><div class="panel-heading"><div><p class="eyebrow">Choose the path</p><h3>Production Methods</h3></div></div><div class="recipe-method-grid">${r.methods.map(m=>`<article class="recipe-method-card"><strong>${escapeHTML(m.title)}</strong><p>${escapeHTML(m.description)}</p></article>`).join('')}</div></section><section class="recipe-section panel"><div class="panel-heading"><div><p class="eyebrow">At a glance</p><h3>Quick Reference</h3></div></div><div class="quick-reference-grid">${r.quickReference.map(q=>`<article class="quick-reference-card"><span>${escapeHTML(q.label)}</span><strong>${escapeHTML(q.value)}</strong><small>${escapeHTML(q.note||'')}</small></article>`).join('')}</div></section><section class="recipe-two-column"><article class="recipe-section panel"><div class="panel-heading"><div><p class="eyebrow">What you need</p><h3>Materials</h3></div></div><div class="recipe-list">${r.materials.map(m=>`<div><strong>${escapeHTML(inventoryItemById(m.inventoryItemId)?.name || m.name)}</strong><span>${escapeHTML(recipeComponentDisplay(m))}</span></div>`).join('')}</div></article><article class="recipe-section panel"><div class="panel-heading"><div><p class="eyebrow">Worktable</p><h3>Tools</h3></div></div><div class="recipe-list simple">${r.tools.map(t=>`<div><strong>${escapeHTML(t)}</strong></div>`).join('')}</div></article></section><section class="recipe-section"><div class="section-heading"><p class="eyebrow">Build from scratch</p><h3>Production Stages</h3><p>Open details only when needed. Check off the meaningful milestone.</p></div><div class="recipe-stage-list">${r.stages.map((st,idx)=>renderRecipeStage(r,st,idx,orderId,itemId)).join('')}</div></section><section class="recipe-wisdom"><div><p class="eyebrow">Lessons from the workbench</p><h3>Workshop Wisdom</h3></div><div class="wisdom-list">${r.wisdom.map(w=>`<blockquote>${escapeHTML(w)}</blockquote>`).join('')}</div></section><section class="recipe-two-column"><article class="recipe-section panel"><div class="panel-heading"><div><p class="eyebrow">Before mailing</p><h3>Packing</h3></div></div><ol class="recipe-numbered-list">${r.packing.map(x=>`<li>${escapeHTML(x)}</li>`).join('')}</ol></article><article class="recipe-section panel"><div class="panel-heading"><div><p class="eyebrow">Master record</p><h3>Recipe History</h3></div></div><div class="recipe-history">${r.history.map(h=>`<div><strong>v${escapeHTML(h.version)} · ${escapeHTML(h.date)}</strong><p>${escapeHTML(h.changes)}</p></div>`).join('')}</div></article></section></section>`;
+    viewContainer.innerHTML=`<section class="page-section wide">${orderId ? `<div class="recipe-navigation"><button class="back-button" data-action="return-to-order" data-order-id="${orderId}" data-item-id="${itemId}">← Return to This Order</button><button class="text-button" data-action="products-subview" data-subview="recipes">Recipe Index</button><button class="text-button" data-action="products-subview" data-subview="catalog">Product Catalog</button></div>` : `<div class="recipe-navigation"><button class="back-button" data-action="products-subview" data-subview="recipes">← Back to Recipes</button><button class="text-button" data-action="products-subview" data-subview="catalog">View Catalog</button></div>`}<section class="recipe-view-hero"><div><p class="eyebrow">${escapeHTML(r.craft || r.category)} · Master Recipe v${escapeHTML(r.version)}</p><h3>${escapeHTML(r.title)}</h3><p>${escapeHTML(r.summary)}</p>${item?'<div class="recipe-order-context">Opened for an active production traveler.</div>':''}</div><div class="recipe-hero-actions"><button class="button secondary" data-action="edit-recipe" data-recipe-id="${r.id}">Edit Recipe</button><button class="button secondary" data-action="recipe-focus" data-recipe-id="${r.id}">Focus View</button><button class="button primary" data-action="print-recipe" data-recipe-id="${r.id}">Print Cut Sheet</button></div></section><section class="recipe-overview-grid">${[['Estimated Time',r.estimatedTime],['Difficulty',r.difficulty],['Last Revised',r.lastRevised],['Recipe Status',r.status]].map(([a,b])=>`<article class="summary-card"><strong>${escapeHTML(b)}</strong><span>${escapeHTML(a)}</span></article>`).join('')}</section><section class="recipe-section panel"><div class="panel-heading"><div><p class="eyebrow">Choose the path</p><h3>Production Methods</h3></div></div><div class="recipe-method-grid">${r.methods.map(m=>`<article class="recipe-method-card"><strong>${escapeHTML(m.title)}</strong><p>${escapeHTML(m.description)}</p></article>`).join('')}</div></section><section class="recipe-section panel"><div class="panel-heading"><div><p class="eyebrow">At a glance</p><h3>Quick Reference</h3></div></div><div class="quick-reference-grid">${r.quickReference.map(q=>`<article class="quick-reference-card"><span>${escapeHTML(q.label)}</span><strong>${escapeHTML(q.value)}</strong><small>${escapeHTML(q.note||'')}</small></article>`).join('')}</div></section><section class="recipe-component-phases"><article class="recipe-section panel"><div class="panel-heading"><div><p class="eyebrow">Phase 1 · Make</p><h3>Manufacturing Components</h3></div></div><div class="recipe-list">${normalizeRecipeComponents(r).filter(m=>(m.phase||"manufacturing")==="manufacturing").map(m=>`<div><strong>${escapeHTML(inventoryItemById(m.inventoryItemId)?.name || m.name)}</strong><span>${escapeHTML(recipeComponentDisplay(m))}</span></div>`).join('') || `<p class="empty-note">No manufacturing components recorded.</p>`}</div></article><article class="recipe-section panel recipe-packaging-panel"><div class="panel-heading"><div><p class="eyebrow">Phase 2 · Pack</p><h3>Packaging Components</h3></div></div><div class="recipe-list">${normalizeRecipeComponents(r).filter(m=>m.phase==="packaging").map(m=>`<div><strong>${escapeHTML(inventoryItemById(m.inventoryItemId)?.name || m.name)}</strong><span>${escapeHTML(recipeComponentDisplay(m))}</span></div>`).join('') || `<p class="empty-note">No packaging components recorded yet.</p>`}</div></article></section><section class="recipe-section panel"><div class="panel-heading"><div><p class="eyebrow">Worktable</p><h3>Tools</h3></div></div><div class="recipe-list simple">${r.tools.map(t=>`<div><strong>${escapeHTML(t)}</strong></div>`).join('')}</div></section><section class="recipe-section"><div class="section-heading"><p class="eyebrow">Build from scratch</p><h3>Production Stages</h3><p>Open details only when needed. Check off the meaningful milestone.</p></div><div class="recipe-stage-list">${r.stages.map((st,idx)=>renderRecipeStage(r,st,idx,orderId,itemId)).join('')}</div></section><section class="recipe-wisdom"><div><p class="eyebrow">Lessons from the workbench</p><h3>Workshop Wisdom</h3></div><div class="wisdom-list">${r.wisdom.map(w=>`<blockquote>${escapeHTML(w)}</blockquote>`).join('')}</div></section><section class="recipe-two-column"><article class="recipe-section panel"><div class="panel-heading"><div><p class="eyebrow">Before mailing</p><h3>Packing</h3></div></div><ol class="recipe-numbered-list">${r.packing.map(x=>`<li>${escapeHTML(x)}</li>`).join('')}</ol></article><article class="recipe-section panel"><div class="panel-heading"><div><p class="eyebrow">Master record</p><h3>Recipe History</h3></div></div><div class="recipe-history">${r.history.map(h=>`<div><strong>v${escapeHTML(h.version)} · ${escapeHTML(h.date)}</strong><p>${escapeHTML(h.changes)}</p></div>`).join('')}</div></article></section></section>`;
   }
 
   function renderRecipeStage(r,st,idx,orderId,itemId){ const order=orderId?data.orders.find(o=>o.id===orderId):null; const item=order?.items.find(i=>i.id===itemId); const checked=Boolean(item?.recipeStageChecks?.[st.id]); return `<article class="recipe-stage-card"><div class="recipe-stage-heading"><div class="recipe-stage-number">${idx+1}</div><div><p class="eyebrow">Stage ${idx+1}</p><h3>${escapeHTML(st.title)}</h3></div>${item?`<label class="recipe-checkpoint ${checked?'checked':''}"><input type="checkbox" data-action="recipe-stage-check" data-order-id="${orderId}" data-item-id="${itemId}" data-stage-id="${st.id}" ${checked?'checked':''}><span>${checked?'✓':''}</span>${escapeHTML(st.checkpoint)}</label>`:`<span class="badge status">${escapeHTML(st.checkpoint)}</span>`}</div><div class="recipe-stage-quick">${st.quick.map(x=>`<span>${escapeHTML(x)}</span>`).join('')}</div><details><summary>Show Detailed Instructions</summary><ol>${st.instructions.map(x=>`<li>${escapeHTML(x)}</li>`).join('')}</ol></details></article>`; }
 
   function renderRecipeFocus(recipeId){ const r=recipeById(recipeId); pageTitle.textContent="Recipe Focus"; setActiveNav("products"); viewContainer.innerHTML=`<section class="recipe-focus-view"><button class="back-button" data-action="open-recipe" data-recipe-id="${r.id}">← Full Recipe</button><p class="eyebrow">Simply Ummiby Workshop · Recipe v${escapeHTML(r.version)}</p><h2>${escapeHTML(r.title)}</h2><section class="quick-reference-grid">${r.quickReference.map(q=>`<article class="quick-reference-card"><span>${escapeHTML(q.label)}</span><strong>${escapeHTML(q.value)}</strong><small>${escapeHTML(q.note||'')}</small></article>`).join('')}</section><section class="focus-stage-list">${r.stages.map((st,i)=>`<article><span>${i+1}</span><div><strong>${escapeHTML(st.title)}</strong><p>${escapeHTML(st.checkpoint)}</p></div></article>`).join('')}</section></section>`; }
 
-  function printRecipe(recipeId){ const r=recipeById(recipeId); const w=window.open('','_blank','width=900,height=1000'); if(!w)return showToast('Please allow pop-ups to print the cut sheet.'); w.document.write(`<!doctype html><html><head><title>${escapeHTML(r.title)} Cut Sheet</title><style>body{font-family:Arial,sans-serif;color:#333;padding:28px;line-height:1.45}h1{color:#9f3d4d}.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}.tile,.stage{border:1px solid #ddd;border-radius:12px;padding:12px}.tile strong{display:block;font-size:18px;color:#9f3d4d}.stage{margin:10px 0}.tip{background:#fff1f3;border-left:4px solid #d96d7b;padding:10px;margin:8px 0}@media print{body{padding:0}}</style></head><body><h1>Simply Ummiby Workshop</h1><p>Workshop Recipe · ${escapeHTML(r.title)} · v${escapeHTML(r.version)}</p><h2>Quick Reference</h2><div class="grid">${r.quickReference.map(q=>`<div class="tile"><span>${escapeHTML(q.label)}</span><strong>${escapeHTML(q.value)}</strong><small>${escapeHTML(q.note||'')}</small></div>`).join('')}</div><h2>Materials</h2><ul>${r.materials.map(m=>`<li>${escapeHTML(inventoryItemById(m.inventoryItemId)?.name || m.name)} — ${escapeHTML(recipeComponentDisplay(m))}</li>`).join('')}</ul><h2>Production Stages</h2>${r.stages.map((st,i)=>`<section class="stage"><h3>${i+1}. ${escapeHTML(st.title)}</h3><ul>${st.quick.map(x=>`<li>${escapeHTML(x)}</li>`).join('')}</ul><strong>Checkpoint:</strong> ${escapeHTML(st.checkpoint)}</section>`).join('')}<h2>Workshop Wisdom</h2>${r.wisdom.map(x=>`<div class="tip">${escapeHTML(x)}</div>`).join('')}<script>window.onload=()=>window.print();<\/script></body></html>`); w.document.close(); }
+  function printRecipe(recipeId){ const r=recipeById(recipeId); const w=window.open('','_blank','width=900,height=1000'); if(!w)return showToast('Please allow pop-ups to print the cut sheet.'); w.document.write(`<!doctype html><html><head><title>${escapeHTML(r.title)} Cut Sheet</title><style>body{font-family:Arial,sans-serif;color:#333;padding:28px;line-height:1.45}h1{color:#9f3d4d}.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}.tile,.stage{border:1px solid #ddd;border-radius:12px;padding:12px}.tile strong{display:block;font-size:18px;color:#9f3d4d}.stage{margin:10px 0}.tip{background:#fff1f3;border-left:4px solid #d96d7b;padding:10px;margin:8px 0}@media print{body{padding:0}}</style></head><body><h1>Simply Ummiby Workshop</h1><p>Workshop Recipe · ${escapeHTML(r.title)} · v${escapeHTML(r.version)}</p><h2>Quick Reference</h2><div class="grid">${r.quickReference.map(q=>`<div class="tile"><span>${escapeHTML(q.label)}</span><strong>${escapeHTML(q.value)}</strong><small>${escapeHTML(q.note||'')}</small></div>`).join('')}</div><h2>Manufacturing Components</h2><ul>${normalizeRecipeComponents(r).filter(m=>(m.phase||"manufacturing")==="manufacturing").map(m=>`<li>${escapeHTML(inventoryItemById(m.inventoryItemId)?.name || m.name)} — ${escapeHTML(recipeComponentDisplay(m))}</li>`).join('')}</ul><h2>Packaging Components</h2><ul>${normalizeRecipeComponents(r).filter(m=>m.phase==="packaging").map(m=>`<li>${escapeHTML(inventoryItemById(m.inventoryItemId)?.name || m.name)} — ${escapeHTML(recipeComponentDisplay(m))}</li>`).join('')}</ul><h2>Production Stages</h2>${r.stages.map((st,i)=>`<section class="stage"><h3>${i+1}. ${escapeHTML(st.title)}</h3><ul>${st.quick.map(x=>`<li>${escapeHTML(x)}</li>`).join('')}</ul><strong>Checkpoint:</strong> ${escapeHTML(st.checkpoint)}</section>`).join('')}<h2>Workshop Wisdom</h2>${r.wisdom.map(x=>`<div class="tip">${escapeHTML(x)}</div>`).join('')}<script>window.onload=()=>window.print();<\/script></body></html>`); w.document.close(); }
 
   function renderDashboardView() {
     pageTitle.textContent = "Dashboard";
@@ -3109,7 +3119,7 @@
 
   function recipeConsumptionDefinitions(item) {
     const recipe=recipeByProductId(item.productId);
-    return Array.isArray(recipe?.inventoryConsumption) ? recipe.inventoryConsumption : [];
+    return Array.isArray(recipe?.inventoryConsumption) ? recipe.inventoryConsumption.filter(definition=>(definition.phase||"manufacturing")==="manufacturing") : [];
   }
 
   function resolveConsumptionInventory(item,definition) {
@@ -3140,6 +3150,63 @@
       return definitions;
     }
     return recipeConsumptionDefinitions(item).map(definition => ({...definition,inventoryItem:resolveConsumptionInventory(item,definition)}));
+  }
+
+  function recipePackagingDefinitions(item) {
+    const recipe=recipeByProductId(item.productId);
+    return Array.isArray(recipe?.inventoryConsumption) ? recipe.inventoryConsumption.filter(definition=>definition.phase==="packaging") : [];
+  }
+
+  function existingPackTransaction(order,item,inventoryItemId) {
+    return data.inventoryTransactions.find(tx=>tx.orderId===order.id && tx.quantity<0 && tx.itemId===inventoryItemId && ["pack-and-ship","recipe-packaging"].includes(tx.source) && (!tx.orderItemId || tx.orderItemId===item.id));
+  }
+
+  function consumeRecipePackagingInventory(order) {
+    const pending=[];
+    for (const item of order.items) {
+      item.workflow.packagingRecipeTransactions ||= [];
+      if (item.workflow.packagingRecipeTransactions.length) continue;
+      for (const definition of recipePackagingDefinitions(item)) {
+        const inventoryItem=resolveConsumptionInventory(item,definition);
+        if (!inventoryItem) return showToast(`${definition.label || "A packaging component"} is missing its inventory link.`),false;
+        if (existingPackTransaction(order,item,inventoryItem.id)) continue;
+        const row={...definition,inventoryItem};
+        const issue=productionPlanIssue(row);
+        if(issue!=="Ready") return showToast(`${definition.label}: ${issue}. Update packaging inventory before marking the order packed.`),false;
+        pending.push({item,row});
+      }
+    }
+    for (const {item,row} of pending) {
+      const inventoryItem=row.inventoryItem;
+      if (row.kind==="length") {
+        const inventoryUnit=inventoryItem.yarnLengthUnit||"yd";
+        const amount=roundInventoryLength(convertLength(Number(row.quantity),row.unit||"cm",inventoryUnit));
+        inventoryItem.yarnRemainingLength=roundInventoryLength(Number(inventoryItem.yarnRemainingLength||0)-amount);
+        inventoryItem.yarnUsageHistory ||= [];
+        inventoryItem.yarnUsageHistory.unshift({id:uid("yarn-use"),date:new Date().toISOString(),type:"usage",amount,enteredAmount:Number(row.quantity),enteredUnit:row.unit||"cm",entryMethod:"recipe-packaging",remaining:inventoryItem.yarnRemainingLength,note:`Packaging use · Etsy order ${order.etsyOrderNumber||order.id}`});
+        const tx=recordInventoryTransaction({type:"consume",itemId:inventoryItem.id,quantity:-amount,reason:"Order packaging",details:`Used ${row.quantity} ${row.unit||"cm"} while packing ${item.productName}.`,relatedItemId:item.id,orderId:order.id,etsyOrderNumber:order.etsyOrderNumber||"",orderItemId:item.id,source:"recipe-packaging",measurement:{amount:Number(row.quantity),unit:row.unit||"cm",inventoryAmount:amount,inventoryUnit}});
+        item.workflow.packagingRecipeTransactions.push(tx.id);
+      } else {
+        inventoryItem.quantity=Number(inventoryItem.quantity||0)-Number(row.quantity||0);
+        const tx=recordInventoryTransaction({type:"consume",itemId:inventoryItem.id,quantity:-Number(row.quantity||0),reason:"Order packaging",details:`Used ${row.quantity} ${inventoryItem.name} while packing ${item.productName}.`,relatedItemId:item.id,orderId:order.id,etsyOrderNumber:order.etsyOrderNumber||"",orderItemId:item.id,source:"recipe-packaging"});
+        item.workflow.packagingRecipeTransactions.push(tx.id);
+      }
+    }
+    return true;
+  }
+
+  function restoreRecipePackagingInventory(order,item) {
+    const ids=item.workflow?.packagingRecipeTransactions||[];
+    ids.forEach(transactionId=>{
+      const original=data.inventoryTransactions.find(tx=>tx.id===transactionId);
+      if(!original||original.quantity>=0)return;
+      const inventoryItem=inventoryItemById(original.itemId); if(!inventoryItem)return;
+      const amount=Math.abs(Number(original.quantity||0));
+      if(original.measurement&&isYarnOrCord(inventoryItem)) inventoryItem.yarnRemainingLength=roundInventoryLength(Number(inventoryItem.yarnRemainingLength||0)+amount);
+      else if(inventoryItem.tracking==="quantity") inventoryItem.quantity=Number(inventoryItem.quantity||0)+amount;
+      recordInventoryTransaction({type:"restore",itemId:inventoryItem.id,quantity:amount,reason:"Order packaging reversal",details:`Returned packaging inventory from ${item.productName}.`,relatedItemId:item.id,orderId:order.id,etsyOrderNumber:order.etsyOrderNumber||"",orderItemId:item.id,source:"recipe-packaging-reversal",reversesTransactionId:original.id});
+    });
+    item.workflow.packagingRecipeTransactions=[];
   }
 
   function productionPlanIssue(row) {
@@ -3881,6 +3948,7 @@
     const shippingDone=["careSheetPrinted","labelAttached","companyStickerAttached","mailerSealed"].every(key => Boolean(order.shipping[key]));
     const tagsDone=productTagGroupsForOrder(order).every(group => Boolean(order.shipping.productTagChecks?.[group.taskKey]));
     if (!productionReady || !mailersDone || !shippingDone || !tagsDone) return showToast("Complete the full packing sequence first.");
+    if (!consumeRecipePackagingInventory(order)) return;
     order.items.forEach(i => { if (i.status!=="Completed") i.status="Ready to Mail"; });
     order.shipping.packedAt ||= new Date().toISOString();
     order.shipping.mailedAt = null;
@@ -4001,9 +4069,10 @@
       });
       actionsEl.appendChild(button);
     });
+    document.querySelector("#modalBackdrop .modal")?.classList.toggle("recipe-editor-modal",Boolean(document.getElementById("recipeEditorForm")));
     document.getElementById("modalBackdrop").classList.remove("hidden");
   }
-  function hideModal(){ document.getElementById("modalBackdrop").classList.add("hidden"); }
+  function hideModal(){ document.getElementById("modalBackdrop").classList.add("hidden"); document.querySelector("#modalBackdrop .modal")?.classList.remove("recipe-editor-modal"); }
 
   function resetItem(orderId,itemId) {
     const order=data.orders.find(o => o.id===orderId);

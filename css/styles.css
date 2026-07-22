@@ -1800,3 +1800,28 @@ textarea { resize: vertical; }
 
 /* v0.8.4.2 — searchable, grouped recipe inventory selection */
 .recipe-inventory-picker{display:grid;grid-template-columns:minmax(180px,.8fr) minmax(240px,1.4fr);gap:10px}.recipe-inline-inventory-overlay{position:fixed;inset:0;z-index:10000;background:rgba(35,24,28,.5);display:grid;place-items:center;padding:20px}.recipe-inline-inventory-modal{width:min(720px,100%);max-height:90vh;overflow:auto;background:#fff;border-radius:18px;padding:22px}.recipe-inline-modal-heading{display:flex;justify-content:space-between;gap:18px;align-items:flex-start;margin-bottom:18px}.recipe-inline-modal-heading h3{margin:2px 0 4px}.recipe-inline-modal-heading p{margin:0}.recipe-inline-modal-actions{display:flex;justify-content:flex-end;gap:10px;margin-top:20px}@media(max-width:760px){.recipe-inventory-picker{grid-template-columns:1fr}.recipe-inline-inventory-modal{padding:18px}}
+
+/* v0.8.5.0 — compact two-phase recipe worktable */
+.modal.recipe-editor-modal{width:min(1180px,calc(100vw - 32px));max-height:min(94vh,1050px);overflow:auto}
+.recipe-worktable-section{gap:16px}
+.recipe-phase-section{border:1px solid var(--line);border-radius:15px;background:#fbfafb;padding:14px}
+.recipe-phase-section.packaging{background:var(--rose-50);border-color:var(--rose-200)}
+.recipe-phase-heading{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;margin-bottom:12px}
+.recipe-phase-heading>div>span{display:block;color:var(--primary);font-size:.7rem;font-weight:850;letter-spacing:.08em;text-transform:uppercase}
+.recipe-phase-heading h5{margin:3px 0;font-size:1rem}
+.recipe-phase-heading p{margin:0;color:var(--muted);font-size:.84rem}
+.recipe-components-list.compact{gap:10px;margin:0}
+.recipe-components-list.compact:empty::before{content:"No items added yet.";display:block;padding:14px;border:1px dashed var(--line);border-radius:12px;color:var(--muted);background:#fff}
+.recipe-components-list.compact .recipe-component-row{padding:12px;border-radius:13px}
+.recipe-components-list.compact .recipe-component-main{grid-template-columns:minmax(0,1fr) auto}
+.recipe-components-list.compact .recipe-inventory-picker{grid-template-columns:minmax(160px,.7fr) minmax(250px,1.3fr)}
+.recipe-components-list.compact .recipe-component-meta{margin:7px 0}
+.recipe-components-list.compact .recipe-component-fields{grid-template-columns:140px 100px 90px 120px 110px minmax(180px,1fr);gap:9px}
+.recipe-components-list.compact .recipe-component-description{grid-column:auto}
+.recipe-components-list.compact .recipe-component-summary{margin:8px 0 5px;padding:7px 9px;font-size:.86rem}
+.recipe-component-phases{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px;margin-bottom:22px}
+.recipe-component-phases .recipe-section{margin:0}
+.recipe-packaging-panel{background:var(--rose-50)}
+.empty-note{margin:0;color:var(--muted)}
+@media(max-width:980px){.recipe-components-list.compact .recipe-component-fields{grid-template-columns:repeat(3,minmax(0,1fr))}.recipe-components-list.compact .recipe-component-description{grid-column:span 2}}
+@media(max-width:760px){.modal.recipe-editor-modal{width:100%;max-height:100vh;border-radius:0}.recipe-phase-heading{flex-direction:column}.recipe-components-list.compact .recipe-inventory-picker,.recipe-components-list.compact .recipe-component-fields,.recipe-component-phases{grid-template-columns:1fr}.recipe-components-list.compact .recipe-component-description{grid-column:auto}}

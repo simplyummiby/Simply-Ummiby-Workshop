@@ -1,5 +1,19 @@
 # Changelog
 
+## v0.8.5.0 — Two-Phase Recipe Worktable
+
+- Widened the Recipe Editor and compacted recipe component rows to reduce unnecessary scrolling.
+- Split inventory-linked components into Manufacturing Components and Packaging Components.
+- Added separate Add Manufacturing Item and Add Packaging Item actions.
+- Kept inventory search, grouped dropdowns, inline inventory creation, quantities, and cut-length controls available in both phases.
+- Limited production inventory plans to manufacturing components.
+- Added recipe-driven packaging deductions when an order is marked packed.
+- Avoided duplicate packaging deductions when an existing Pack & Ship checklist transaction already consumed the same inventory record.
+- Added packaging inventory restoration during item and order resets.
+- Separated manufacturing and packaging components on recipe detail pages and printed cut sheets.
+- Migrated legacy recipe components to the manufacturing phase by default.
+- Centralized phase-aware component collection and inventory-consumption generation.
+
 ## v0.8.4.2 — Organized Recipe Inventory Picker
 
 - Added a search field to each recipe component so inventory can be filtered by item name, material type, or craft.
