@@ -102,3 +102,12 @@ Each recipe has two component groups:
 - **Packaging Components**: mailers, labels, wrapping string, stickers, care sheets, and other supplies used after production.
 
 Every row links to a permanent inventory ID. Counted rows store a quantity per product. Cut-length rows store pieces, length per piece, and the measurement unit. Manufacturing inventory is consumed when production begins. Packaging inventory is consumed when the completed order is marked packed.
+
+## Component measurement behavior
+
+Recipe components support two usage modes:
+
+- **Quantity / each:** for rings, dowels, end caps, mailers, stickers, labels, care sheets, and other counted items. Only quantity is required.
+- **Cut by length:** for cord, yarn, twine, or other materials cut from a longer supply. Pieces, length per piece, and unit are required.
+
+Selecting a precise yarn or cord item defaults to cut-by-length. Other inventory items default to quantity/each. The usage mode can still be changed manually when needed.

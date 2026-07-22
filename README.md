@@ -1,11 +1,11 @@
 # Simply Ummiby Workshop
 
-**Version 0.8.5.0**
+**Version 0.8.5.1**
 
 
-Version 0.8.5.0 reorganizes recipes around the two real workshop phases: making the product and packing it. The wider, more compact editor keeps manufacturing and packaging supplies distinct while linking both directly to inventory.
+Version 0.8.5.1 reorganizes recipes around the two real workshop phases: making the product and packing it. The wider, more compact editor keeps manufacturing and packaging supplies distinct while linking both directly to inventory.
 
-## Version 0.8.5.0 highlights
+## Version 0.8.5.1 highlights
 
 - Use a wider Recipe Editor with a compact worktable layout.
 - Maintain separate Manufacturing Components and Packaging Components.

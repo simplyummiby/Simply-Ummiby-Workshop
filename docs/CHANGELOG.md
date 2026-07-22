@@ -1,6 +1,15 @@
 # Changelog
 
-## v0.8.5.0 — Two-Phase Recipe Worktable
+## v0.8.5.1 — Recipe Measurement Fix
+
+- Fixed recipe component rows incorrectly showing and requiring length fields for counted manufacturing and packaging items.
+- Quantity/each items now require only a quantity.
+- Cut-by-length items show pieces, length per piece, and length unit.
+- Inventory selection now defaults precise yarn/cord to cut-by-length and ordinary inventory items to quantity/each.
+- Added explicit hidden-field styling so inactive measurement controls cannot remain visible because of layout CSS.
+- Updated validation messaging, documentation, and release version.
+
+## v0.8.5.1 — Two-Phase Recipe Worktable
 
 - Widened the Recipe Editor and compacted recipe component rows to reduce unnecessary scrolling.
 - Split inventory-linked components into Manufacturing Components and Packaging Components.

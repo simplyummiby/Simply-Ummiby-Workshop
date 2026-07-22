@@ -1,6 +1,6 @@
 (() => {
   const STORAGE_KEY = "simplyUmmibyWorkshopData";
-  const VERSION = "0.8.5.0";
+  const VERSION = "0.8.5.1";
   const ITEM_STATUSES = ["New","Preparing","Manufacturing","Waiting on Material","Ready for Packing","Packed","Ready to Mail","Completed"];
   const STATUS_PROGRESS = {
     "New": 5, "Preparing": 20, "Manufacturing": 50, "Waiting on Material": 35,
@@ -2492,7 +2492,7 @@
       <div class="recipe-component-main"><div class="recipe-inventory-picker"><label><span>Find Inventory Item</span><input type="search" data-role="inventory-search" placeholder="Search by name, type, or craft"></label><label><span>Inventory Item</span><select data-field="inventoryItemId">${recipeInventoryOptions(component.inventoryItemId||"")}</select></label></div><button type="button" class="button secondary small" data-action="recipe-quick-add-inventory">+ Add New Inventory Item</button></div>
       <div class="recipe-component-meta"><span class="recipe-link-state ${component.inventoryItemId?"linked":"unlinked"}">${component.inventoryItemId?"Linked":"Inventory link needed"}</span><small data-role="availability">${escapeHTML(available)}</small></div>
       <div class="recipe-component-fields">
-        <label><span>Usage Type</span><select data-field="usageType"><option value="count" ${usageType==="count"?"selected":""}>Counted item</option><option value="cut" ${usageType==="cut"?"selected":""}>Cut length</option></select></label>
+        <label><span>How is it used?</span><select data-field="usageType"><option value="count" ${usageType==="count"?"selected":""}>Quantity / each</option><option value="cut" ${usageType==="cut"?"selected":""}>Cut by length</option></select></label>
         <label class="component-count-field"><span>Quantity</span><input data-field="quantity" type="number" min="0.01" step="0.01" value="${Number(component.quantity||1)}"></label>
         <label class="component-cut-field"><span>Pieces</span><input data-field="pieces" type="number" min="1" step="1" value="${Number(component.pieces||1)}"></label>
         <label class="component-cut-field"><span>Length Each</span><input data-field="lengthEach" type="number" min="0.01" step="0.01" value="${Number(component.lengthEach||0)}"></label>
@@ -2528,7 +2528,18 @@
       if(!list) return;
       list.querySelectorAll('.recipe-component-row').forEach(syncRecipeComponentRow);
       list.addEventListener("input",event=>{const row=event.target.closest('.recipe-component-row');if(!row)return; if(event.target.matches('[data-role="inventory-search"]')) refreshRecipeInventorySelect(row,event.target.value); else syncRecipeComponentRow(row);});
-      list.addEventListener("change",event=>{const row=event.target.closest('.recipe-component-row');if(row)syncRecipeComponentRow(row);});
+      list.addEventListener("change",event=>{
+        const row=event.target.closest('.recipe-component-row');
+        if(!row) return;
+        if(event.target.matches('[data-field="inventoryItemId"]')) {
+          const selectedId=event.target.value||"";
+          const item=inventoryItemById(selectedId);
+          const usageSelect=row.querySelector('[data-field="usageType"]');
+          const shouldUseCut=selectedId==="__order_color_yarn__" || Boolean(item && isYarnOrCord(item) && item.yarnTrackingMode==="precise");
+          if(usageSelect) usageSelect.value=shouldUseCut?"cut":"count";
+        }
+        syncRecipeComponentRow(row);
+      });
       list.addEventListener("click",event=>{
         const remove=event.target.closest('[data-action="remove-recipe-component"]'); if(remove){remove.closest('.recipe-component-row')?.remove();return;}
         const quick=event.target.closest('[data-action="recipe-quick-add-inventory"]'); if(quick) openRecipeQuickInventoryModal(quick.closest('.recipe-component-row'));
@@ -2588,7 +2599,7 @@
     if (!components.some(component=>(component.phase||"manufacturing")==="manufacturing")) { showToast("Add at least one manufacturing component."); return; }
     const unlinked=components.filter(component=>!component.inventoryItemId);
     if (unlinked.length) { showToast("Link every recipe component to inventory before saving."); return; }
-    if (components.some(component=>component.usageType==="cut" && (!component.pieces || !component.lengthEach))) { showToast("Each cut-length component needs pieces and a length."); return; }
+    if (components.some(component=>component.usageType==="cut" && (!component.pieces || !component.lengthEach))) { showToast("Only items set to Cut by length need pieces and a length."); return; }
     const updated={id:existing?.id||uid("recipe"),productId:fd.get("productId"),productCategoryId:master?.categoryId||"",craft:master?.craft||"Other",title:fd.get("title").trim(),version:fd.get("version").trim()||"0.1",status:fd.get("status"),estimatedTime:fd.get("estimatedTime").trim(),difficulty:fd.get("difficulty").trim(),lastRevised:fd.get("lastRevised").trim(),summary:fd.get("summary").trim(),methods:linesToObjects(fd.get("methods"),["title","description"]),quickReference:linesToObjects(fd.get("quickReference"),["label","value","note"]),materials:components,inventoryConsumption:componentsToInventoryConsumption(components),tools:linesToList(fd.get("tools")),stages,wisdom:linesToList(fd.get("wisdom")),packing:linesToList(fd.get("packing")),history:linesToObjects(fd.get("history"),["version","date","changes"])};
     if(existing) Object.assign(existing,updated); else data.recipes.push(updated);
     const product=productMasters().find(item=>item.id===updated.productId); if(product) product.recipeId=updated.id;
