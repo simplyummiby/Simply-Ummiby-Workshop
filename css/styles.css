@@ -1829,3 +1829,12 @@ textarea { resize: vertical; }
 /* v0.8.5.1: recipe measurement fields only display for their selected usage type. */
 .recipe-component-fields .component-count-field[hidden],
 .recipe-component-fields .component-cut-field[hidden] { display: none !important; }
+
+/* v0.8.5.2 recipe editor workflow */
+.recipe-phase-footer {
+  display: flex;
+  justify-content: flex-end;
+  padding-top: 0.85rem;
+  border-top: 1px solid var(--border-color, #eadde0);
+  margin-top: 0.85rem;
+}

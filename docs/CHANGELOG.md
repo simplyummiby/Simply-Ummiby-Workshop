@@ -1,5 +1,13 @@
 # Changelog
 
+## v0.8.5.2 — Recipe Editor Save Fix
+
+- Moved Add Manufacturing Item and Add Packaging Item controls to the bottom of their respective sections.
+- Reworked recipe saving with safer field handling and explicit validation feedback.
+- Added quantity and cut-length validation that matches each component usage type.
+- Added save success feedback and guarded error handling so failures are visible rather than silent.
+- Preserved structured manufacturing and packaging component data during edits.
+
 ## v0.8.5.1 — Recipe Measurement Fix
 
 - Fixed recipe component rows incorrectly showing and requiring length fields for counted manufacturing and packaging items.
@@ -9,7 +17,7 @@
 - Added explicit hidden-field styling so inactive measurement controls cannot remain visible because of layout CSS.
 - Updated validation messaging, documentation, and release version.
 
-## v0.8.5.1 — Two-Phase Recipe Worktable
+## v0.8.5.0 — Two-Phase Recipe Worktable
 
 - Widened the Recipe Editor and compacted recipe component rows to reduce unnecessary scrolling.
 - Split inventory-linked components into Manufacturing Components and Packaging Components.

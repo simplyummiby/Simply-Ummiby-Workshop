@@ -1,12 +1,15 @@
 # Simply Ummiby Workshop
 
-**Version 0.8.5.1**
+**Version 0.8.5.2**
 
 
-Version 0.8.5.1 reorganizes recipes around the two real workshop phases: making the product and packing it. The wider, more compact editor keeps manufacturing and packaging supplies distinct while linking both directly to inventory.
+Version 0.8.5.2 fixes the Recipe Editor save workflow and keeps component-entry controls where the work is happening. Manufacturing and packaging remain separate, inventory-linked phases.
 
-## Version 0.8.5.1 highlights
+## Version 0.8.5.2 highlights
 
+- Save edited recipes reliably with clear validation and success/error feedback.
+- Add manufacturing and packaging items from the bottom of each section without scrolling back to the top.
+- Validate quantity-based and cut-by-length components according to their selected usage type.
 - Use a wider Recipe Editor with a compact worktable layout.
 - Maintain separate Manufacturing Components and Packaging Components.
 - Add individual inventory-linked rows for cord, hardware, mailers, wrapping string, labels, stickers, care sheets, and other supplies.
