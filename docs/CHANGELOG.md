@@ -1,3 +1,12 @@
+## 0.8.3.3 — Yarn Usage Converter
+
+- Added a measurement-unit selector to the Record Use modal.
+- Defaulted day-to-day usage entry to centimeters while preserving yard-based roll inventory.
+- Added a live conversion preview before subtraction.
+- Stored both the entered measurement and normalized inventory-unit deduction in usage history.
+- Remembered the last entry unit used for each yarn or cord record.
+- Centralized length conversion and rounding helpers to avoid duplicated calculations and floating-point drift.
+
 ## 0.8.3.2 — Precise Yarn Balance Fix
 
 - Fixed new precise yarn/cord records saving `0` remaining when Original Length was entered and Remaining Length was left blank.

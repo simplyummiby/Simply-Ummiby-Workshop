@@ -1,11 +1,11 @@
 # Simply Ummiby Workshop
 
-**Version 0.8.3.2**
+**Version 0.8.3.3**
 
 
-Version 0.8.3.2 makes precise yarn usage easier to find and use. A dedicated Record Use workflow subtracts the amount just used, shows the new balance, preserves usage history, and keeps manual remaining-length edits reserved for setup or recalibration.
+Version 0.8.3.3 adds measurement conversion to Record Use. Cord can remain stored in yards while day-to-day usage is entered in centimeters; Workshop converts and subtracts the equivalent yardage automatically.
 
-## Version 0.8.3.2 highlights
+## Version 0.8.3.3 highlights
 
 - Choose Simple, Approximate, or Precise tracking for yarn and cord.
 - Record the amount just used and automatically calculate the remaining yardage or meterage.

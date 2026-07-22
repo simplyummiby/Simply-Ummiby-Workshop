@@ -33,3 +33,8 @@ Routine precise usage is handled through one dedicated Record Use workflow. The 
 ## Precise yarn balance normalization (v0.8.3.2)
 
 Precise-length initialization is handled in the inventory save boundary. A blank remaining-length value on a new precise record inherits the original length, while edits preserve the stored remaining balance unless the user explicitly changes it. Inventory status for precise and approximate yarn is derived from yarn tracking data rather than the generic quantity/condition branch.
+
+
+## Yarn usage unit conversion (v0.8.3.3)
+
+Precise yarn inventory keeps one canonical balance in the record's selected inventory unit (`yd` or `m`). Record Use accepts centimeters, yards, or meters and converts the entered value through centralized meter-based conversion helpers before subtraction. Usage history stores the original entered amount/unit and the normalized deducted amount, preserving both the maker-facing measurement and the inventory calculation.

@@ -1,6 +1,6 @@
 (() => {
   const STORAGE_KEY = "simplyUmmibyWorkshopData";
-  const VERSION = "0.8.3.2";
+  const VERSION = "0.8.3.3";
   const ITEM_STATUSES = ["New","Preparing","Manufacturing","Waiting on Material","Ready for Packing","Packed","Ready to Mail","Completed"];
   const STATUS_PROGRESS = {
     "New": 5, "Preparing": 20, "Manufacturing": 50, "Waiting on Material": 35,
@@ -322,6 +322,21 @@
   function formatInventoryNumber(value) {
     const number = Number(value || 0);
     return Number.isInteger(number) ? String(number) : number.toFixed(2).replace(/0+$/, "").replace(/\.$/, "");
+  }
+
+  const LENGTH_UNIT_TO_METERS = {cm:0.01,m:1,yd:0.9144};
+  function convertLength(value, fromUnit, toUnit) {
+    const amount = Number(value);
+    const from = LENGTH_UNIT_TO_METERS[fromUnit];
+    const to = LENGTH_UNIT_TO_METERS[toUnit];
+    if (!Number.isFinite(amount) || !from || !to) return NaN;
+    return amount * from / to;
+  }
+  function roundInventoryLength(value) {
+    return Math.round((Number(value) + Number.EPSILON) * 10000) / 10000;
+  }
+  function lengthUnitLabel(unit) {
+    return ({cm:"cm",m:"m",yd:"yd"})[unit] || unit;
   }
 
   function inventoryItems() {
@@ -1484,24 +1499,60 @@
   function showRecordYarnUse(itemId) {
     const item=inventoryItemById(itemId);
     if (!item || !isYarnOrCord(item) || item.yarnTrackingMode !== "precise") return;
-    const unit=item.yarnLengthUnit || "yd";
+    const inventoryUnit=item.yarnLengthUnit || "yd";
+    const preferredEntryUnit=item.yarnUsageEntryUnit || "cm";
     const history=(item.yarnUsageHistory || []).slice(0,8);
-    showModal("Record Yarn or Cord Use", `<form id="recordYarnUseForm" class="stock-adjustment-form yarn-use-form"><div class="yarn-current-balance"><span>Current remaining</span><strong>${formatInventoryNumber(item.yarnRemainingLength)} ${escapeHTML(unit)}</strong></div><label><span>Amount Just Used</span><input name="amountUsed" type="number" min="0.01" step="0.01" inputmode="decimal" autofocus><small>Workshop will subtract this from the current remaining amount.</small></label><label><span>Note (optional)</span><input name="note" placeholder="Example: Paper towel holder order"></label><details class="yarn-recalibrate"><summary>Recorded amount is no longer accurate</summary><label><span>Set current remaining amount</span><input name="recalibratedRemaining" type="number" min="0" step="0.01" inputmode="decimal"></label><small>Use this to restart from what is actually left. Earlier history stays saved.</small></details></form>${history.length?`<div class="yarn-usage-history"><h4>Recent History</h4>${history.map(entry=>`<div><span>${escapeHTML(new Date(entry.date).toLocaleDateString())}</span><strong>${entry.type==="recalibration"?"Adjusted":`−${formatInventoryNumber(entry.amount)} ${escapeHTML(unit)}`}</strong><span>${formatInventoryNumber(entry.remaining)} ${escapeHTML(unit)} left</span><small>${escapeHTML(entry.note||"")}</small></div>`).join("")}</div>`:""}`, [{label:"Cancel"},{label:"Record Usage",kind:"primary",keepOpen:true,onClick:()=>saveYarnUse(itemId)}]);
+    const historyMarkup=history.length?`<div class="yarn-usage-history"><h4>Recent History</h4>${history.map(entry=>{
+      const enteredAmount=entry.enteredAmount ?? entry.amount;
+      const enteredUnit=entry.enteredUnit || inventoryUnit;
+      const usageLabel=entry.type==="recalibration"?"Adjusted":`−${formatInventoryNumber(enteredAmount)} ${escapeHTML(lengthUnitLabel(enteredUnit))}`;
+      const convertedLabel=entry.type!=="recalibration" && enteredUnit!==inventoryUnit?`<small>${formatInventoryNumber(entry.amount)} ${escapeHTML(inventoryUnit)} deducted${entry.note?` · ${escapeHTML(entry.note)}`:""}</small>`:`<small>${escapeHTML(entry.note||"")}</small>`;
+      return `<div><span>${escapeHTML(new Date(entry.date).toLocaleDateString())}</span><strong>${usageLabel}</strong><span>${formatInventoryNumber(entry.remaining)} ${escapeHTML(inventoryUnit)} left</span>${convertedLabel}</div>`;
+    }).join("")}</div>`:"";
+    showModal("Record Yarn or Cord Use", `<form id="recordYarnUseForm" class="stock-adjustment-form yarn-use-form"><div class="yarn-current-balance"><span>Current remaining</span><strong>${formatInventoryNumber(item.yarnRemainingLength)} ${escapeHTML(inventoryUnit)}</strong></div><div class="yarn-use-entry-grid"><label><span>Amount Just Used</span><input name="amountUsed" type="number" min="0.01" step="0.01" inputmode="decimal" autofocus></label><label><span>Measured In</span><select name="amountUnit"><option value="cm" ${preferredEntryUnit==="cm"?"selected":""}>Centimeters</option><option value="yd" ${preferredEntryUnit==="yd"?"selected":""}>Yards</option><option value="m" ${preferredEntryUnit==="m"?"selected":""}>Meters</option></select></label></div><div class="yarn-conversion-preview" aria-live="polite"><span>Converted amount</span><strong data-yarn-conversion-preview>Enter an amount to convert</strong><small>Workshop converts your measurement to ${escapeHTML(inventoryUnit)} before subtracting it.</small></div><label><span>Note (optional)</span><input name="note" placeholder="Example: Paper towel holder order"></label><details class="yarn-recalibrate"><summary>Recorded amount is no longer accurate</summary><label><span>Set current remaining amount (${escapeHTML(inventoryUnit)})</span><input name="recalibratedRemaining" type="number" min="0" step="0.01" inputmode="decimal"></label><small>Use this to restart from what is actually left. Earlier history stays saved.</small></details></form>${historyMarkup}`, [{label:"Cancel"},{label:"Record Usage",kind:"primary",keepOpen:true,onClick:()=>saveYarnUse(itemId)}]);
+    setupYarnUsageConverter(item);
+  }
+
+  function setupYarnUsageConverter(item) {
+    const form=document.getElementById("recordYarnUseForm");
+    if (!form) return;
+    const amountInput=form.elements.amountUsed;
+    const unitSelect=form.elements.amountUnit;
+    const preview=form.querySelector("[data-yarn-conversion-preview]");
+    const updatePreview=()=>{
+      const amount=Number(amountInput.value);
+      const fromUnit=unitSelect.value;
+      const inventoryUnit=item.yarnLengthUnit || "yd";
+      if (!(amount > 0)) { preview.textContent="Enter an amount to convert"; return; }
+      const converted=convertLength(amount,fromUnit,inventoryUnit);
+      preview.textContent=`${formatInventoryNumber(roundInventoryLength(converted))} ${inventoryUnit}`;
+    };
+    amountInput.addEventListener("input",updatePreview);
+    unitSelect.addEventListener("change",updatePreview);
+    updatePreview();
   }
 
   function saveYarnUse(itemId) {
     const item=inventoryItemById(itemId); const form=document.getElementById("recordYarnUseForm");
     if (!item || !form) return;
-    const fd=new FormData(form); const recalibrated=String(fd.get("recalibratedRemaining")||"").trim(); const used=Number(fd.get("amountUsed")||0); const note=String(fd.get("note")||"").trim();
+    const fd=new FormData(form);
+    const recalibrated=String(fd.get("recalibratedRemaining")||"").trim();
+    const enteredAmount=Number(fd.get("amountUsed")||0);
+    const enteredUnit=String(fd.get("amountUnit")||"cm");
+    const inventoryUnit=item.yarnLengthUnit || "yd";
+    const used=roundInventoryLength(convertLength(enteredAmount,enteredUnit,inventoryUnit));
+    const note=String(fd.get("note")||"").trim();
     item.yarnUsageHistory ||= [];
+    item.yarnUsageEntryUnit=enteredUnit;
     if (recalibrated !== "") {
       const next=Math.max(0,Number(recalibrated)); const previous=Number(item.yarnRemainingLength||0); item.yarnRemainingLength=next;
       item.yarnUsageHistory.unshift({id:uid("yarn-use"),date:new Date().toISOString(),type:"recalibration",previous,remaining:next,note:note||"Manual recalibration"});
     } else {
-      if (!(used > 0)) return showToast("Enter the amount used.");
+      if (!(enteredAmount > 0)) return showToast("Enter the amount used.");
+      if (!(used > 0)) return showToast("That measurement could not be converted.");
       if (used > Number(item.yarnRemainingLength||0)) return showToast("Usage cannot be more than the recorded amount remaining. Recalibrate instead.");
-      item.yarnRemainingLength=Number(item.yarnRemainingLength||0)-used;
-      item.yarnUsageHistory.unshift({id:uid("yarn-use"),date:new Date().toISOString(),type:"usage",amount:used,remaining:item.yarnRemainingLength,note});
+      item.yarnRemainingLength=roundInventoryLength(Number(item.yarnRemainingLength||0)-used);
+      item.yarnUsageHistory.unshift({id:uid("yarn-use"),date:new Date().toISOString(),type:"usage",amount:used,enteredAmount,enteredUnit,remaining:item.yarnRemainingLength,note});
     }
     data.activity.unshift({text:`Updated yarn remaining for ${item.name}`,time:"Just now"}); saveData(); hideModal(); renderInventoryCatalog(inventoryViewState.category||"overview"); showToast("Yarn inventory updated.");
   }
