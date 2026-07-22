@@ -1,6 +1,6 @@
 (() => {
   const STORAGE_KEY = "simplyUmmibyWorkshopData";
-  const VERSION = "0.8.5.2";
+  const VERSION = "0.8.5.3";
   const ITEM_STATUSES = ["New","Preparing","Manufacturing","Waiting on Material","Ready for Packing","Packed","Ready to Mail","Completed"];
   const STATUS_PROGRESS = {
     "New": 5, "Preparing": 20, "Manufacturing": 50, "Waiting on Material": 35,
@@ -2576,7 +2576,8 @@
     const components=normalizeRecipeComponents(recipe);
     const manufacturingComponents=components.filter(component=>(component.phase||"manufacturing")==="manufacturing");
     const packagingComponents=components.filter(component=>component.phase==="packaging");
-    showModal(recipe?"Edit Recipe":"Add Recipe",`<form id="recipeEditorForm" class="recipe-editor-form">
+    showModal(recipe?"Edit Recipe":"Add Recipe",`<form id="recipeEditorForm" class="recipe-editor-form" novalidate>
+      <div id="recipeValidationSummary" class="recipe-validation-summary" hidden role="alert" aria-live="assertive"></div>
       <section class="product-form-section"><div class="product-section-heading"><span>Recipe identity</span><h4>Basics</h4><p>Connect the recipe to its sellable product and keep the master details current.</p></div><div class="product-form-grid"><label class="product-field"><span class="field-label">Recipe Title</span><input name="title" value="${escapeHTML(recipe?.title||"")}" required></label><label class="product-field"><span class="field-label">Linked Product</span><select name="productId" required><option value="">Choose product</option>${masters.map(master=>`<option value="${master.id}" ${recipe?.productId===master.id?"selected":""}>${escapeHTML(master.name)}</option>`).join("")}</select></label><label class="product-field"><span class="field-label">Version</span><input name="version" value="${escapeHTML(recipe?.version||"0.1")}"></label><label class="product-field"><span class="field-label">Status</span><select name="status">${["Draft","Starter","Active","Archived"].map(status=>`<option ${recipe?.status===status?"selected":""}>${status}</option>`).join("")}</select></label><label class="product-field"><span class="field-label">Estimated Time</span><input name="estimatedTime" value="${escapeHTML(recipe?.estimatedTime||"")}"></label><label class="product-field"><span class="field-label">Difficulty</span><input name="difficulty" value="${escapeHTML(recipe?.difficulty||"")}"></label><label class="product-field"><span class="field-label">Last Revised</span><input name="lastRevised" value="${escapeHTML(recipe?.lastRevised||new Date().toLocaleDateString(undefined,{month:"long",year:"numeric"}))}"></label></div><label class="product-field product-field-full"><span class="field-label">Summary</span><textarea name="summary" rows="3">${escapeHTML(recipe?.summary||"")}</textarea></label></section>
       <section class="product-form-section"><div class="product-section-heading"><span>At a glance</span><h4>Methods & Quick Reference</h4><p>Enter one row per line. Separate columns with a vertical bar.</p></div><label class="product-field"><span class="field-label">Production Methods — Title | Description</span><textarea name="methods" rows="5">${escapeHTML(objectsToLines(recipe?.methods,["title","description"]))}</textarea></label><label class="product-field"><span class="field-label">Quick Reference — Label | Value | Note</span><textarea name="quickReference" rows="6">${escapeHTML(objectsToLines(recipe?.quickReference,["label","value","note"]))}</textarea></label></section>
       <section class="product-form-section recipe-worktable-section"><div class="product-section-heading"><span>Worktable</span><h4>Build & Pack Components</h4><p>Keep production materials separate from the supplies used at the packing table.</p></div>
@@ -2589,28 +2590,72 @@
     bindRecipeComponentEditor();
   }
 
+  function clearRecipeValidation() {
+    const form=document.getElementById("recipeEditorForm");
+    form?.querySelectorAll(".recipe-field-error, .recipe-component-error").forEach(element=>element.classList.remove("recipe-field-error","recipe-component-error"));
+    const summary=document.getElementById("recipeValidationSummary");
+    if(summary){summary.hidden=true;summary.innerHTML="";}
+  }
+
+  function showRecipeValidation(errors=[]) {
+    const form=document.getElementById("recipeEditorForm");
+    const summary=document.getElementById("recipeValidationSummary");
+    if(!form || !summary || !errors.length) return;
+    summary.innerHTML=`<strong>Recipe not saved yet</strong><p>Please fix the following:</p><ul>${errors.map(error=>`<li>${escapeHTML(error.message)}</li>`).join("")}</ul>`;
+    summary.hidden=false;
+    errors.forEach(error=>error.element?.classList.add(error.row?"recipe-component-error":"recipe-field-error"));
+    summary.scrollIntoView({behavior:"smooth",block:"start"});
+    const first=errors[0]?.focus || errors[0]?.element?.querySelector?.("input, select, textarea") || errors[0]?.element;
+    setTimeout(()=>first?.focus?.({preventScroll:true}),250);
+  }
+
   function saveRecipeEditor(recipeId="") {
     const form=document.getElementById("recipeEditorForm");
     if(!form) { showToast("The recipe editor could not be found. Close it and try again."); return; }
-    if(!form.reportValidity()) { showToast("Review the highlighted recipe fields before saving."); return; }
-    const value=name=>String(new FormData(form).get(name)??"").trim();
+    clearRecipeValidation();
+    const fd=new FormData(form);
+    const value=name=>String(fd.get(name)??"").trim();
+    const errors=[];
+    const titleField=form.querySelector('[name="title"]');
+    const productField=form.querySelector('[name="productId"]');
+    if(!value("title")) errors.push({message:"Enter a Recipe Title.",element:titleField?.closest("label")||titleField,focus:titleField});
+    const productId=String(fd.get("productId")||"");
+    const master=productMasters().find(product=>product.id===productId);
+    if(!master) errors.push({message:"Choose a Linked Product.",element:productField?.closest("label")||productField,focus:productField});
+
+    let stages=[];
+    const stagesField=form.querySelector('[name="stages"]');
+    try { stages=JSON.parse(String(fd.get("stages")||"[]")); if(!Array.isArray(stages)) throw new Error(); }
+    catch (_) { errors.push({message:"Production Stages contains invalid JSON.",element:stagesField?.closest("label")||stagesField,focus:stagesField}); }
+
+    const components=collectRecipeComponents();
+    const rows=[...form.querySelectorAll('.recipe-component-row[data-component-phase]')];
+    const manufacturing=components.filter(component=>(component.phase||"manufacturing")==="manufacturing");
+    if(!manufacturing.length) {
+      errors.push({message:"Add at least one Manufacturing Component.",element:document.querySelector('.recipe-phase-section'),focus:document.getElementById("addManufacturingComponent")});
+    }
+    components.forEach((component,index)=>{
+      const row=rows[index];
+      const phaseLabel=(component.phase||"manufacturing")==="packaging"?"Packaging":"Manufacturing";
+      const phaseRows=components.slice(0,index+1).filter(item=>(item.phase||"manufacturing")===(component.phase||"manufacturing")).length;
+      const itemLabel=component.name && component.name!=="Unlinked material" ? component.name : `${phaseLabel} item ${phaseRows}`;
+      const inventorySelect=row?.querySelector('[data-field="inventoryItemId"]');
+      if(!component.inventoryItemId || (!component.linked && component.inventoryItemId!=="__order_color_yarn__")) {
+        errors.push({message:`${itemLabel}: select a valid Inventory Item.`,element:row,focus:inventorySelect,row:true});
+        return;
+      }
+      if(component.usageType==="count" && !(component.quantityValue>0)) {
+        errors.push({message:`${itemLabel}: enter a Quantity greater than zero.`,element:row,focus:row?.querySelector('[data-field="quantity"]'),row:true});
+      }
+      if(component.usageType==="cut") {
+        if(!(component.pieces>0)) errors.push({message:`${itemLabel}: enter the number of Pieces.`,element:row,focus:row?.querySelector('[data-field="pieces"]'),row:true});
+        if(!(component.lengthEach>0)) errors.push({message:`${itemLabel}: enter Length Each greater than zero.`,element:row,focus:row?.querySelector('[data-field="lengthEach"]'),row:true});
+      }
+    });
+
+    if(errors.length){showRecipeValidation(errors);return;}
     try {
-      const fd=new FormData(form);
-      let stages;
-      try { stages=JSON.parse(String(fd.get("stages")||"[]")); if(!Array.isArray(stages)) throw new Error(); }
-      catch (_) { showToast("Production Stages must be valid JSON."); form.querySelector('[name="stages"]')?.focus(); return; }
-      const productId=String(fd.get("productId")||"");
-      const master=productMasters().find(product=>product.id===productId);
-      if(!master) { showToast("Choose a linked product before saving."); form.querySelector('[name="productId"]')?.focus(); return; }
       const existing=recipeById(recipeId);
-      const components=collectRecipeComponents();
-      if (!components.some(component=>(component.phase||"manufacturing")==="manufacturing")) { showToast("Add at least one manufacturing component."); return; }
-      const unlinked=components.filter(component=>!component.inventoryItemId);
-      if (unlinked.length) { showToast("Link every recipe component to inventory before saving."); return; }
-      const invalidCount=components.find(component=>component.usageType==="count" && !(component.quantityValue>0));
-      if(invalidCount) { showToast("Enter a quantity greater than zero for each quantity-based item."); return; }
-      const invalidCut=components.find(component=>component.usageType==="cut" && (!(component.pieces>0) || !(component.lengthEach>0)));
-      if (invalidCut) { showToast("Only items set to Cut by length need pieces and a length greater than zero."); return; }
       const updated={id:existing?.id||uid("recipe"),productId,productCategoryId:master.categoryId||"",craft:master.craft||"Other",title:value("title"),version:value("version")||"0.1",status:String(fd.get("status")||"Draft"),estimatedTime:value("estimatedTime"),difficulty:value("difficulty"),lastRevised:value("lastRevised"),summary:value("summary"),methods:linesToObjects(String(fd.get("methods")||""),["title","description"]),quickReference:linesToObjects(String(fd.get("quickReference")||""),["label","value","note"]),materials:components,inventoryConsumption:componentsToInventoryConsumption(components),tools:linesToList(String(fd.get("tools")||"")),stages,wisdom:linesToList(String(fd.get("wisdom")||"")),packing:linesToList(String(fd.get("packing")||"")),history:linesToObjects(String(fd.get("history")||""),["version","date","changes"])};
       if(existing) Object.assign(existing,updated); else data.recipes.push(updated);
       const product=productMasters().find(item=>item.id===updated.productId); if(product) product.recipeId=updated.id;
@@ -2621,7 +2666,7 @@
       showToast(`${updated.title} saved.`);
     } catch (error) {
       console.error("Unable to save recipe",error);
-      showToast("The recipe could not be saved. Please review the fields and try again.");
+      showRecipeValidation([{message:"Workshop encountered an unexpected error while saving. No recipe changes were lost from the open form.",element:form}]);
     }
   }
 

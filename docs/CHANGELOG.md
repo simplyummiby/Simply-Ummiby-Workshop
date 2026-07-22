@@ -1,5 +1,15 @@
 # Changelog
 
+## v0.8.5.3 — Recipe Validation Clarity
+
+- Replaced the vague native “fill in fields” save failure with a detailed validation summary inside the Recipe Editor modal.
+- Validation now identifies the exact missing recipe field or component value.
+- Invalid component rows and fields are visibly highlighted and the editor scrolls to the error summary.
+- Added checks for inventory records that no longer exist, not merely non-empty inventory IDs.
+- Raised toast notifications above modal overlays.
+- Preserved all entered form data when validation fails.
+
+
 ## v0.8.5.2 — Recipe Editor Save Fix
 
 - Moved Add Manufacturing Item and Add Packaging Item controls to the bottom of their respective sections.

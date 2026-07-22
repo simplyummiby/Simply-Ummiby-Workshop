@@ -209,7 +209,7 @@ textarea { resize: vertical; }
 .placeholder-copy { max-width: 650px; color: var(--muted); line-height: 1.6; }
 .placeholder-card { margin-top: 22px; width: min(680px, 100%); min-height: 180px; border: 1px dashed var(--rose-300); border-radius: 20px; background: rgba(255,255,255,.65); }
 
-.toast { position: fixed; right: 24px; bottom: 24px; background: var(--charcoal); color: white; padding: 13px 16px; border-radius: 12px; box-shadow: var(--shadow); z-index: 100; }
+.toast { position: fixed; right: 24px; bottom: 24px; background: var(--charcoal); color: white; padding: 13px 16px; border-radius: 12px; box-shadow: var(--shadow); z-index: 12050; }
 .modal-backdrop { position: fixed; inset: 0; background: rgba(46,51,50,.38); display: grid; place-items: center; padding: 20px; z-index: 200; }
 .modal { width: min(520px, 100%); background: white; border-radius: 22px; padding: 22px; box-shadow: 0 25px 70px rgba(46,51,50,.22); }
 .modal-heading { display: flex; justify-content: space-between; align-items: center; gap: 16px; }
@@ -1838,3 +1838,8 @@ textarea { resize: vertical; }
   border-top: 1px solid var(--border-color, #eadde0);
   margin-top: 0.85rem;
 }
+
+/* v0.8.5.3 recipe validation clarity */
+.recipe-validation-summary{position:sticky;top:0;z-index:5;margin-bottom:18px;padding:14px 16px;border:2px solid #b42318;border-radius:14px;background:#fff4f2;color:#7a271a;box-shadow:0 6px 18px rgba(122,39,26,.12)}
+.recipe-validation-summary strong{display:block;font-size:1rem}.recipe-validation-summary p{margin:4px 0}.recipe-validation-summary ul{margin:8px 0 0;padding-left:20px}.recipe-validation-summary li+li{margin-top:4px}
+.recipe-field-error{outline:3px solid rgba(180,35,24,.28);outline-offset:4px;border-radius:10px}.recipe-component-error{border-color:#b42318!important;box-shadow:0 0 0 3px rgba(180,35,24,.15)}

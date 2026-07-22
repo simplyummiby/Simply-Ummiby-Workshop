@@ -1,11 +1,11 @@
 # Simply Ummiby Workshop
 
-**Version 0.8.5.2**
+**Version 0.8.5.3**
 
 
-Version 0.8.5.2 fixes the Recipe Editor save workflow and keeps component-entry controls where the work is happening. Manufacturing and packaging remain separate, inventory-linked phases.
+Version 0.8.5.3 makes Recipe Editor validation visible and specific. Save errors now appear inside the recipe modal, identify the exact missing field or component, and highlight the row that needs attention.
 
-## Version 0.8.5.2 highlights
+## Version 0.8.5.3 highlights
 
 - Save edited recipes reliably with clear validation and success/error feedback.
 - Add manufacturing and packaging items from the bottom of each section without scrolling back to the top.
